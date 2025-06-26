@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Server Health Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #181c24;
+        margin: 0;
+        padding: 20px;
+        color: #e0e6ed;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #90caf9;
+        letter-spacing: 1px;
+        font-weight: 600;
+      }
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 24px;
+      }
+      .card {
+        background: #232a36;
+        padding: 24px 20px 20px 20px;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+        border: 1px solid #232a36;
+        transition: box-shadow 0.2s;
+      }
+      .card:hover {
+        box-shadow: 0 8px 32px rgba(33, 150, 243, 0.12);
+        border: 1px solid #394867;
+      }
+      h3 {
+        color: #90caf9;
+        margin-top: 0;
+        margin-bottom: 12px;
+        font-weight: 500;
+        font-size: 1.1rem;
+      }
+      canvas {
+        margin-top: 10px;
+        background: #1a202c;
+        border-radius: 8px;
+      }
+      .server-info-glass {
+        max-width: 800px;
+        margin: 0 auto 36px auto;
+        background: rgba(35, 42, 54, 0.85);
+        border-radius: 20px;
+        box-shadow:
+          0 8px 32px 0 rgba(33, 150, 243, 0.18),
+          0 1.5px 8px 0 rgba(0, 0, 0, 0.12);
+        border: 1.5px solid rgba(144, 202, 249, 0.18);
+        padding: 32px 36px 24px 36px;
+        color: #e0e6ed;
+        text-align: left;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        position: relative;
+        overflow: hidden;
+        animation: fadeIn 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .server-info-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 18px;
+      }
+      .server-info-header h2 {
+        color: #90caf9;
+        margin: 0;
+        font-weight: 700;
+        font-size: 1.35rem;
+        letter-spacing: 0.5px;
+      }
+      .server-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 14px 24px;
+      }
+      .server-info-grid div {
+        background: rgba(144, 202, 249, 0.07);
+        border-radius: 10px;
+        padding: 12px 16px 10px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        box-shadow: 0 1px 4px 0 rgba(33, 150, 243, 0.04);
+        min-width: 0;
+      }
+      .server-info-grid span {
+        color: #b0bac9;
+        font-size: 0.98rem;
+        margin-bottom: 2px;
+        font-weight: 500;
+        letter-spacing: 0.1px;
+      }
+      .server-info-grid strong {
+        color: #e0e6ed;
+        font-size: 1.08rem;
+        font-weight: 600;
+        word-break: break-all;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-24px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      /* Remove old .server-info and #infoCard style */
+      .server-info,
+      #infoCard {
+        display: none !important;
+      }
+      .server-info-icon {
+        vertical-align: middle;
+        margin-right: 10px;
+        display: inline-block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="server-info-glass" id="serverInfo">
+      <div class="server-info-header">
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          class="server-info-icon"
+        >
+          <rect
+            x="2"
+            y="4"
+            width="20"
+            height="16"
+            rx="4"
+            fill="#90caf9"
+            fill-opacity="0.15"
+          />
+          <rect
+            x="6"
+            y="8"
+            width="12"
+            height="8"
+            rx="2"
+            fill="#90caf9"
+            fill-opacity="0.25"
+          />
+          <rect
+            x="9"
+            y="11"
+            width="6"
+            height="2"
+            rx="1"
+            fill="#90caf9"
+            fill-opacity="0.5"
+          />
+        </svg>
+        <h2>System Info</h2>
+      </div>
+      <div class="server-info-grid">
+        <div><span>Platform</span><strong id="platform"></strong></div>
+        <div><span>Node Version</span><strong id="nodeVersion"></strong></div>
+        <div><span>CPU</span><strong id="cpuModel"></strong></div>
+        <div><span>Cores</span><strong id="cpuCores"></strong></div>
+        <div><span>Uptime</span><strong id="uptime"></strong></div>
+        <div><span>RAM (RSS)</span><strong id="lastRss"></strong></div>
+        <div><span>Heap Total</span><strong id="lastHeapTotal"></strong></div>
+        <div><span>External</span><strong id="lastExternal"></strong></div>
+        <div>
+          <span>ArrayBuffers</span><strong id="lastArrayBuffers"></strong>
+        </div>
+        <div><span>ROM (Disk)</span><strong id="diskInfo">N/A</strong></div>
+      </div>
+    </div>
+    <h1>🚦 Server Health Dashboard</h1>
+    <div class="dashboard">
+      <div class="card">
+        <h3>Heap Used Over Time (MB)</h3>
+        <canvas id="heapChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>Heap Total Over Time (MB)</h3>
+        <canvas id="heapTotalChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>RSS Memory Over Time (MB)</h3>
+        <canvas id="rssChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>External Memory Over Time (MB)</h3>
+        <canvas id="externalChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>ArrayBuffers Over Time (MB)</h3>
+        <canvas id="arrayBuffersChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>CPU Load (1m avg)</h3>
+        <canvas id="cpuChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>CPU Load (5m avg)</h3>
+        <canvas id="cpu5mChart" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>CPU Load (15m avg)</h3>
+        <canvas id="cpu15mChart" height="200"></canvas>
+      </div>
+    </div>
+
+    <script>
+      fetch("/logs/healthcheck.log.jsonl")
+        .then((res) => res.text())
+        .then((text) => {
+          const lines = text.split("\n").filter(Boolean);
+          const data = lines
+            .map((line) => {
+              try {
+                return JSON.parse(line);
+              } catch {
+                return null;
+              }
+            })
+            .filter(Boolean);
+
+          const labels = data.map((d) =>
+            new Date(d.timestamp).toLocaleTimeString()
+          );
+          const heapUsed = data.map((d) => parseFloat(d.memory.heapUsed));
+          const heapTotal = data.map((d) => parseFloat(d.memory.heapTotal));
+          const rss = data.map((d) => parseFloat(d.memory.rss));
+          const external = data.map((d) => parseFloat(d.memory.external));
+          const arrayBuffers = data.map((d) =>
+            parseFloat(d.memory.arrayBuffers)
+          );
+          const cpuLoad = data.map((d) => parseFloat(d.cpu.loadAverage[0])); // 1-minute avg
+          const cpuLoad5m = data.map((d) => parseFloat(d.cpu.loadAverage[1]));
+          const cpuLoad15m = data.map((d) => parseFloat(d.cpu.loadAverage[2]));
+
+          // Populate system info from last entry
+          const last = data[data.length - 1];
+          document.getElementById("platform").textContent = last.platform;
+          document.getElementById("nodeVersion").textContent = last.nodeVersion;
+          document.getElementById("cpuModel").textContent = last.cpu.model;
+          document.getElementById("cpuCores").textContent = last.cpu.cores;
+          document.getElementById("uptime").textContent = last.uptime.formatted;
+          document.getElementById("lastRss").textContent = last.memory.rss;
+          document.getElementById("lastHeapTotal").textContent =
+            last.memory.heapTotal;
+          document.getElementById("lastExternal").textContent =
+            last.memory.external;
+          document.getElementById("lastArrayBuffers").textContent =
+            last.memory.arrayBuffers;
+
+          new Chart(document.getElementById("heapChart").getContext("2d"), {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "Heap Used (MB)",
+                  data: heapUsed,
+                  backgroundColor: "rgba(66, 133, 244, 0.7)",
+                },
+              ],
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "MB",
+                  },
+                },
+              },
+            },
+          });
+
+          new Chart(
+            document.getElementById("heapTotalChart").getContext("2d"),
+            {
+              type: "bar",
+              data: {
+                labels,
+                datasets: [
+                  {
+                    label: "Heap Total (MB)",
+                    data: heapTotal,
+                    backgroundColor: "rgba(244, 180, 0, 0.7)",
+                  },
+                ],
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: "MB",
+                    },
+                  },
+                },
+              },
+            }
+          );
+
+          new Chart(document.getElementById("rssChart").getContext("2d"), {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "RSS (MB)",
+                  data: rss,
+                  backgroundColor: "rgba(15, 157, 88, 0.7)",
+                },
+              ],
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "MB",
+                  },
+                },
+              },
+            },
+          });
+
+          new Chart(document.getElementById("externalChart").getContext("2d"), {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "External (MB)",
+                  data: external,
+                  backgroundColor: "rgba(255, 112, 67, 0.7)",
+                },
+              ],
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "MB",
+                  },
+                },
+              },
+            },
+          });
+
+          new Chart(
+            document.getElementById("arrayBuffersChart").getContext("2d"),
+            {
+              type: "bar",
+              data: {
+                labels,
+                datasets: [
+                  {
+                    label: "ArrayBuffers (MB)",
+                    data: arrayBuffers,
+                    backgroundColor: "rgba(171, 71, 188, 0.7)",
+                  },
+                ],
+              },
+              options: {
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: {
+                      display: true,
+                      text: "MB",
+                    },
+                  },
+                },
+              },
+            }
+          );
+
+          new Chart(document.getElementById("cpuChart").getContext("2d"), {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "CPU Load (1m)",
+                  data: cpuLoad,
+                  borderColor: "rgba(219, 68, 55, 1)",
+                  backgroundColor: "rgba(219, 68, 55, 0.2)",
+                  fill: true,
+                  tension: 0.3,
+                },
+              ],
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Load Avg",
+                  },
+                },
+              },
+            },
+          });
+
+          new Chart(document.getElementById("cpu5mChart").getContext("2d"), {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "CPU Load (5m)",
+                  data: cpuLoad5m,
+                  borderColor: "rgba(66, 133, 244, 1)",
+                  backgroundColor: "rgba(66, 133, 244, 0.2)",
+                  fill: true,
+                  tension: 0.3,
+                },
+              ],
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Load Avg",
+                  },
+                },
+              },
+            },
+          });
+
+          new Chart(document.getElementById("cpu15mChart").getContext("2d"), {
+            type: "line",
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: "CPU Load (15m)",
+                  data: cpuLoad15m,
+                  borderColor: "rgba(255, 193, 7, 1)",
+                  backgroundColor: "rgba(255, 193, 7, 0.2)",
+                  fill: true,
+                  tension: 0.3,
+                },
+              ],
+            },
+            options: {
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Load Avg",
+                  },
+                },
+              },
+            },
+          });
+        });
+
+      // Try to get disk info (ROM) using the StorageManager API if available
+      if (navigator.storage && navigator.storage.estimate) {
+        navigator.storage.estimate().then(({ usage, quota }) => {
+          if (typeof usage === "number" && typeof quota === "number") {
+            const usedGB = (usage / 1024 ** 3).toFixed(2);
+            const totalGB = (quota / 1024 ** 3).toFixed(2);
+            document.getElementById("diskInfo").textContent =
+              `${usedGB} GB / ${totalGB} GB`;
+          }
+        });
+      }
+
+      Chart.defaults.color = "#e0e6ed";
+      Chart.defaults.plugins.legend.labels.color = "#b0bac9";
+      Chart.defaults.plugins.title.color = "#90caf9";
+      Chart.defaults.scales = {
+        x: {
+          grid: { color: "rgba(144,202,249,0.08)" },
+          ticks: { color: "#b0bac9" },
+        },
+        y: {
+          grid: { color: "rgba(144,202,249,0.08)" },
+          ticks: { color: "#b0bac9" },
+        },
+      };
+    </script>
+  </body>
+</html>
