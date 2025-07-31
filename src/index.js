@@ -34,7 +34,11 @@ dotenv.config({
   path: "./.env",
 });
 
-if (cluster.isPrimary) {
+// Disable cluster if running locally
+const isLocal =
+  process.env.NODE_ENV === "development" || process.env.CLUSTER_MODE === "off";
+
+if (!isLocal && cluster.isPrimary) {
   const numCPUs = os.cpus().length;
   console.log(`Primary process ${process.pid} is running`);
   // Fork workers.

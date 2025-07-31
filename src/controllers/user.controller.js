@@ -5,6 +5,9 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
+import path from "path";
+import { sendMail } from "../utils/EmailService.js";
+import crypto from "crypto";
 
 /**
  * @swagger
@@ -407,6 +410,30 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Something went wrong while registering the user");
   }
 
+  // Send Welcome email after successful registration
+  try {
+    const templatePath = path.join(
+      process.cwd(),
+      "public",
+      "email-templates",
+      "Welcome.html"
+    );
+    let template = fs
+      .readFileSync(templatePath, "utf8")
+      .replace("[User's First Name]", user.fullName)
+      .replace(/\[Your Company Name\]/g, "Covelent")
+      .replace("[GET_STARTED_LINK]", "https://localhost/dashboard")
+      .replace("[Current Year]", new Date().getFullYear());
+    await sendMail({
+      to: user.email,
+      subject: "Welcome to Covelent",
+      html: template,
+    });
+  } catch (err) {
+    // Optionally log error, but do not block registration
+    console.error("Failed to send welcome email:", err);
+  }
+
   return res.status(201).json(
     new ApiResponse(
       200,
@@ -624,6 +651,72 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Avatar image updated successfully"));
 });
 
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) throw new ApiError(400, "Email is required");
+
+  const user = await User.findOne({ email });
+  if (!user) throw new ApiError(404, "User with this email does not exist");
+  if (!user.isActive || !user.isVerified)
+    throw new ApiError(401, "User account is not active or not verified");
+
+  // Generate secure token and expiry
+  user.resetPasswordToken = crypto.randomBytes(32).toString("hex");
+  user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 min
+  await user.save({ validateBeforeSave: false });
+
+  const templatePath = path.join(
+    process.cwd(),
+    "public",
+    "email-templates",
+    "forgot-password.html"
+  );
+  let template = fs
+    .readFileSync(templatePath, "utf8")
+    .replace("[User's First Name]", user.fullName)
+    .replace(/\[Your Company Name\]/g, "Covelent")
+    .replace(
+      "[RESET_LINK]",
+      `https://localhost/reset-password?token=${user.resetPasswordToken}`
+    )
+    .replace("[Current Year]", new Date().getFullYear());
+
+  await sendMail({
+    to: email,
+    subject: "Reset password request",
+    html: template,
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Reset link sent to email"));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) {
+    throw new ApiError(400, "Token and new password are required");
+  }
+
+  const user = await User.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired reset token");
+  }
+
+  user.password = password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password reset successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -633,4 +726,6 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
+  forgotPassword,
+  resetPassword,
 };
