@@ -4,8 +4,294 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 import fs from "fs";
+
+/**
+ * @swagger
+ * /api/v1/users/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *               aadharImage:
+ *                 type: string
+ *                 format: binary
+ *               panImage:
+ *                 type: string
+ *                 format: binary
+ *             required:
+ *               - fullName
+ *               - email
+ *               - password
+ *               - role
+ *               - dateOfBirth
+ *               - avatar
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *                 dateOfBirth:
+ *                   type: string
+ *                   format: date
+ *                 isVerified:
+ *                   type: boolean
+ *                 isActive:
+ *                   type: boolean
+ *       400:
+ *         description: Bad request
+ *       409:
+ *         description: User already exists
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/login:
+ *   post:
+ *     summary: Login a user
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User logged in successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       400:
+ *         description: Bad request
+ *       404:
+ *         description: User not found
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/logout:
+ *   post:
+ *     summary: Logout the current user
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/refresh-token:
+ *   post:
+ *     summary: Refresh access token
+ *     tags:
+ *       - Users
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Access token refreshed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/change-password:
+ *   post:
+ *     summary: Change current user's password
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid old password
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/current-user:
+ *   get:
+ *     summary: Get current authenticated user's details
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/update-account:
+ *   patch:
+ *     summary: Update account details for the current user
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Account details updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request
+ */
+
+/**
+ * @swagger
+ * /api/v1/users/avatar:
+ *   patch:
+ *     summary: Update the user's avatar
+ *     tags:
+ *       - Users
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Avatar image updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Avatar file is missing
+ */
 
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
@@ -26,21 +312,9 @@ const generateAccessAndRefereshTokens = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res) => {
-  // get user details from frontend
-  // validation - not empty
-  // check if user already exists: username, email
-  // check for images, check for avatar
-  // upload them to cloudinary, avatar
-  // create user object - create entry in db
-  // remove password and refresh token field from response
-  // check for user creation
-  // return res
+  const { fullName, email, password, role, dateOfBirth } = req.body;
 
-  const { fullName, email, username, password } = req.body;
-  //console.log("email: ", email);
-
-  let avatarLocalPath;
-  let coverImageLocalPath;
+  let avatarLocalPath, aadharImageLocalPath, panImageLocalPath;
   if (
     req.files &&
     Array.isArray(req.files.avatar) &&
@@ -50,118 +324,137 @@ const registerUser = asyncHandler(async (req, res) => {
   }
   if (
     req.files &&
-    Array.isArray(req.files.coverImage) &&
-    req.files.coverImage.length > 0
+    Array.isArray(req.files.aadharImage) &&
+    req.files.aadharImage.length > 0
   ) {
-    coverImageLocalPath = req.files.coverImage[0].path;
+    aadharImageLocalPath = req.files.aadharImage[0].path;
+  }
+  if (
+    req.files &&
+    Array.isArray(req.files.panImage) &&
+    req.files.panImage.length > 0
+  ) {
+    panImageLocalPath = req.files.panImage[0].path;
   }
 
+  // Validate required fields including role and dateOfBirth
   if (
-    [fullName, email, username, password].some((field) => field?.trim() === "")
+    [fullName, email, password, role, dateOfBirth].some(
+      (field) => field?.trim() === ""
+    )
   ) {
-    // Clean up uploaded files if validation fails
     if (avatarLocalPath && fs.existsSync(avatarLocalPath))
       fs.unlinkSync(avatarLocalPath);
-    if (coverImageLocalPath && fs.existsSync(coverImageLocalPath))
-      fs.unlinkSync(coverImageLocalPath);
-    throw new ApiError(400, "All fields are required");
+    throw new ApiError(
+      400,
+      "All fields (fullName, email, password, role, dateOfBirth) are required"
+    );
   }
 
   const existedUser = await User.findOne({
-    $or: [{ username }, { email }],
+    $or: [{ email }],
   });
 
   if (existedUser) {
     // Clean up uploaded files if user exists
     if (avatarLocalPath && fs.existsSync(avatarLocalPath))
       fs.unlinkSync(avatarLocalPath);
-    if (coverImageLocalPath && fs.existsSync(coverImageLocalPath))
-      fs.unlinkSync(coverImageLocalPath);
     throw new ApiError(409, "User with email or username already exists");
   }
-  console.log(req.files);
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required");
   }
-  console.log("avatarLocalPath:", avatarLocalPath);
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  // console.log("avatar upload result:", avatar);
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath, "avatars");
+  const aadharImage = aadharImageLocalPath
+    ? await uploadOnCloudinary(aadharImageLocalPath, "aadhar")
+    : null;
+  const panImage = panImageLocalPath
+    ? await uploadOnCloudinary(panImageLocalPath, "pan")
+    : null;
 
   if (!avatar) {
     throw new ApiError(400, "Avatar file is required");
   }
 
+  // Add new fields from user.model.js
   const user = await User.create({
     fullName,
     avatar: avatar.url,
-    coverImage: coverImage?.url || "",
     email,
     password,
-    username: username.toLowerCase(),
+    googleId: req.body.googleId,
+    aadhar: {
+      ...(req.body.aadhar || {}),
+      link: aadharImage?.url || req.body.aadhar?.link || "",
+    },
+    pan: {
+      ...(req.body.pan || {}),
+      link: panImage?.url || req.body.pan?.link || "",
+    },
+    role,
+    dateOfBirth,
   });
 
+  // Generate tokens and return with role, isVerified, isActive
+  const tokens = await generateAccessAndRefereshTokens(user._id);
   const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken -aadhar -pan"
   );
 
   if (!createdUser) {
     throw new ApiError(500, "Something went wrong while registering the user");
   }
 
-  return res
-    .status(201)
-    .json(new ApiResponse(200, createdUser, "User registered Successfully"));
+  return res.status(201).json(
+    new ApiResponse(
+      200,
+      {
+        user: createdUser,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        role: user.role,
+        dateOfBirth: user.dateOfBirth,
+        isVerified: user.isVerified,
+        isActive: user.isActive,
+      },
+      "User registered Successfully"
+    )
+  );
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-  // req body -> data
-  // username or email
-  //find the user
-  //password check
-  //access and referesh token
-  //send cookie
+  const { email, password } = req.body;
 
-  const { email, username, password } = req.body;
-
-  if (!username && !email) {
-    throw new ApiError(400, "username or email is required");
+  if (!email) {
+    throw new ApiError(400, "email is required");
   }
 
-  // Here is an alternative of above code based on logic discussed in video:
-  // if (!(username || email)) {
-  //     throw new ApiError(400, "username or email is required")
-
-  // }
-
-  const user = await User.findOne({
-    $or: [{ username }, { email }],
-  });
-
+  const user = await User.findOne({ email });
   if (!user) {
     throw new ApiError(404, "User does not exist");
   }
 
-  const isPasswordValid = await user.isPasswordCorrect(password);
+  if (!user.isActive) {
+    throw new ApiError(401, "User account is not active");
+  }
+  if (!user.isVerified) {
+    throw new ApiError(401, "User account is not verified");
+  }
 
-  if (!isPasswordValid) {
+  if (!(await user.isPasswordCorrect(password))) {
     throw new ApiError(401, "Invalid user credentials");
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(
     user._id
   );
-
   const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken -aadhar -pan"
   );
 
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
+  const options = { httpOnly: true, secure: true };
 
   return res
     .status(200)
@@ -170,11 +463,7 @@ const loginUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        {
-          user: loggedInUser,
-          accessToken,
-          refreshToken,
-        },
+        { user: loggedInUser, accessToken, refreshToken },
         "User logged In Successfully"
       )
     );
@@ -272,9 +561,12 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select(
+    "-password -refreshToken -aadhar -pan"
+  );
   return res
     .status(200)
-    .json(new ApiResponse(200, req.user, "User fetched successfully"));
+    .json(new ApiResponse(200, user, "User fetched successfully"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -284,16 +576,18 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user?._id,
-    {
-      $set: {
-        fullName,
-        email: email,
-      },
-    },
-    { new: true }
-  ).select("-password");
+  // Prevent aadhar and pan number update
+  if (req.body?.aadhar?.number || req.body?.pan?.number) {
+    return res
+      .status(400)
+      .json(
+        new ApiResponse(400, null, "Aadhar and PAN number cannot be updated")
+      );
+  }
+  const user = await User.findByIdAndUpdate(req.user._id, req.body, {
+    new: true,
+    runValidators: true,
+  }).select("-password");
 
   return res
     .status(200)
@@ -309,7 +603,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   //TODO: delete old image - assignment
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  const avatar = await uploadOnCloudinary(avatarLocalPath, "users");
 
   if (!avatar.url) {
     throw new ApiError(400, "Error while uploading on avatar");

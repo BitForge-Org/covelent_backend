@@ -3,14 +3,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
 const userSchema = new Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    index: true,
-    lowercase: true,
-  },
   email: {
     type: String,
     required: true,
@@ -19,6 +11,11 @@ const userSchema = new Schema({
     index: true,
     lowercase: true,
   },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
   fullName: {
     type: String,
     required: true,
@@ -26,16 +23,56 @@ const userSchema = new Schema({
     index: true,
   },
   avatar: {
-    type: String, // cloudinary url
+    type: String,
     required: true,
-  },
-  coverImage: {
-    type: String, // cloudinary url
   },
   password: {
     type: String,
     required: [true, "Password is required"],
     minlength: [6, "Password must be at least 6 characters long"],
+  },
+  isActive: {
+    type: Boolean,
+    default: function () {
+      return this.role === "user" ? true : false;
+    },
+  },
+  isVerified: {
+    type: Boolean,
+    default: function () {
+      return this.role === "user" ? true : false;
+    },
+  },
+  role: {
+    type: String,
+    enum: ["user", "provider", "admin"],
+    default: "user",
+  },
+  aadhar: {
+    link: { type: String, required: false },
+    number: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      maxlength: [12, "Aadhar number must be 12 characters long"],
+    },
+    isVerified: { type: Boolean, default: false },
+  },
+  pan: {
+    link: { type: String, required: false },
+    number: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      maxlength: [10, "PAN number must be 10 characters long"],
+    },
+    isVerified: { type: Boolean, default: false },
+  },
+  dateOfBirth: {
+    type: Date,
+    required: true,
   },
   refreshToken: {
     type: String,
@@ -78,5 +115,31 @@ userSchema.methods.generateRefreshToken = function () {
     }
   );
 };
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - name
+ *         - email
+ *         - password
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: User ID
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
 
 export const User = mongoose.model("User", userSchema);

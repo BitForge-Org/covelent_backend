@@ -3,6 +3,8 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { generalLimiter, authLimiter } from "./utils/rateLimiter.js"; // 👈 import utility
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
 
 const app = express();
 
@@ -10,7 +12,7 @@ const app = express();
 app.use(express.static(path.resolve("public")));
 
 // Serve the logs directory as static (for log file access)
-app.use("/logs", express.static(path.resolve("public/logs")));
+// app.use("/logs", express.static(path.resolve("public/logs")));
 
 app.use(generalLimiter); // 👈 use rate limiter middleware
 
@@ -26,14 +28,41 @@ app.use(cookieParser());
 
 import userRouter from "./routes/user.routes.js";
 import healthcheckRouter from "./routes/healthcheck.routes.js";
+import categoryRouter from "./routes/category.routes.js";
 
 app.use("/api/v1/users", authLimiter, userRouter); // 👈 apply authLimiter to user routes
 app.use("/api/v1/healthcheck", healthcheckRouter);
+app.use("/api/v1/categories", categoryRouter);
+
+// Swagger definition
+const swaggerDefinition = {
+  openapi: "3.0.0",
+  info: {
+    title: "Covelent Backend API",
+    version: "1.0.0",
+    description: "API documentation for Covelent Backend",
+  },
+  servers: [
+    {
+      url: "http://localhost:8000",
+      description: "Local server",
+    },
+  ],
+};
+
+const options = {
+  swaggerDefinition,
+  apis: ["./src/routes/*.js", "./src/controllers/*.js", "./src/models/*.js"], // Scan all route, controller, and model files
+};
+
+const swaggerSpec = swaggerJsdoc(options);
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Serve the health chart at a custom route
-app.get("/health/memory-chart", (req, res) => {
-  res.sendFile(path.resolve("public/health-heapused-chart.html"));
-});
+// app.use("/health/memory-chart", (req, res) => {
+//   res.sendFile(path.resolve("public/health-heapused-chart.html"));
+// });
 
 // Global error handler
 app.use((err, req, res, next) => {

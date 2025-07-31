@@ -1,1 +1,1 @@
-export const DB_NAME = "covalent";
+export const DB_NAME = "covelent";
