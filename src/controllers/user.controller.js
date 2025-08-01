@@ -370,11 +370,9 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(409, "User with email or username already exists");
   }
 
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar file is required");
-  }
-
-  const avatar = await uploadOnCloudinary(avatarLocalPath, "avatars");
+  const avatar = avatarLocalPath
+    ? await uploadOnCloudinary(avatarLocalPath, "avatars")
+    : null;
   const aadharImage = aadharImageLocalPath
     ? await uploadOnCloudinary(aadharImageLocalPath, "aadhar")
     : null;
@@ -382,14 +380,10 @@ const registerUser = asyncHandler(async (req, res) => {
     ? await uploadOnCloudinary(panImageLocalPath, "pan")
     : null;
 
-  if (!avatar) {
-    throw new ApiError(400, "Avatar file is required");
-  }
-
   // Add new fields from user.model.js
   const user = await User.create({
     fullName,
-    avatar: avatar.url,
+    avatar: avatar?.url || "",
     email,
     password,
     googleId: req.body.googleId,
