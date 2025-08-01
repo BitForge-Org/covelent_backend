@@ -36,7 +36,7 @@ export async function sendMail({ to, subject, html, from }) {
       subject,
       html,
     };
-    const info = await transporter.sendMail(mailOptions);
+    // const info = await transporter.sendMail(mailOptions);
     return info;
   } catch (err) {
     // Log error for monitoring

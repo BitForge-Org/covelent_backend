@@ -7,6 +7,8 @@ const serviceSchema = new Schema(
       required: true,
       trim: true,
       index: true,
+      unique: true, // Ensure title is unique
+      maxlength: 100, // Limit title length
     },
     description: {
       type: String,

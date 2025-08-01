@@ -24,15 +24,15 @@
  */
 // require('dotenv').config({path: './env'})
 import dotenv from "dotenv";
+dotenv.config({
+  path: "./.env",
+});
+
 import connectDB from "./db/index.js";
 import { app } from "./app.js";
 import cluster from "cluster";
 import os from "os";
 import { logHealthStats } from "./controllers/healthcheck.controller.js";
-
-dotenv.config({
-  path: "./.env",
-});
 
 // Disable cluster if running locally
 const isLocal =

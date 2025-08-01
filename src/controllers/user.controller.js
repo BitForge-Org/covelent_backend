@@ -354,6 +354,20 @@ const registerUser = asyncHandler(async (req, res) => {
     );
   }
 
+  // If role is 'provider', aadhar and pan files are required
+  if (role === "provider") {
+    if (!aadharImageLocalPath || !fs.existsSync(aadharImageLocalPath)) {
+      if (avatarLocalPath && fs.existsSync(avatarLocalPath))
+        fs.unlinkSync(avatarLocalPath);
+      throw new ApiError(400, "Aadhar file is required for provider role");
+    }
+    if (!panImageLocalPath || !fs.existsSync(panImageLocalPath)) {
+      if (avatarLocalPath && fs.existsSync(avatarLocalPath))
+        fs.unlinkSync(avatarLocalPath);
+      throw new ApiError(400, "PAN file is required for provider role");
+    }
+  }
+
   const existedUser = await User.findOne({
     $or: [{ email }],
   });

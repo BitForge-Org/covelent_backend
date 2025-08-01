@@ -29,10 +29,12 @@ app.use(cookieParser());
 import userRouter from "./routes/user.routes.js";
 import healthcheckRouter from "./routes/healthcheck.routes.js";
 import categoryRouter from "./routes/category.routes.js";
+import serviceRoutes from "./routes/service.routes.js";
 
 app.use("/api/v1/users", authLimiter, userRouter); // 👈 apply authLimiter to user routes
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/categories", categoryRouter);
+app.use("/api/v1/services", serviceRoutes);
 
 // Swagger definition
 const swaggerDefinition = {

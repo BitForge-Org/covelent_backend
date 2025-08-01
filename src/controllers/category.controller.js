@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Category } from "../models/category.model.js";
+import { redisClient, initRedis } from "../utils/redisClient.js";
 
 const createCategory = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
@@ -26,23 +27,92 @@ const createCategory = asyncHandler(async (req, res) => {
     icon: icon ? icon.secure_url : null, // Use secure_url if icon is uploaded
   });
 
+  // Invalidate categories cache after creating a new category
+  await redisClient.del("categories:all");
+
   return res
     .status(201)
     .json(new ApiResponse(201, category, "Category created successfully"));
 });
 
-const getAllCategories = asyncHandler(async (req, res) => {
-  const categories = await Category.find().sort({ createdAt: -1 });
+let hasLoggedCacheMiss = false;
 
-  if (categories.length === 0) {
-    return res
-      .status(404)
-      .json(new ApiResponse(404, null, "No categories found"));
+async function getCategoriesFromCache() {
+  if (redisClient.isOpen) {
+    try {
+      const cached = await redisClient.get("categories:all");
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (err) {
+      if (!hasLoggedCacheMiss) {
+        console.warn("Redis unavailable, falling back to DB:", err.message);
+        hasLoggedCacheMiss = true;
+      }
+    }
+  }
+  return null;
+}
+
+async function setCategoriesToCache(categories) {
+  if (redisClient.isOpen) {
+    try {
+      await redisClient.set("categories:all", JSON.stringify(categories), {
+        EX: 3600,
+      });
+      console.log("Categories cached in Redis");
+    } catch (err) {
+      if (!hasLoggedCacheMiss) {
+        console.warn("Could not cache categories in Redis:", err.message);
+        hasLoggedCacheMiss = true;
+      }
+    }
+  } else {
+    console.warn("Redis client is not open, cannot cache categories");
+  }
+}
+
+const getAllCategories = asyncHandler(async (req, res) => {
+  if (!redisClient.isOpen) {
+    console.warn("Redis client is not open. Attempting to connect...");
+    try {
+      await initRedis();
+      if (redisClient.isOpen) {
+        console.log("Redis client connected successfully.");
+      } else {
+        console.warn("Failed to connect Redis client.");
+      }
+    } catch (err) {
+      console.error("Error connecting Redis client:", err.message);
+    }
+  }
+  let categories = await getCategoriesFromCache();
+  let cacheHit = !!categories;
+
+  if (cacheHit) {
+    console.log("Categories served from Redis cache");
+  }
+
+  if (!categories) {
+    categories = await Category.find().sort({ createdAt: -1 });
+    if (categories.length === 0) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "No categories found"));
+    }
+    await setCategoriesToCache(categories); // Await to ensure cache is set
+    console.log("Categories served from MongoDB");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, categories, "Categories fetched successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        categories,
+        `Categories fetched successfully${cacheHit ? " (from cache)" : ""}`
+      )
+    );
 });
 
 export { createCategory, getAllCategories };
