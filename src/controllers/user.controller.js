@@ -340,11 +340,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // Validate required fields including role and dateOfBirth
-  if (
-    [fullName, email, password, role, dateOfBirth].some(
-      (field) => field?.trim() === ""
-    )
-  )
+  if ([fullName, email, password, role].some((field) => field?.trim() === ""))
     if (role === "provider") {
       // If role is 'provider', aadhar and pan files are required
       if (!aadharImageLocalPath || !fs.existsSync(aadharImageLocalPath)) {
