@@ -73,46 +73,50 @@ async function setCategoriesToCache(categories) {
 }
 
 const getAllCategories = asyncHandler(async (req, res) => {
-  if (!redisClient.isOpen) {
-    console.warn("Redis client is not open. Attempting to connect...");
-    try {
-      await initRedis();
-      if (redisClient.isOpen) {
-        console.log("Redis client connected successfully.");
-      } else {
-        console.warn("Failed to connect Redis client.");
-      }
-    } catch (err) {
-      console.error("Error connecting Redis client:", err.message);
-    }
-  }
-  let categories = await getCategoriesFromCache();
-  let cacheHit = !!categories;
-
-  if (cacheHit) {
-    console.log("Categories served from Redis cache");
-  }
-
-  if (!categories) {
-    categories = await Category.find().sort({ createdAt: -1 });
+  try {
+    const categories = await Category.find().sort({ createdAt: -1 });
     if (categories.length === 0) {
       return res
         .status(404)
         .json(new ApiResponse(404, null, "No categories found"));
     }
-    await setCategoriesToCache(categories); // Await to ensure cache is set
+    // await setCategoriesToCache(categories); // Await to ensure cache is set
     console.log("Categories served from MongoDB");
-  }
+    // }
 
-  return res
-    .status(200)
-    .json(
+    return res.status(200).json(
       new ApiResponse(
         200,
-        categories,
-        `Categories fetched successfully${cacheHit ? " (from cache)" : ""}`
+        categories
+        // `Categories fetched successfully${cacheHit ? " (from cache)" : ""}`
       )
     );
+  } catch (error) {
+    console.log(error);
+  }
+  // if (!redisClient.isOpen) {
+  //   console.warn("Redis client is not open. Attempting to connect...");
+  //   try {
+  //     await initRedis();
+  //     if (redisClient.isOpen) {
+  //       console.log("Redis client connected successfully.");
+  //     } else {
+  //       console.warn("Failed to connect Redis client.");
+  //     }
+  //   } catch (err) {
+  //     console.error("Error connecting Redis client:", err.message);
+  //   }
+  // }
+  // let categories = await getCategoriesFromCache();
+  // let cacheHit = !!categories;
+
+  // if (cacheHit) {
+  //   console.log("Categories served from Redis cache");
+  // }
+
+  // let categories = null;
+
+  // if (!categories) {
 });
 
 export { createCategory, getAllCategories };
