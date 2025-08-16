@@ -47,6 +47,45 @@ const options = {
             refreshToken: { type: "string" },
           },
         },
+        Service: {
+          type: "object",
+          properties: {
+            _id: { type: "string" },
+            title: { type: "string", maxLength: 100 },
+            description: { type: "string" },
+            category: { type: "string" },
+            price: { type: "number", minimum: 0 },
+            duration: { type: "number", minimum: 0 },
+            media: {
+              type: "array",
+              items: { type: "string" },
+              maxItems: 5,
+            },
+            avgRating: { type: "number", minimum: 0, maximum: 5 },
+            ratingsCount: { type: "number", minimum: 0 },
+            isActive: { type: "boolean" },
+            isFeatured: { type: "boolean" },
+            locationAvailable: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  city: { type: "string" },
+                  state: { type: "string" },
+                  coordinates: {
+                    type: "object",
+                    properties: {
+                      lan: { type: "number" },
+                      lat: { type: "number" },
+                    },
+                  },
+                },
+              },
+            },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
       },
     },
   },

@@ -2,37 +2,49 @@ import { Router } from "express";
 import {
   createService,
   getFeaturedServices,
-  getServiceByCategory,
+  getServices,
 } from "../controllers/service.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { isAdmin } from "../middlewares/auth.middleware.js";
 
 /**
  * @swagger
+ * tags:
+ *   - name: Service
+ *     description: Service management and retrieval
+ */
+
+/**
+ * @swagger
  * /api/v1/services:
  *   post:
  *     summary: Create a new service
- *     tags:
- *       - Service
+ *     tags: [Service]
  *     requestBody:
  *       required: true
  *       content:
  *         multipart/form-data:
  *           schema:
  *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - category
+ *               - price
+ *               - duration
  *             properties:
  *               title:
  *                 type: string
  *                 description: Service title
- *                 example: "Home Cleaning"
+ *                 example: Home Cleaning
  *               description:
  *                 type: string
  *                 description: Service description
- *                 example: "Professional home cleaning service"
+ *                 example: Professional home cleaning service
  *               category:
  *                 type: string
  *                 description: Category ObjectId
- *                 example: "60f7c0b8e1b1c8a1b8e1b1c8"
+ *                 example: 60f7c0b8e1b1c8a1b8e1b1c8
  *               price:
  *                 type: number
  *                 description: Service price
@@ -44,16 +56,18 @@ import { isAdmin } from "../middlewares/auth.middleware.js";
  *               icon:
  *                 type: string
  *                 format: binary
- *                 description: Icon image file
+ *                 description: Icon image file (optional)
  *               media:
  *                 type: array
  *                 items:
  *                   type: string
  *                   format: binary
- *                 description: Up to 5 media files
+ *                 description: Up to 5 media files (optional)
  *               locationAvailable:
  *                 type: string
- *                 description: JSON stringified array of locations, e.g. '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
+ *                 description: >
+ *                   JSON stringified array of locations, e.g.
+ *                   '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
  *     responses:
  *       201:
  *         description: Service created successfully
@@ -65,18 +79,56 @@ import { isAdmin } from "../middlewares/auth.middleware.js";
 
 /**
  * @swagger
- * /api/v1/services/{categoryId}:
+ * /api/v1/services:
  *   get:
- *     summary: Get all services by category
- *     tags:
- *       - Service
+ *     summary: Get all services with optional filters
+ *     tags: [Service]
  *     parameters:
- *       - in: path
+ *       - in: query
  *         name: categoryId
- *         required: true
  *         schema:
  *           type: string
  *         description: The ObjectId of the category
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum price
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maximum price
+ *       - in: query
+ *         name: avgRating
+ *         schema:
+ *           type: number
+ *         description: Minimum average rating
+ *       - in: query
+ *         name: isFeatured
+ *         schema:
+ *           type: boolean
+ *         description: Filter for featured services
+ *       - in: query
+ *         name: city
+ *         schema:
+ *           type: string
+ *         description: Filter by city (locationAvailable)
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: Filter by state (locationAvailable)
+ *       - in: query
+ *         name: lan
+ *         schema:
+ *           type: number
+ *         description: Filter by longitude (locationAvailable.coordinates.lan)
+ *       - in: query
+ *         name: lat
+ *         schema:
+ *           type: number
+ *         description: Filter by latitude (locationAvailable.coordinates.lat)
  *     responses:
  *       200:
  *         description: Services retrieved successfully
@@ -98,7 +150,7 @@ import { isAdmin } from "../middlewares/auth.middleware.js";
  *       404:
  *         description: No services found
  *       400:
- *         description: Category ID is required
+ *         description: Invalid filter
  *       500:
  *         description: Server error
  */
@@ -108,8 +160,7 @@ import { isAdmin } from "../middlewares/auth.middleware.js";
  * /api/v1/services/featured-services:
  *   get:
  *     summary: Get featured services
- *     tags:
- *       - Service
+ *     tags: [Service]
  *     responses:
  *       200:
  *         description: Featured services retrieved successfully
@@ -150,6 +201,6 @@ router.route("/").post(
 
 router.route("/featured-services").get(getFeaturedServices);
 
-router.route("/:categoryId").get(getServiceByCategory);
+router.route("/").get(getServices);
 
 export default router;
