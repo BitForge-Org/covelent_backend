@@ -45,6 +45,11 @@ import { ApiResponse } from "../utils/ApiResponse.js";
  *                 type: string
  *               email:
  *                 type: string
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               phoneNumber:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Account details updated successfully
@@ -102,7 +107,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullName, email } = req.body;
+  const { fullName, email, dateOfBirth, phoneNumber } = req.body;
 
   if (!fullName || !email) {
     throw new ApiError(400, "All fields are required");
@@ -116,7 +121,13 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         new ApiResponse(400, null, "Aadhar and PAN number cannot be updated")
       );
   }
-  const user = await User.findByIdAndUpdate(req.user._id, req.body, {
+
+  // Only update allowed fields
+  const updateFields = { fullName, email };
+  if (dateOfBirth !== undefined) updateFields.dateOfBirth = dateOfBirth;
+  if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
+
+  const user = await User.findByIdAndUpdate(req.user._id, updateFields, {
     new: true,
     runValidators: true,
   }).select("-password");

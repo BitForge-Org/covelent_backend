@@ -11,7 +11,8 @@ import crypto from "crypto";
 import { APP_URL } from "../constants.js";
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { fullName, email, password, role, dateOfBirth } = req.body;
+  const { fullName, email, password, role, dateOfBirth, phoneNumber } =
+    req.body;
 
   let avatarLocalPath, aadharImageLocalPath, panImageLocalPath;
   if (
@@ -90,6 +91,7 @@ const registerUser = asyncHandler(async (req, res) => {
     },
     role,
     dateOfBirth,
+    phoneNumber,
   });
 
   // Generate tokens and return with role, isVerified, isActive
@@ -137,6 +139,7 @@ const registerUser = asyncHandler(async (req, res) => {
         dateOfBirth: user.dateOfBirth,
         isVerified: user.isVerified,
         isActive: user.isActive,
+        phoneNumber: user.phoneNumber,
       },
       "User registered Successfully"
     )

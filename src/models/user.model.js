@@ -11,6 +11,12 @@ const userSchema = new Schema({
     index: true,
     lowercase: true,
   },
+  phoneNumber: {
+    type: String,
+    unique: true,
+    trim: true,
+    maxlength: [10, "Phone number must be at most 10 characters long"],
+  },
   googleId: {
     type: String,
     unique: true,
@@ -129,6 +135,8 @@ userSchema.methods.generateRefreshToken = function () {
  *         fullName:
  *           type: string
  *         email:
+ *           type: string
+ *         phoneNumber:
  *           type: string
  *         avatar:
  *           type: string
