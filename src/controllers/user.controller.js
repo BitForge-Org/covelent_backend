@@ -99,7 +99,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 
 const getCurrentUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(
-    "-password -refreshToken -aadhar -pan"
+    "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
   );
   return res
     .status(200)
@@ -130,7 +130,9 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
   const user = await User.findByIdAndUpdate(req.user._id, updateFields, {
     new: true,
     runValidators: true,
-  }).select("-password");
+  }).select(
+    "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
+  );
 
   return res
     .status(200)
@@ -160,7 +162,9 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
       },
     },
     { new: true }
-  ).select("-password");
+  ).select(
+    "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
+  );
 
   return res
     .status(200)

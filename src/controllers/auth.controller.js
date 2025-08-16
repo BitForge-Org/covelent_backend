@@ -97,7 +97,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // Generate tokens and return with role, isVerified, isActive
   const tokens = await generateAccessAndRefreshTokens(user._id);
   const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken -aadhar -pan"
+    "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
   );
 
   if (!createdUser) {
@@ -192,7 +192,7 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 
   const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken -aadhar -pan"
+    "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
   );
 
   const options = { httpOnly: true, secure: true };
