@@ -122,18 +122,46 @@ userSchema.methods.generateRefreshToken = function () {
  *   schemas:
  *     User:
  *       type: object
- *       required:
- *         - name
- *         - email
- *         - password
  *       properties:
  *         _id:
  *           type: string
  *           description: User ID
- *         name:
+ *         fullName:
  *           type: string
  *         email:
  *           type: string
+ *         avatar:
+ *           type: string
+ *         role:
+ *           type: string
+ *           enum: [user, provider, admin]
+ *         isActive:
+ *           type: boolean
+ *         isVerified:
+ *           type: boolean
+ *         googleId:
+ *           type: string
+ *         aadhar:
+ *           type: object
+ *           properties:
+ *             link:
+ *               type: string
+ *             number:
+ *               type: string
+ *             isVerified:
+ *               type: boolean
+ *         pan:
+ *           type: object
+ *           properties:
+ *             link:
+ *               type: string
+ *             number:
+ *               type: string
+ *             isVerified:
+ *               type: boolean
+ *         dateOfBirth:
+ *           type: string
+ *           format: date
  *         createdAt:
  *           type: string
  *           format: date-time

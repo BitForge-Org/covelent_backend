@@ -30,8 +30,10 @@ import userRouter from "./routes/user.routes.js";
 import healthcheckRouter from "./routes/healthcheck.routes.js";
 import categoryRouter from "./routes/category.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
+import authRouter from "./routes/auth.routes.js";
 
 app.use("/api/v1/users", authLimiter, userRouter); // 👈 apply authLimiter to user routes
+app.use("/api/v1/auth", authLimiter, authRouter); // 👈 apply authLimiter to auth routes
 app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/services", serviceRoutes);
