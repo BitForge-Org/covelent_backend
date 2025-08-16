@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { Service } from "../models/service.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-// import { redisClient, initRedis } from "../utils/redisClient.js";
+import { redisClient, initRedis } from "../utils/redisClient.js";
 
 const createService = asyncHandler(async (req, res) => {
   try {
@@ -71,10 +71,10 @@ const createService = asyncHandler(async (req, res) => {
     });
 
     // Invalidate services cache after creating a new service
-    // if (!redisClient.isOpen) {
-    //   await redisClient.connect();
-    // }
-    // await redisClient.del("services:all");
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+    await redisClient.del("services:all");
 
     return res
       .status(201)
@@ -89,32 +89,31 @@ const createService = asyncHandler(async (req, res) => {
 });
 
 const getServiceByCategory = asyncHandler(async (req, res) => {
-  console.log("Fetching services by category...");
   const { categoryId } = req.params;
 
   if (!categoryId) {
     throw new ApiError(400, "Category ID is required");
   }
 
-  // const cacheKey = `services:category:${categoryId}`;
+  const cacheKey = `services:category:${categoryId}`;
 
   // Try to get from Redis cache
-  // if (!redisClient.isOpen) {
-  //   await redisClient.connect();
-  // }
-  // const cached = await redisClient.get(cacheKey);
-  // if (cached) {
-  //   const services = JSON.parse(cached);
-  //   return res
-  //     .status(200)
-  //     .json(
-  //       new ApiResponse(
-  //         200,
-  //         services,
-  //         "Services retrieved successfully (cache)"
-  //       )
-  //     );
-  // }
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
+    const services = JSON.parse(cached);
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          services,
+          "Services retrieved successfully (cache)"
+        )
+      );
+  }
 
   // If not cached, fetch from DB
   const services = await Service.find({ category: categoryId }).populate(
@@ -128,7 +127,7 @@ const getServiceByCategory = asyncHandler(async (req, res) => {
   }
 
   // Cache the result
-  // await redisClient.set(cacheKey, JSON.stringify(services), { EX: 3600 }); // cache for 1 hour
+  await redisClient.set(cacheKey, JSON.stringify(services), { EX: 3600 }); // cache for 1 hour
 
   return res
     .status(200)
@@ -136,57 +135,44 @@ const getServiceByCategory = asyncHandler(async (req, res) => {
 });
 
 const getFeaturedServices = asyncHandler(async (req, res) => {
-  console.log("Fetching featured services...");
-  try {
-    // const cacheKey = "services:featured";
+  const cacheKey = "services:featured";
 
-    // // Try to get from Redis cache
-    // if (!redisClient.isOpen) {
-    //   await redisClient.connect();
-    // }
-    // const cached = await redisClient.get(cacheKey);
-    // if (cached) {
-    //   const services = JSON.parse(cached);
-    //   return res
-    //     .status(200)
-    //     .json(
-    //       new ApiResponse(
-    //         200,
-    //         services,
-    //         "Featured services retrieved successfully (cache)"
-    //       )
-    //     );
-    // }
-
-    // If not cached, fetch from DB
-    const services = await Service.find({ isFeatured: true });
-
-    if (!services || services.length === 0) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, null, "No featured services found"));
-    }
-
-    // // Cache the result
-    // await redisClient.set(cacheKey, JSON.stringify(services), { EX: 3600 }); // cache for 1 hour
-
-    // console.log("res", res);
+  // Try to get from Redis cache
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
+    const services = JSON.parse(cached);
     return res
       .status(200)
       .json(
         new ApiResponse(
           200,
           services,
-          "Featured services retrieved successfully"
+          "Featured services retrieved successfully (cache)"
         )
       );
-  } catch (error) {
-    console.log(error);
-    throw new ApiError(
-      error.statusCode || 500,
-      error.message || "Failed to retrieve featured services"
-    );
   }
+
+  // If not cached, fetch from DB
+  const services = await Service.find({ isFeatured: true });
+
+  if (!services || services.length === 0) {
+    return res
+      .status(404)
+      .json(new ApiResponse(404, null, "No featured services found"));
+  }
+
+  // Cache the result
+  await redisClient.set(cacheKey, JSON.stringify(services), { EX: 3600 }); // cache for 1 hour
+
+  console.log("res", res);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, services, "Featured services retrieved successfully")
+    );
 });
 
 export { createService, getServiceByCategory, getFeaturedServices };

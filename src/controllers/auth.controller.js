@@ -302,8 +302,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
   if (!user.isActive || !user.isVerified)
     throw new ApiError(401, "User account is not active or not verified");
 
-  // Generate secure token and expiry
-  user.resetPasswordToken = crypto.randomBytes(32).toString("hex");
+  // Generate 6-digit OTP and expiry
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  user.resetPasswordToken = otp;
   user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 min
   await user.save({ validateBeforeSave: false });
 
@@ -317,10 +318,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     .readFileSync(templatePath, "utf8")
     .replace("[User's First Name]", user.fullName)
     .replace(/\[Your Company Name\]/g, "Covelent")
-    .replace(
-      "[RESET_LINK]",
-      `${APP_URL}/reset-password?token=${user.resetPasswordToken}`
-    )
+    .replace("[RESET_LINK]", `Your OTP for password reset is: <b>${otp}</b>`)
     .replace("[Current Year]", new Date().getFullYear());
 
   await sendMail({
@@ -328,11 +326,11 @@ const forgotPassword = asyncHandler(async (req, res) => {
     subject: "Reset password request",
     html: template,
   });
-  console.log(`[FORGOT PASSWORD] Reset email sent to: ${email}`);
+  console.log(`[FORGOT PASSWORD] Reset OTP sent to: ${email}`);
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "Reset link sent to email"));
+    .json(new ApiResponse(200, {}, "Reset OTP sent to email"));
 });
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -356,20 +354,20 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
-  const { token, password } = req.body;
-  if (!token || !password) {
-    throw new ApiError(400, "Token and new password are required");
+  const { otp, password } = req.body;
+  if (!otp || !password) {
+    throw new ApiError(400, "OTP and new password are required");
   }
 
   const user = await User.findOne({
-    resetPasswordToken: token,
+    resetPasswordToken: otp,
     resetPasswordExpires: { $gt: Date.now() },
   });
 
-  console.log(`[RESET PASSWORD] Token used: ${token}`);
+  console.log(`[RESET PASSWORD] OTP used: ${otp}`);
 
   if (!user) {
-    throw new ApiError(400, "Invalid or expired reset token");
+    throw new ApiError(400, "Invalid or expired OTP");
   }
 
   user.password = password;
