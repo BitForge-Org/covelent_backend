@@ -263,7 +263,7 @@ export default router;
  *                 type: string
  *     responses:
  *       200:
- *         description: Reset link sent to email
+ *         description: OTP sent to email
  *         content:
  *           application/json:
  *             schema:
@@ -283,7 +283,7 @@ export default router;
  * @swagger
  * /api/v1/auth/reset-password:
  *   post:
- *     summary: Reset password using token
+ *     summary: Reset password using OTP
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -292,8 +292,8 @@ export default router;
  *           schema:
  *             type: object
  *             properties:
- *               token:
- *                 type: string
+ *               otp:
+ *                 type: number
  *               password:
  *                 type: string
  *     responses:
