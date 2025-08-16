@@ -57,6 +57,10 @@ const serviceSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
     locationAvailable: {
       type: [
         {

@@ -57,7 +57,10 @@ const registerUser = asyncHandler(async (req, res) => {
     $or: [{ email }],
   });
 
+  console.log(`[REGISTER] Attempt for email: ${email}`);
+
   if (existedUser) {
+    console.warn(`[REGISTER] Duplicate email: ${email}`);
     // Clean up uploaded files if user exists
     if (avatarLocalPath && fs.existsSync(avatarLocalPath))
       fs.unlinkSync(avatarLocalPath);
@@ -101,6 +104,7 @@ const registerUser = asyncHandler(async (req, res) => {
   );
 
   if (!createdUser) {
+    console.error(`[REGISTER] Failed to create user for email: ${email}`);
     throw new ApiError(500, "Something went wrong while registering the user");
   }
 
@@ -123,8 +127,8 @@ const registerUser = asyncHandler(async (req, res) => {
       subject: "Welcome to Covelent",
       html: template,
     });
+    console.log(`[REGISTER] Welcome email sent to: ${user.email}`);
   } catch (err) {
-    // Optionally log error, but do not block registration
     console.error("Failed to send welcome email:", err);
   }
 
@@ -167,12 +171,15 @@ const generateAccessAndRefreshTokens = async (userId) => {
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
+  console.log(`[LOGIN] Attempt for email: ${email}`);
+
   if (!email) {
     throw new ApiError(400, "email is required");
   }
 
   const user = await User.findOne({ email });
   if (!user) {
+    console.warn(`[LOGIN] User not found: ${email}`);
     throw new ApiError(404, "User does not exist");
   }
 
@@ -184,6 +191,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   if (!(await user.isPasswordCorrect(password))) {
+    console.warn(`[LOGIN] Invalid credentials for: ${email}`);
     throw new ApiError(401, "Invalid user credentials");
   }
 
@@ -196,6 +204,8 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 
   const options = { httpOnly: true, secure: true };
+
+  console.log(`[LOGIN] Success for email: ${email}`);
 
   return res
     .status(200)
@@ -318,6 +328,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     subject: "Reset password request",
     html: template,
   });
+  console.log(`[FORGOT PASSWORD] Reset email sent to: ${email}`);
 
   return res
     .status(200)
@@ -329,6 +340,8 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 
   const user = await User.findById(req.user?._id);
   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  console.log(`[CHANGE PASSWORD] User: ${req.user?._id}`);
 
   if (!isPasswordCorrect) {
     throw new ApiError(400, "Invalid old password");
@@ -352,6 +365,8 @@ const resetPassword = asyncHandler(async (req, res) => {
     resetPasswordToken: token,
     resetPasswordExpires: { $gt: Date.now() },
   });
+
+  console.log(`[RESET PASSWORD] Token used: ${token}`);
 
   if (!user) {
     throw new ApiError(400, "Invalid or expired reset token");

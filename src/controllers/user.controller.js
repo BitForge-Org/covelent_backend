@@ -134,6 +134,8 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
   );
 
+  console.log(`[USER] Update account for user: ${req.user._id}`);
+
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Account details updated successfully"));
@@ -165,6 +167,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   ).select(
     "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
   );
+
+  console.log(`[USER] Update avatar for user: ${req.user._id}`);
 
   return res
     .status(200)

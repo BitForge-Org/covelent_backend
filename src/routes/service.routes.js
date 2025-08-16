@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createService,
+  getFeaturedServices,
   getServiceByCategory,
 } from "../controllers/service.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -8,7 +9,7 @@ import { isAdmin } from "../middlewares/auth.middleware.js";
 
 /**
  * @swagger
- * /services:
+ * /api/v1/services:
  *   post:
  *     summary: Create a new service
  *     tags:
@@ -64,7 +65,7 @@ import { isAdmin } from "../middlewares/auth.middleware.js";
 
 /**
  * @swagger
- * /services/{categoryId}:
+ * /api/v1/services/{categoryId}:
  *   get:
  *     summary: Get all services by category
  *     tags:
@@ -101,6 +102,35 @@ import { isAdmin } from "../middlewares/auth.middleware.js";
  *       500:
  *         description: Server error
  */
+
+/**
+ * @swagger
+ * /api/v1/services/featured-services:
+ *   get:
+ *     summary: Get featured services
+ *     tags:
+ *       - Service
+ *     responses:
+ *       200:
+ *         description: Featured services retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Service'
+ *                 message:
+ *                   type: string
+ *                   example: Featured services retrieved successfully
+ *       500:
+ *         description: Server error
+ */
 const router = Router();
 
 router.route("/").post(
@@ -117,6 +147,8 @@ router.route("/").post(
   ]),
   createService
 );
+
+router.route("/featured-services").get(getFeaturedServices);
 
 router.route("/:categoryId").get(getServiceByCategory);
 

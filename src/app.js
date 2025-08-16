@@ -5,8 +5,12 @@ import cookieParser from "cookie-parser";
 import { generalLimiter, authLimiter } from "./utils/rateLimiter.js"; // 👈 import utility
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
+import morgan from "morgan";
 
 const app = express();
+
+// Logger middleware
+app.use(morgan("dev"));
 
 // Serve static files from the public directory
 app.use(express.static(path.resolve("public")));
