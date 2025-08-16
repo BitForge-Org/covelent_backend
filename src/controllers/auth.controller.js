@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { sendMail } from "../utils/EmailService.js";
 import crypto from "crypto";
+import { APP_URL } from "../constants.js";
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password, role, dateOfBirth } = req.body;
@@ -305,7 +306,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     .replace(/\[Your Company Name\]/g, "Covelent")
     .replace(
       "[RESET_LINK]",
-      `https://localhost:8081/reset-password?token=${user.resetPasswordToken}`
+      `${APP_URL}/reset-password?token=${user.resetPasswordToken}`
     )
     .replace("[Current Year]", new Date().getFullYear());
 
