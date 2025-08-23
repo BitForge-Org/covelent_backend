@@ -1,0 +1,55 @@
+/categories:
+  get:
+    summary: Get all categories
+    tags:
+      - Categories
+    responses:
+      '200':
+        description: List of categories
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: array
+                  items:
+                    $ref: './../schemas/Category.yaml#/Category'
+                message:
+                  type: string
+  post:
+    summary: Create a new category
+    tags:
+      - Categories
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              icon:
+                type: string
+                format: binary
+    responses:
+      '201':
+        description: Category created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  $ref: './../schemas/Category.yaml#/Category'
+                message:
+                  type: string

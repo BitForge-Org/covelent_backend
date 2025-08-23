@@ -1,0 +1,45 @@
+openapi: 3.0.3
+info:
+  title: Service API
+  version: 1.0.0
+  description: API for service management and retrieval
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: Authentication management
+  - name: Categories
+    description: Category management
+  - name: Service
+    description: Service management and retrieval
+
+paths:
+  /services:
+    $ref: './paths/services.yaml#/~1services'
+  /services/featured-services:
+    $ref: './paths/featured-services.yaml'
+  /categories:
+    $ref: './paths/categories.yaml#/~1categories'
+  /users/current-user:
+    $ref: './paths/users/current-user.yaml#/~1current-user'
+  /users/update-account:
+    $ref: './paths/users/update-account.yaml#/~1update-account'
+  /users/avatar:
+    $ref: './paths/users/avatar.yaml#/~1avatar'
+
+components:
+  securitySchemes:
+    BearerAuth:            
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      $ref: './schemas/User.yaml#/User'
+    Service:
+     $ref: './schemas/Service.yaml#/Service'
+
+

@@ -1,0 +1,47 @@
+User:
+  type: object
+  properties:
+    _id:
+      type: string
+    email:
+      type: string
+    googleId:
+      type: string
+    fullName:
+      type: string
+    avatar:
+      type: string
+    password:
+      type: string
+    isActive:
+      type: boolean
+    isVerified:
+      type: boolean
+    role:
+      type: string
+      enum:
+        - user
+        - provider
+        - admin
+    aadhar:
+      type: object
+      properties:
+        link:
+          type: string
+        number:
+          type: string
+          maxLength: 12
+        isVerified:
+          type: boolean
+    pan:
+      type: object
+      properties:
+        link:
+          type: string
+        number:
+          type: string
+          maxLength: 10
+        isVerified:
+          type: boolean
+    refreshToken:
+      type: string

@@ -30,11 +30,5 @@ router
   .route("/avatar")
   .patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
 
-/**
- * @swagger
- * tags:
- *   name: Users
- *   description: User management
- */
 
 export default router;

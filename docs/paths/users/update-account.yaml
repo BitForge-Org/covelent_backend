@@ -1,0 +1,35 @@
+/update-account:
+  patch:
+    summary: Update account details for the current user
+    tags:
+      - Users
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              fullName:
+                type: string
+              email:
+                type: string
+              dateOfBirth:
+                type: string
+                format: date
+              phoneNumber:
+                type: string
+    responses:
+      200:
+        description: Account details updated successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  $ref:'./../../schemas/User.yaml#/User'
+      400:
+        description: Bad request

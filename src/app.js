@@ -2,10 +2,10 @@ import path from "path";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { generalLimiter, authLimiter } from "./utils/rateLimiter.js"; // 👈 import utility
-import swaggerUi from "swagger-ui-express";
-import swaggerJsdoc from "swagger-jsdoc";
 import morgan from "morgan";
+
+import { generalLimiter, authLimiter } from "./utils/rateLimiter.js";
+import { setupSwagger } from "./swagger.js";
 
 const app = express();
 
@@ -42,30 +42,7 @@ app.use("/api/v1/healthcheck", healthcheckRouter);
 app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/services", serviceRoutes);
 
-// Swagger definition
-const swaggerDefinition = {
-  openapi: "3.0.0",
-  info: {
-    title: "Covelent Backend API",
-    version: "1.0.0",
-    description: "API documentation for Covelent Backend",
-  },
-  servers: [
-    {
-      url: "http://localhost:8000",
-      description: "Local server",
-    },
-  ],
-};
-
-const options = {
-  swaggerDefinition,
-  apis: ["./src/routes/*.js", "./src/controllers/*.js", "./src/models/*.js"], // Scan all route, controller, and model files
-};
-
-const swaggerSpec = swaggerJsdoc(options);
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+setupSwagger(app);
 
 // Serve the health chart at a custom route
 // app.use("/health/memory-chart", (req, res) => {

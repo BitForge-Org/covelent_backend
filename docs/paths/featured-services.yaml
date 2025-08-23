@@ -1,0 +1,24 @@
+get:
+  summary: Get featured services
+  tags:
+    - Service
+  responses:
+    "200":
+      description: Featured services retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              statusCode:
+                type: integer
+                example: 200
+              data:
+                type: array
+                items:
+                  $ref: "./../schemas/Service.yaml"
+              message:
+                type: string
+                example: Featured services retrieved successfully
+    "500":
+      description: Server error

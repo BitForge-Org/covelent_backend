@@ -1,0 +1,22 @@
+Category:
+  type: object
+  required:
+    - name
+    - description
+    - icon
+  properties:
+    _id:
+      type: string
+      description: Category ID
+    name:
+      type: string
+    description:
+      type: string
+    icon:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
