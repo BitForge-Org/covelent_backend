@@ -353,21 +353,44 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password changed successfully"));
 });
 
-const resetPassword = asyncHandler(async (req, res) => {
-  const { otp, password } = req.body;
-  if (!otp || !password) {
-    throw new ApiError(400, "OTP and new password are required");
+const verifyOtp = asyncHandler(async (req, res) => {
+  const { otp } = req.body;
+
+  if (!otp) {
+    throw new ApiError(400, "OTP is required");
   }
 
   const user = await User.findOne({
     resetPasswordToken: otp,
     resetPasswordExpires: { $gt: Date.now() },
+    isActive: true,
+    isVerified: true,
   });
 
-  console.log(`[RESET PASSWORD] OTP used: ${otp}`);
+  if (!user) {
+    throw new ApiError(
+      400,
+      "Invalid, expired, inactive, or unverified OTP/user"
+    );
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { user }, "OTP verified successfully"));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { id, password } = req.body;
+  if (!id || !password) {
+    throw new ApiError(400, "OTP and new password are required");
+  }
+
+  const user = await User.findOne({
+    _id: id,
+  });
 
   if (!user) {
-    throw new ApiError(400, "Invalid or expired OTP");
+    throw new ApiError(400, "Invalid User");
   }
 
   user.password = password;
@@ -388,4 +411,5 @@ export {
   changeCurrentPassword,
   forgotPassword,
   resetPassword,
+  verifyOtp,
 };
