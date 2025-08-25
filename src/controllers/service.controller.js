@@ -1,9 +1,10 @@
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
-import { Service } from "../models/service.model.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
-// import { redisClient, initRedis } from "../utils/redisClient.js";
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { ApiError } from '../utils/ApiError.js';
+import { Service } from '../models/service.model.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import { redisClient, initRedis } from '../utils/redisClient.js';
+import logger from '../utils/logger.js';
 
 const createService = asyncHandler(async (req, res) => {
   try {
@@ -20,7 +21,7 @@ const createService = asyncHandler(async (req, res) => {
     ) {
       throw new ApiError(
         400,
-        "Title, description, category, price, and duration are required"
+        'Title, description, category, price, and duration are required'
       );
     }
 
@@ -29,17 +30,17 @@ const createService = asyncHandler(async (req, res) => {
     });
 
     if (isServiceExists) {
-      throw new ApiError(400, "Service with this title already exists");
+      throw new ApiError(400, 'Service with this title already exists');
     }
 
     // Handle media upload (up to 5 files)
     let media = [];
     if (req.files && req.files.media) {
       if (req.files.media.length > 5) {
-        throw new ApiError(400, "A maximum of 5 media files are allowed");
+        throw new ApiError(400, 'A maximum of 5 media files are allowed');
       }
       for (const file of req.files.media) {
-        const uploaded = await uploadOnCloudinary(file.path, "service/media");
+        const uploaded = await uploadOnCloudinary(file.path, 'service/media');
         if (uploaded && uploaded.secure_url) {
           media.push(uploaded.secure_url);
         }
@@ -51,11 +52,11 @@ const createService = asyncHandler(async (req, res) => {
     if (locationAvailable) {
       try {
         parsedLocationAvailable =
-          typeof locationAvailable === "string"
+          typeof locationAvailable === 'string'
             ? JSON.parse(locationAvailable)
             : locationAvailable;
-      } catch (e) {
-        throw new ApiError(400, "Invalid locationAvailable format");
+      } catch (err) {
+        throw new ApiError(400, 'Invalid locationAvailable format');
       }
     }
 
@@ -71,19 +72,19 @@ const createService = asyncHandler(async (req, res) => {
     });
 
     // Invalidate services cache after creating a new service
-    // if (!redisClient.isOpen) {
-    //   await redisClient.connect();
-    // }
-    // await redisClient.del("services:all");
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+    await redisClient.del('services:all');
 
     return res
       .status(201)
-      .json(new ApiResponse(201, service, "Service created successfully"));
+      .json(new ApiResponse(201, service, 'Service created successfully'));
   } catch (error) {
-    console.log(error);
+    logger.error(error);
     throw new ApiError(
       error.statusCode || 500,
-      error.message || "Failed to create service"
+      error.message || 'Failed to create service'
     );
   }
 });
@@ -108,44 +109,45 @@ const getServices = asyncHandler(async (req, res) => {
   }
 
   if (isFeatured) {
-    filter.isFeatured = isFeatured === "true";
+    filter.isFeatured = isFeatured === 'true';
   }
 
   const cacheKey = `services:${JSON.stringify(filter)}`;
 
   // TODO: Redis cache logic if needed
 
-  const services = await Service.find(filter).populate("category");
+  const services = await Service.find(filter).populate('category');
 
   if (!services || services.length === 0) {
-    return res.status(404).json(new ApiResponse(404, [], "No services found"));
+    return res.status(404).json(new ApiResponse(404, [], 'No services found'));
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, services, "Services retrieved successfully"));
+    .json(new ApiResponse(200, services, 'Services retrieved successfully'));
 });
 
 const getFeaturedServices = asyncHandler(async (req, res) => {
   // const cacheKey = "services:featured";
 
   // Try to get from Redis cache
-  // if (!redisClient.isOpen) {
-  //   await redisClient.connect();
-  // }
-  // const cached = await redisClient.get(cacheKey);
-  // if (cached) {
-  //   const services = JSON.parse(cached);
-  //   return res
-  //     .status(200)
-  //     .json(
-  //       new ApiResponse(
-  //         200,
-  //         services,
-  //         "Featured services retrieved successfully (cache)"
-  //       )
-  //     );
-  // }
+
+  if (!redisClient.isOpen) {
+    await redisClient.connect();
+  }
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
+    const services = JSON.parse(cached);
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          services,
+          'Featured services retrieved successfully (cache)'
+        )
+      );
+  }
 
   // If not cached, fetch from DB
   const services = await Service.find({ isFeatured: true });
@@ -153,17 +155,17 @@ const getFeaturedServices = asyncHandler(async (req, res) => {
   if (!services || services.length === 0) {
     return res
       .status(404)
-      .json(new ApiResponse(404, null, "No featured services found"));
+      .json(new ApiResponse(404, null, 'No featured services found'));
   }
 
   // Cache the result
-  // await redisClient.set(cacheKey, JSON.stringify(services), { EX: 3600 }); // cache for 1 hour
+  await redisClient.set(cacheKey, JSON.stringify(services), { EX: 3600 }); // cache for 1 hour
 
-  console.log("res", res);
+  logger.info('res', res);
   return res
     .status(200)
     .json(
-      new ApiResponse(200, services, "Featured services retrieved successfully")
+      new ApiResponse(200, services, 'Featured services retrieved successfully')
     );
 });
 

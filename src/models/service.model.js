@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema } from 'mongoose';
 
 const serviceSchema = new Schema(
   {
@@ -17,7 +17,7 @@ const serviceSchema = new Schema(
     },
     category: {
       type: Schema.Types.ObjectId,
-      ref: "Category",
+      ref: 'Category',
       required: true,
     },
     price: {
@@ -80,4 +80,4 @@ const serviceSchema = new Schema(
   }
 );
 
-export const Service = mongoose.model("Service", serviceSchema);
+export const Service = mongoose.model('Service', serviceSchema);

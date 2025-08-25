@@ -1,19 +1,18 @@
-import path from "path";
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import morgan from "morgan";
+import path from 'path';
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
-import { generalLimiter, authLimiter } from "./utils/rateLimiter.js";
-import { setupSwagger } from "./swagger.js";
+import { generalLimiter, authLimiter } from './utils/rateLimiter.js';
+import { setupSwagger } from './swagger.js';
 
 const app = express();
 
 // Logger middleware
-app.use(morgan("dev"));
+app.use(apiLoggerMiddleware);
 
 // Serve static files from the public directory
-app.use(express.static(path.resolve("public")));
+app.use(express.static(path.resolve('public')));
 
 // Serve the logs directory as static (for log file access)
 // app.use("/logs", express.static(path.resolve("public/logs")));
@@ -26,21 +25,22 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "16kb" }));
-app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.json({ limit: '16kb' }));
+app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 app.use(cookieParser());
 
-import userRouter from "./routes/user.routes.js";
-import healthcheckRouter from "./routes/healthcheck.routes.js";
-import categoryRouter from "./routes/category.routes.js";
-import serviceRoutes from "./routes/service.routes.js";
-import authRouter from "./routes/auth.routes.js";
+import userRouter from './routes/user.routes.js';
+import healthcheckRouter from './routes/healthcheck.routes.js';
+import categoryRouter from './routes/category.routes.js';
+import serviceRoutes from './routes/service.routes.js';
+import authRouter from './routes/auth.routes.js';
+import apiLoggerMiddleware from "./middlewares/apiLogger.middleware.js";
 
-app.use("/api/v1/users", authLimiter, userRouter); // 👈 apply authLimiter to user routes
-app.use("/api/v1/auth", authLimiter, authRouter); // 👈 apply authLimiter to auth routes
-app.use("/api/v1/healthcheck", healthcheckRouter);
-app.use("/api/v1/categories", categoryRouter);
-app.use("/api/v1/services", serviceRoutes);
+app.use('/api/v1/users', authLimiter, userRouter); // 👈 apply authLimiter to user routes
+app.use('/api/v1/auth', authLimiter, authRouter); // 👈 apply authLimiter to auth routes
+app.use('/api/v1/healthcheck', healthcheckRouter);
+app.use('/api/v1/categories', categoryRouter);
+app.use('/api/v1/services', serviceRoutes);
 
 setupSwagger(app);
 
@@ -54,9 +54,9 @@ app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     success: false,
-    message: err.message || "Internal Server Error",
+    message: err.message || 'Internal Server Error',
     errors: err.errors || [],
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 });
 

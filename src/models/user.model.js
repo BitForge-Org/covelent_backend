@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import mongoose, { Schema } from 'mongoose';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new Schema({
   email: {
@@ -15,7 +15,7 @@ const userSchema = new Schema({
     type: String,
     unique: true,
     trim: true,
-    maxlength: [10, "Phone number must be at most 10 characters long"],
+    maxlength: [10, 'Phone number must be at most 10 characters long'],
   },
   googleId: {
     type: String,
@@ -33,25 +33,25 @@ const userSchema = new Schema({
   },
   password: {
     type: String,
-    required: [true, "Password is required"],
-    minlength: [6, "Password must be at least 6 characters long"],
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters long'],
   },
   isActive: {
     type: Boolean,
     default: function () {
-      return this.role === "user" ? true : false;
+      return this.role === 'user' ? true : false;
     },
   },
   isVerified: {
     type: Boolean,
     default: function () {
-      return this.role === "user" ? true : false;
+      return this.role === 'user' ? true : false;
     },
   },
   role: {
     type: String,
-    enum: ["user", "provider", "admin"],
-    default: "user",
+    enum: ['user', 'provider', 'admin'],
+    default: 'user',
   },
   aadhar: {
     link: { type: String, required: false },
@@ -60,7 +60,7 @@ const userSchema = new Schema({
       unique: true,
       sparse: true,
       trim: true,
-      maxlength: [12, "Aadhar number must be 12 characters long"],
+      maxlength: [12, 'Aadhar number must be 12 characters long'],
     },
     isVerified: { type: Boolean, default: false },
   },
@@ -71,7 +71,7 @@ const userSchema = new Schema({
       unique: true,
       sparse: true,
       trim: true,
-      maxlength: [10, "PAN number must be 10 characters long"],
+      maxlength: [10, 'PAN number must be 10 characters long'],
     },
     isVerified: { type: Boolean, default: false },
   },
@@ -85,8 +85,8 @@ const userSchema = new Schema({
   resetPasswordExpires: { type: Date },
 });
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
 
   this.password = await bcrypt.hash(this.password, 10);
   next();
@@ -178,4 +178,4 @@ userSchema.methods.generateRefreshToken = function () {
  *           format: date-time
  */
 
-export const User = mongoose.model("User", userSchema);
+export const User = mongoose.model('User', userSchema);

@@ -1,0 +1,26 @@
+ARG NODE_VERSION=22.18
+
+FROM node:${NODE_VERSION}-alpine
+
+
+ENV NODE_ENV=development
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN yarn
+
+# Make node the owner of the working directory
+RUN chown -R node:node /usr/src/app
+
+# Run the application as a non-root user.
+USER node
+
+# Copy the rest of the source files into the image.
+COPY --chown=node:node . .
+
+EXPOSE 8000
+
+# Run the application.
+CMD ["yarn", "dev"]

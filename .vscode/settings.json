@@ -1,7 +1,22 @@
 {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "always"
+    },
+    "eslint.enable": true,
+    "eslint.format.enable": true,
+    "eslint.run": "onSave",
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+    ],
+    "prettier.requireConfig": true,
     "cSpell.words": [
         "Aadhar",
         "Covelent",
+        "healthcheck",
         "maxlength"
     ]
 }

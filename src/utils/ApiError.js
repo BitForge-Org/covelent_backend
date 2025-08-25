@@ -1,3 +1,5 @@
+import logger from './logger.js';
+
 /**
  * Custom error class for API errors.
  * Extends the built-in Error class to include HTTP status codes, error details, and additional metadata.
@@ -19,7 +21,7 @@
 class ApiError extends Error {
   constructor(
     statusCode,
-    message = "Something went wrong",
+    message = 'Something went wrong',
     errors = [],
     stack
   ) {
@@ -33,7 +35,7 @@ class ApiError extends Error {
       this.stack = stack;
     } else {
       Error.captureStackTrace(this, this.constructor);
-      console.log(errors);
+      logger.error("Errors:", errors);
     }
   }
 }

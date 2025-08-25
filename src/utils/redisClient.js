@@ -1,7 +1,8 @@
-import { createClient } from "redis";
+import { createClient } from 'redis';
+import logger from './logger.js';
 
 export const redisClient = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6379",
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
   socket: {
     reconnectStrategy: (retries) => {
       // Exponential backoff, max 30s
@@ -11,12 +12,12 @@ export const redisClient = createClient({
   },
 });
 
-redisClient.on("error", (err) => {
-  console.error("Redis Client Error:", err);
+redisClient.on('error', (err) => {
+  logger.error('Redis Client Error:', err);
 });
 
-redisClient.on("end", () => {
-  console.warn("Redis client connection closed.");
+redisClient.on('end', () => {
+  logger.warn('Redis client connection closed.');
 });
 
 // Call this during app startup

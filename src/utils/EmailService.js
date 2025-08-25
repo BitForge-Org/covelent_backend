@@ -1,10 +1,11 @@
-import nodemailer from "nodemailer";
+import nodemailer from 'nodemailer';
+import logger from './logger.js';
 
 // Configure SMTP transporter using environment variables for security
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
-  secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+  secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
@@ -14,9 +15,9 @@ const transporter = nodemailer.createTransport({
 // Verify transporter configuration at startup
 transporter.verify((error, success) => {
   if (error) {
-    console.error("SMTP configuration error:", error);
+    logger.error('SMTP configuration error:', error);
   } else {
-    console.log("SMTP server is ready to send emails", success);
+    logger.info('SMTP server is ready to send emails', success);
   }
 });
 
@@ -36,11 +37,11 @@ export async function sendMail({ to, subject, html, from }) {
       subject,
       html,
     };
-    const info = await transporter.sendMail(mailOptions);
-    return info;
+
+    return await transporter.sendMail(mailOptions);
   } catch (err) {
     // Log error for monitoring
-    console.error("Email send error:", err);
+    logger.error('Email send error:', err);
     throw err;
   }
 }

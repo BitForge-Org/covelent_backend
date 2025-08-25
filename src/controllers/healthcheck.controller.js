@@ -1,10 +1,10 @@
-import os from "os";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { getServerMeta } from "../utils/serverMeta.js";
-import { storeHealthLog } from "../utils/healthLogger.js";
+import os from 'os';
+import { ApiResponse } from '../utils/ApiResponse.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { getServerMeta } from '../utils/serverMeta.js';
+import { storeHealthLog } from '../utils/healthLogger.js';
 
-const formatBytes = (bytes) => (bytes / 1024 / 1024).toFixed(2) + " MB";
+const formatBytes = (bytes) => (bytes / 1024 / 1024).toFixed(2) + ' MB';
 const formatUptime = (seconds) => {
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
@@ -46,7 +46,7 @@ export function logHealthStats() {
 
 // Healthcheck API: just return success
 const healthcheck = asyncHandler(async (req, res) => {
-  return res.status(200).json(new ApiResponse(200, null, "Server is healthy"));
+  return res.status(200).json(new ApiResponse(200, null, 'Server is healthy'));
 });
 
 export { healthcheck };
