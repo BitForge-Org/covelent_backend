@@ -331,7 +331,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, 'Reset OTP sent to email'));
+    .json(new ApiResponse(200, { email }, 'Reset OTP sent to email'));
 });
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
@@ -355,39 +355,50 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 });
 
 const verifyOtp = asyncHandler(async (req, res) => {
-  const { otp } = req.body;
+  const { email, otp } = req.body;
 
   if (!otp) {
     throw new ApiError(400, 'OTP is required');
   }
+  if (!email) {
+    throw new ApiError(400, 'Email is required');
+  }
 
-  const user = await User.findOne({
-    resetPasswordToken: otp,
-    resetPasswordExpires: { $gt: Date.now() },
-    isActive: true,
-    isVerified: true,
-  });
+  const user = await User.findOne({ email });
 
   if (!user) {
-    throw new ApiError(
-      400,
-      'Invalid, expired, inactive, or unverified OTP/user'
-    );
+    throw new ApiError(404, 'User not found');
+  }
+
+  if (!user.isActive) {
+    throw new ApiError(403, 'User account is deactivated');
+  }
+
+  if (!user.isVerified) {
+    throw new ApiError(403, 'User is not verified');
+  }
+
+  if (!user.resetPasswordToken || user.resetPasswordToken !== otp) {
+    throw new ApiError(400, 'Invalid OTP');
+  }
+
+  if (user.resetPasswordExpires < Date.now()) {
+    throw new ApiError(400, 'OTP has expired. Please request a new one');
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, { user }, 'OTP verified successfully'));
+    .json(new ApiResponse(200, { email }, 'OTP verified successfully'));
 });
 
 const resetPassword = asyncHandler(async (req, res) => {
-  const { id, password } = req.body;
-  if (!id || !password) {
+  const { email, password } = req.body;
+  if (!email || !password) {
     throw new ApiError(400, 'OTP and new password are required');
   }
 
   const user = await User.findOne({
-    _id: id,
+    email: email,
   });
 
   if (!user) {

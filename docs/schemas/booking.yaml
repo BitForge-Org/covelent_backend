@@ -1,0 +1,21 @@
+Booking:
+  type: object
+  properties:
+    id:
+      type: string
+    user_id:
+      type: string
+    service_id:
+      type: string
+    provider_id:
+      type: string
+    start_date:
+      type: string
+      format: date
+    end_date:
+      type: string
+      format: date
+    status:
+      type: string
+      enum: [pending, confirmed, cancelled]
+  required: [id, user_id, listing_id, start_date, end_date, status]
