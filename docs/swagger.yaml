@@ -15,6 +15,10 @@ tags:
     description: Category management
   - name: Service
     description: Service management and retrieval
+  - name: User
+    description: User management and retrieval
+  - name: ProviderApplication
+    description: Provider application management
 
 paths:
   /services:
@@ -29,6 +33,14 @@ paths:
     $ref: './paths/users/update-account.yaml#/~1update-account'
   /users/avatar:
     $ref: './paths/users/avatar.yaml#/~1avatar'
+  /provider-applications:
+    $ref: './paths/provider-application.yaml#/~1provider-applications'
+
+  /provider-applications/{id}:
+    $ref: './paths/provider-application.yaml#/~1provider-applications~1{id}'
+
+  /provider-applications/{id}/status:
+    $ref: './paths/provider-application.yaml#/~1provider-applications~1{id}~1status'
 
 components:
   securitySchemes:
@@ -40,6 +52,6 @@ components:
     User:
       $ref: './schemas/User.yaml#/User'
     Service:
-     $ref: './schemas/Service.yaml#/Service'
-
-
+      $ref: './schemas/Service.yaml#/Service'
+    providerApplication:
+      $ref: './schemas/providerApplication.yaml#/ProviderApplication'

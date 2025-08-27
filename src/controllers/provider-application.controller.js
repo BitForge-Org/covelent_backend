@@ -1,7 +1,7 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
-import { ProviderApplication } from '../models/providerapplication.model.js';
+import { ProviderApplication } from '../models/provider-application.model.js';
 
 // Create a new provider application
 const createProviderApplication = asyncHandler(async (req, res) => {

@@ -39,9 +39,9 @@ const providerApplicationSchema = new Schema(
   }
 );
 
-const ProviderApplication = mongoose.model(
+export const ProviderApplication = mongoose.model(
   'ProviderApplication',
   providerApplicationSchema
 );
 
-export default ProviderApplication;
+// export const Service = mongoose.model('Service', serviceSchema);

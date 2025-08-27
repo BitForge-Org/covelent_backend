@@ -13,6 +13,10 @@ tags:
     description: Category management
   - name: Service
     description: Service management and retrieval
+  - name: User
+    description: User management and retrieval
+  - name: ProviderApplication
+    description: Provider application management
 paths:
   /services:
     post:
@@ -382,6 +386,131 @@ paths:
                     $ref: '#/components/schemas/User'
         '400':
           description: Avatar file is missing
+  /provider-applications:
+    post:
+      summary: Create a new provider application
+      tags:
+        - ProviderApplication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - service
+              properties:
+                provider:
+                  type: string
+                  description: Provider User ObjectId
+                  example: 60f7c0b8e1b1c8a1b8e1b1c8
+                service:
+                  type: string
+                  description: Service ObjectId
+                  example: 60f7c0b8e1b1c8a1b8e1b1c9
+      responses:
+        '201':
+          description: Provider application created successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Server error
+    get:
+      summary: Get all provider applications (admin only)
+      tags:
+        - ProviderApplication
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - rejected
+              - suspended
+          description: Filter by application status
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Results per page
+      responses:
+        '200':
+          description: Applications fetched successfully
+        '400':
+          description: Invalid filter
+        '500':
+          description: Server error
+  '/provider-applications/{id}':
+    get:
+      summary: Get a single provider application by ID
+      tags:
+        - ProviderApplication
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Provider application ObjectId
+      responses:
+        '200':
+          description: Application fetched successfully
+        '400':
+          description: Invalid ID
+        '404':
+          description: Provider application not found
+        '500':
+          description: Server error
+  '/provider-applications/{id}/status':
+    patch:
+      summary: Update application status (admin only)
+      tags:
+        - ProviderApplication
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Provider application ObjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - applicationStatus
+              properties:
+                applicationStatus:
+                  type: string
+                  enum:
+                    - pending
+                    - approved
+                    - rejected
+                    - suspended
+                  description: New status
+                  example: approved
+                adminNotes:
+                  type: string
+                  description: Optional admin notes
+      responses:
+        '200':
+          description: Application status updated successfully
+        '400':
+          description: Invalid status or ID
+        '404':
+          description: Provider application not found
+        '500':
+          description: Server error
 components:
   securitySchemes:
     BearerAuth:
@@ -438,3 +567,42 @@ components:
           type: string
     Service:
       $ref: '#/paths/~1services/get/responses/200/content/application~1json/schema/properties/data/items/Service'
+    providerApplication:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectId
+          description: Unique identifier for the provider application.
+        provider:
+          type: string
+          format: objectId
+          description: Reference to the User who is the provider.
+        service:
+          type: string
+          format: objectId
+          description: Reference to the Service being applied for.
+        applicationStatus:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+            - suspended
+          default: pending
+          description: Status of the application.
+        adminNotes:
+          type: string
+          description: Notes from the admin regarding the application.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the application was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the application was last updated.
+      required:
+        - provider
+        - service
+        - applicationStatus
