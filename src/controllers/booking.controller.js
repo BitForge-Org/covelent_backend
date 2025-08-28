@@ -21,17 +21,17 @@ const createBooking = asyncHandler(async (req, res) => {
   } = req.body;
 
   const userId = req.user._id;
-  const existingBooking = await Booking.findOne({
-    user: userId,
-    service: serviceId,
-    bookingStatus: { $in: ['pending', 'in-progress'] },
-  });
-  if (existingBooking) {
-    throw new ApiError(
-      400,
-      'You already have a booking for this service with pending or in-progress status.'
-    );
-  }
+  // const existingBooking = await Booking.findOne({
+  //   user: userId,
+  //   service: serviceId,
+  //   bookingStatus: { $in: ['pending', 'in-progress'] },
+  // });
+  // if (existingBooking) {
+  //   throw new ApiError(
+  //     400,
+  //     'You already have a booking for this service with pending or in-progress status.'
+  //   );
+  // }
   // if (req.user.role !== 'user') {
   //   throw new ApiError(403, 'Only users can create bookings');
   // }
@@ -109,7 +109,7 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
   const { status } = req.query;
   const filter = { user: req.user._id };
   if (status) {
-    filter.status = status;
+    filter.bookingStatus = status;
   }
   const bookings = await Booking.find(filter).populate('service');
   if (!bookings || bookings.length === 0) {
