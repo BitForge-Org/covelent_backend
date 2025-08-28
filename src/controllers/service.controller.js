@@ -3,7 +3,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { Service } from '../models/service.model.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
-import { redisClient, initRedis } from '../utils/redisClient.js';
+import { redisClient } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
 
 const createService = asyncHandler(async (req, res) => {
@@ -112,7 +112,7 @@ const getServices = asyncHandler(async (req, res) => {
     filter.isFeatured = isFeatured === 'true';
   }
 
-  const cacheKey = `services:${JSON.stringify(filter)}`;
+  // const cacheKey = `services:${JSON.stringify(filter)}`;
 
   // TODO: Redis cache logic if needed
 
@@ -128,7 +128,7 @@ const getServices = asyncHandler(async (req, res) => {
 });
 
 const getFeaturedServices = asyncHandler(async (req, res) => {
-  // const cacheKey = "services:featured";
+  const cacheKey = 'services:featured';
 
   // Try to get from Redis cache
 

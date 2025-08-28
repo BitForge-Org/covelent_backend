@@ -5,7 +5,6 @@ import os from 'os';
 import connectDB from './db/index.js';
 import { app } from './app.js';
 
-import { logHealthStats } from './controllers/healthcheck.controller.js';
 import logger from './utils/logger.js';
 dotenv.config({
   path: './.env',
@@ -49,7 +48,6 @@ if (!isLocal && cluster.isPrimary) {
 }
 
 // Run health logging every 1 minute
-typeof setInterval !== 'undefined' && setInterval(logHealthStats, 60 * 1000);
 
 /*
 import express from "express"

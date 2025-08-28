@@ -511,6 +511,129 @@ paths:
           description: Provider application not found
         '500':
           description: Server error
+  /bookings:
+    post:
+      summary: Create a new booking
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serviceId:
+                  type: string
+                scheduledDate:
+                  type: string
+                  format: date
+                scheduledTime:
+                  type: string
+                  format: time
+                specialInstructions:
+                  type: string
+                location:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                    city:
+                      type: string
+                    state:
+                      type: string
+                    pincode:
+                      type: string
+                    coordinates:
+                      type: array
+                      items:
+                        type: number
+                paymentMethod:
+                  type: string
+                  enum:
+                    - cash
+                    - online
+      responses:
+        '201':
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      booking:
+                        $ref: '#/components/schemas/Booking'
+                      order:
+                        type: object
+                        nullable: true
+                  message:
+                    type: string
+  /bookings/available:
+    get:
+      summary: Get available bookings for provider (approved applications)
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of available bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+  /booking/history:
+    get:
+      summary: Get booking history for logged-in user
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+          description: Filter bookings by status
+      responses:
+        '200':
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
 components:
   securitySchemes:
     BearerAuth:
@@ -606,3 +729,33 @@ components:
         - provider
         - service
         - applicationStatus
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        service_id:
+          type: string
+        provider_id:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - cancelled
+      required:
+        - id
+        - user_id
+        - listing_id
+        - start_date
+        - end_date
+        - status

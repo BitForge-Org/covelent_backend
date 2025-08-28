@@ -10,7 +10,7 @@ const bookingSchema = new Schema(
     provider: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      // required: true,
     },
     service: {
       type: Schema.Types.ObjectId,

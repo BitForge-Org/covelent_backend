@@ -4,12 +4,13 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { Booking } from '../models/booking.model.js';
 import { ProviderApplication } from '../models/provider-application.model.js';
 import { Service } from '../models/service.model.js';
-import { User } from '../models/user.model.js';
 // import { Notification } from '../models/notification.model.js';
 import mongoose from 'mongoose';
 import razorpay from '../utils/razorpay.js';
 
 const createBooking = asyncHandler(async (req, res) => {
+  // Prevent booking if user already has a booking for the same service with 'pending' or 'in-progress' status
+
   const {
     serviceId,
     scheduledTime,
@@ -18,9 +19,23 @@ const createBooking = asyncHandler(async (req, res) => {
     location,
     paymentMethod,
   } = req.body;
-  if (req.user.role !== 'user') {
-    throw new ApiError(403, 'Only users can create bookings');
+
+  const userId = req.user._id;
+  const existingBooking = await Booking.findOne({
+    user: userId,
+    service: serviceId,
+    bookingStatus: { $in: ['pending', 'in-progress'] },
+  });
+  if (existingBooking) {
+    throw new ApiError(
+      400,
+      'You already have a booking for this service with pending or in-progress status.'
+    );
   }
+  // if (req.user.role !== 'user') {
+  //   throw new ApiError(403, 'Only users can create bookings');
+  // }
+
   const service = await Service.findById(serviceId);
   if (!service || !service.isActive) {
     throw new ApiError(404, 'Service not found or inactive');
@@ -86,7 +101,7 @@ const createBooking = asyncHandler(async (req, res) => {
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
-    throw new ApiError(500, 'Booking creation failed, please try again');
+    throw new ApiError(500, 'Booking creation failed, please try again' + err);
   }
 });
 
@@ -113,7 +128,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
   // Find provider applications where provider is the current user and status is approved
   const approvedProviderApps = await ProviderApplication.find({
     provider: userId,
-    status: 'approved',
+    applicationStatus: 'approved',
   });
 
   if (!approvedProviderApps.length) {
@@ -123,7 +138,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
         new ApiResponse(
           200,
           { bookings: [] },
-          'No approved provider applications found'
+          'No approved provider applications found' + approvedProviderApps
         )
       );
   }
@@ -134,10 +149,8 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
   // Find bookings where the service matches any of these service IDs and status is 'pending'
   const bookings = await Booking.find({
     service: { $in: serviceIds },
-    status: 'pending',
-  })
-    .populate('service')
-    .populate('providerApplication');
+    bookingStatus: 'pending',
+  }).populate('service');
 
   if (!bookings.length) {
     return res

@@ -36,6 +36,7 @@ import serviceRoutes from './routes/service.routes.js';
 import authRouter from './routes/auth.routes.js';
 import apiLoggerMiddleware from './middlewares/apiLogger.middleware.js';
 import providerApplicationRouter from './routes/provider-application.routes.js';
+import BookingRouter from './routes/booking.routes.js';
 
 app.use('/api/v1/users', authLimiter, userRouter); // 👈 apply authLimiter to user routes
 app.use('/api/v1/auth', authLimiter, authRouter); // 👈 apply authLimiter to auth routes
@@ -43,6 +44,7 @@ app.use('/api/v1/healthcheck', healthcheckRouter);
 app.use('/api/v1/categories', categoryRouter);
 app.use('/api/v1/services', serviceRoutes);
 app.use('/api/v1/provider-applications', providerApplicationRouter);
+app.use('/api/v1/bookings', BookingRouter);
 
 setupSwagger(app);
 

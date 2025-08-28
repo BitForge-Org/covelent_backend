@@ -42,6 +42,13 @@ paths:
   /provider-applications/{id}/status:
     $ref: './paths/provider-application.yaml#/~1provider-applications~1{id}~1status'
 
+  /bookings:
+    $ref: './paths/booking.yaml#/~1bookings'
+  /bookings/available:
+    $ref: './paths/booking.yaml#/~1bookings~1available'
+  /booking/history:
+    $ref: './paths/booking.yaml#/~1booking~1history'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -55,3 +62,5 @@ components:
       $ref: './schemas/Service.yaml#/Service'
     providerApplication:
       $ref: './schemas/providerApplication.yaml#/ProviderApplication'
+    Booking:
+      $ref: './schemas/booking.yaml#/Booking'

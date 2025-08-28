@@ -6,20 +6,27 @@ import { User } from '../models/user.model.js';
 
 // Create a new provider application
 const createProviderApplication = asyncHandler(async (req, res) => {
-  const { provider, service } = req.body;
+  const { service } = req.body;
 
-  if (!provider || !service) {
-    throw new ApiError(400, 'Provider and service are required');
+  if (!service) {
+    throw new ApiError(400, 'Service is required');
   }
 
-  const user = await User.findById(provider);
+  if (!req.user || req.user.role !== 'provider') {
+    throw new ApiError(
+      403,
+      'Only users with role "Provider" can apply as provider'
+    );
+  }
+
+  const user = await User.findById(req.user._id);
 
   if (!user || user.role !== 'provider' || !user.isVerified) {
-    throw new ApiError(404, 'Provider not found or not verified');
+    throw new ApiError(404, 'User not found or not verified' + user);
   }
 
   const existingApplication = await ProviderApplication.findOne({
-    provider,
+    provider: req.user._id,
     service,
   }).select('_id applicationStatus');
 
@@ -31,17 +38,20 @@ const createProviderApplication = asyncHandler(async (req, res) => {
   }
 
   const newApplication = await ProviderApplication.create({
-    provider,
+    provider: req.user._id,
     service,
     applicationStatus: 'pending',
   });
 
-  return ApiResponse.success(
-    res,
-    201,
-    'Provider application created successfully',
-    newApplication
-  );
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        newApplication,
+        'Provider application created successfully'
+      )
+    );
 });
 
 // Update application status (only status & optional notes)
@@ -61,7 +71,9 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
     id,
     { applicationStatus, adminNotes },
     { new: true, runValidators: true }
-  );
+  )
+    .populate('service')
+    .populate('provider');
 
   if (!updatedApplication) {
     throw new ApiError(404, 'Provider application not found');
@@ -69,12 +81,15 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
 
   // Send Notification to user about status
 
-  return ApiResponse.success(
-    res,
-    200,
-    'Application status updated successfully',
-    updatedApplication
-  );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        updatedApplication,
+        'Application status updated successfully'
+      )
+    );
 });
 
 // Get all applications (with filters & pagination)
@@ -91,12 +106,18 @@ const getApplications = asyncHandler(async (req, res) => {
 
   const total = await ProviderApplication.countDocuments(filter);
 
-  return ApiResponse.success(res, 200, 'Applications fetched successfully', {
-    total,
-    page: parseInt(page),
-    limit: parseInt(limit),
-    applications,
-  });
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        applications,
+      },
+      'Applications fetched successfully'
+    )
+  );
 });
 
 // Get single application
@@ -109,12 +130,11 @@ const getApplicationById = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Provider application not found');
   }
 
-  return ApiResponse.success(
-    res,
-    200,
-    'Application fetched successfully',
-    application
-  );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, application, 'Application fetched successfully')
+    );
 });
 
 const getApplicationsByProvider = asyncHandler(async (req, res) => {
