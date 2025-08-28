@@ -17,6 +17,7 @@
         "Aadhar",
         "Covelent",
         "healthcheck",
-        "maxlength"
+        "maxlength",
+        "pincode"
     ]
 }

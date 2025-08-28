@@ -1,8 +1,29 @@
+/**
+ * Express router for provider application related routes.
+ *
+ * @module routes/provider-application
+ *
+ * @requires express
+ * @requires ../controllers/provider-application.controller
+ * @requires ../middlewares/auth.middleware
+ *
+ * @description
+ * Defines routes for creating, updating, and retrieving provider applications.
+ * Includes authentication and authorization middleware for access control.
+ *
+ * Routes:
+ *  - POST   /api/provider-applications                Create a new provider application (provider only)
+ *  - PATCH  /api/provider-applications/:id/status     Update application status (admin only)
+ *  - GET    /api/provider-applications                Get all provider applications (admin only, supports filtering & pagination)
+ *  - GET    /api/provider-applications/:id            Get a single provider application by ID (admin or owning provider)
+ *  - GET    /api/provider-applications/provider/:id   Get all applications by provider (provider only)
+ */
 import express from 'express';
 import {
   createProviderApplication,
   getApplicationById,
   getApplications,
+  getApplicationsByProvider,
   updateApplicationStatus,
 } from '../controllers/provider-application.controller.js';
 
@@ -37,5 +58,12 @@ router.get('/', isAdmin, getApplications);
  * @access  Private (admin or provider who owns it)
  */
 router.get('/:id', verifyJWT, getApplicationById);
+
+/**
+ * @route   GET /api/provider-applications/provider/:id
+ * @desc    Get all applications by provider
+ * @access  Private (provider)
+ */
+router.get('/provider/:id', verifyJWT, getApplicationsByProvider);
 
 export default router;

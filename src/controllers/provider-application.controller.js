@@ -2,6 +2,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { ProviderApplication } from '../models/provider-application.model.js';
+import { User } from '../models/user.model.js';
 
 // Create a new provider application
 const createProviderApplication = asyncHandler(async (req, res) => {
@@ -9,6 +10,24 @@ const createProviderApplication = asyncHandler(async (req, res) => {
 
   if (!provider || !service) {
     throw new ApiError(400, 'Provider and service are required');
+  }
+
+  const user = await User.findById(provider);
+
+  if (!user || user.role !== 'provider' || !user.isVerified) {
+    throw new ApiError(404, 'Provider not found or not verified');
+  }
+
+  const existingApplication = await ProviderApplication.findOne({
+    provider,
+    service,
+  }).select('_id applicationStatus');
+
+  if (existingApplication) {
+    throw new ApiError(
+      400,
+      `Application already exists with status: ${existingApplication.applicationStatus}`
+    );
   }
 
   const newApplication = await ProviderApplication.create({
@@ -47,6 +66,8 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
   if (!updatedApplication) {
     throw new ApiError(404, 'Provider application not found');
   }
+
+  // Send Notification to user about status
 
   return ApiResponse.success(
     res,
@@ -96,9 +117,25 @@ const getApplicationById = asyncHandler(async (req, res) => {
   );
 });
 
+const getApplicationsByProvider = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const application = await ProviderApplication.findById(id);
+
+  if (!application) {
+    throw new ApiError(404, 'Provider application not found');
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, application, 'Application fetched successfully')
+    );
+});
+
 export {
   createProviderApplication,
   updateApplicationStatus,
   getApplications,
   getApplicationById,
+  getApplicationsByProvider,
 };

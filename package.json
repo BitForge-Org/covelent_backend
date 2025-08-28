@@ -41,6 +41,7 @@
     "multer": "^2.0.1",
     "nodemailer": "^7.0.5",
     "prettier": "^3.6.2",
+    "razorpay": "^2.9.6",
     "redis": "^5.7.0",
     "swagger-cli": "^4.0.4",
     "swagger-jsdoc": "^6.2.8",
