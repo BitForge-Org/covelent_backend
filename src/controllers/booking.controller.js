@@ -5,7 +5,7 @@ import { Booking } from '../models/booking.model.js';
 import { ProviderApplication } from '../models/provider-application.model.js';
 import { Service } from '../models/service.model.js';
 import { User } from '../models/user.model.js';
-import { Notification } from '../models/notification.model.js';
+// import { Notification } from '../models/notification.model.js';
 import mongoose from 'mongoose';
 import razorpay from '../utils/razorpay.js';
 
@@ -109,16 +109,56 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
 
 const getAvailableBookings = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const serviceRequest = await ServiceRequest.findOne({ user: userId });
-  if (!serviceRequest) {
+
+  // Find provider applications where provider is the current user and status is approved
+  const approvedProviderApps = await ProviderApplication.find({
+    provider: userId,
+    status: 'approved',
+  });
+
+  if (!approvedProviderApps.length) {
     return res
-      .status(404)
-      .json(new ApiResponse(404, null, 'Service request not found'));
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { bookings: [] },
+          'No approved provider applications found'
+        )
+      );
   }
+
+  // Get all service IDs from these provider applications
+  const serviceIds = approvedProviderApps.map((app) => app.service.toString());
+
+  // Find bookings where the service matches any of these service IDs and status is 'pending'
+  const bookings = await Booking.find({
+    service: { $in: serviceIds },
+    status: 'pending',
+  })
+    .populate('service')
+    .populate('providerApplication');
+
+  if (!bookings.length) {
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          204,
+          { bookings: [] },
+          'No pending bookings found for your approved services'
+        )
+      );
+  }
+
   return res
     .status(200)
     .json(
-      new ApiResponse(200, { serviceRequest }, 'Service request retrieved')
+      new ApiResponse(
+        200,
+        { bookings },
+        'Pending bookings for your approved services retrieved'
+      )
     );
 });
 

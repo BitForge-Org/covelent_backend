@@ -23,7 +23,7 @@ if (!isLocal && cluster.isPrimary) {
     cluster.fork();
   }
   // Listen for worker exit events and restart workers automatically
-  cluster.on('exit', (worker, code, signal) => {
+  cluster.on('exit', (worker) => {
     logger.warn(`Worker ${worker.process.pid} died. Restarting...`);
     cluster.fork();
   });
