@@ -122,4 +122,4 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
     );
 });
 
-export { createBooking, getBookingsHistory, getServiceRequest };
+export { createBooking, getBookingsHistory, getAvailableBookings };
