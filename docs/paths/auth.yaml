@@ -1,0 +1,297 @@
+/auth/register:
+  post:
+    summary: Register a new user
+    tags:
+      - Auth
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              fullName:
+                type: string
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                format: password
+              role:
+                type: string
+                enum: [user, provider, admin]
+              dateOfBirth:
+                type: string
+                format: date
+              phoneNumber:
+                type: string
+              avatar:
+                type: string
+                format: binary
+              aadharImage:
+                type: string
+                format: binary
+              panImage:
+                type: string
+                format: binary
+    responses:
+      '201':
+        description: User registered successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    user:
+                      $ref: '../schemas/User.yaml#/User'
+                    accessToken:
+                      type: string
+                    refreshToken:
+                      type: string
+                    role:
+                      type: string
+                    dateOfBirth:
+                      type: string
+                    isVerified:
+                      type: boolean
+                    isActive:
+                      type: boolean
+                    phoneNumber:
+                      type: string
+                message:
+                  type: string
+
+/auth/login:
+  post:
+    summary: Login user
+    tags:
+      - Auth
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                format: password
+    responses:
+      '200':
+        description: User logged in successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    user:
+                      $ref: '../schemas/User.yaml#/User'
+                    accessToken:
+                      type: string
+                    refreshToken:
+                      type: string
+                message:
+                  type: string
+
+/auth/logout:
+  post:
+    summary: Logout user
+    tags:
+      - Auth
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: User logged out
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                message:
+                  type: string
+
+/auth/refresh-token:
+  post:
+    summary: Refresh access token
+    tags:
+      - Auth
+    requestBody:
+      required: false
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              refreshToken:
+                type: string
+    responses:
+      '200':
+        description: Access token refreshed
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    accessToken:
+                      type: string
+                    refreshToken:
+                      type: string
+                message:
+                  type: string
+
+/auth/change-password:
+  post:
+    summary: Change current password
+    tags:
+      - Auth
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              oldPassword:
+                type: string
+              newPassword:
+                type: string
+    responses:
+      '200':
+        description: Password changed successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                message:
+                  type: string
+
+/auth/forgot-password:
+  post:
+    summary: Request password reset OTP
+    tags:
+      - Auth
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+    responses:
+      '200':
+        description: Reset OTP sent to email
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                message:
+                  type: string
+
+/auth/reset-password:
+  post:
+    summary: Reset password using OTP
+    tags:
+      - Auth
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+    responses:
+      '200':
+        description: Password reset successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                message:
+                  type: string
+
+/auth/verify-otp:
+  post:
+    summary: Verify OTP for password reset
+    tags:
+      - Auth
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+              otp:
+                type: string
+    responses:
+      '200':
+        description: OTP verified successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                message:
+                  type: string

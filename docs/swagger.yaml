@@ -46,8 +46,26 @@ paths:
     $ref: './paths/booking.yaml#/~1bookings'
   /bookings/available:
     $ref: './paths/booking.yaml#/~1bookings~1available'
-  /booking/history:
+  /bookings/history:
     $ref: './paths/booking.yaml#/~1booking~1history'
+
+  # Auth endpoints - Fixed references
+  /auth/register:
+    $ref: './paths/auth.yaml#/~1auth~1register'
+  /auth/login:
+    $ref: './paths/auth.yaml#/~1auth~1login'
+  /auth/logout:
+    $ref: './paths/auth.yaml#/~1auth~1logout'
+  /auth/refresh-token:
+    $ref: './paths/auth.yaml#/~1auth~1refresh-token'
+  /auth/change-password:
+    $ref: './paths/auth.yaml#/~1auth~1change-password'
+  /auth/forgot-password:
+    $ref: './paths/auth.yaml#/~1auth~1forgot-password'
+  /auth/reset-password:
+    $ref: './paths/auth.yaml#/~1auth~1reset-password'
+  /auth/verify-otp:
+    $ref: './paths/auth.yaml#/~1auth~1verify-otp'
 
 components:
   securitySchemes:
