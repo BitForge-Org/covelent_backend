@@ -25,6 +25,9 @@ paths:
     $ref: './paths/services.yaml#/~1services'
   /services/featured-services:
     $ref: './paths/featured-services.yaml'
+  /services/{serviceId}/image:
+    $ref: './paths/service-image-diff.yaml#'
+
   /categories:
     $ref: './paths/categories.yaml#/~1categories'
   /users/current-user:

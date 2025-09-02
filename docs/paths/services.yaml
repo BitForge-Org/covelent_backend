@@ -1,4 +1,4 @@
-/services:  
+/services:
   post:
     summary: Create a new service
     tags:
@@ -36,10 +36,10 @@
                 type: number
                 description: Duration in minutes
                 example: 60
-              icon:
+              image:
                 type: string
                 format: binary
-                description: Icon image file (optional)
+                description: Service image file (required, max 1)
               media:
                 type: array
                 items:
@@ -51,14 +51,6 @@
                 description: >
                   JSON stringified array of locations, e.g.
                   '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
-    responses:
-      "201":
-        description: Service created successfully
-      "400":
-        description: Invalid input
-      "500":
-        description: Server error
-
   get:
     summary: Get all services with optional filters
     tags:
@@ -110,7 +102,7 @@
           type: number
         description: Filter by latitude (locationAvailable.coordinates.lat)
     responses:
-      "200":
+      '200':
         description: Services retrieved successfully
         content:
           application/json:
@@ -123,14 +115,13 @@
                 data:
                   type: array
                   items:
-                    $ref: "./../schemas/Service.yaml"
+                    $ref: './../schemas/Service.yaml'
                 message:
                   type: string
                   example: Services retrieved successfully
-      "404":
+      '404':
         description: No services found
-      "400":
+      '400':
         description: Invalid filter
-      "500":
+      '500':
         description: Server error
-

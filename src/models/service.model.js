@@ -30,6 +30,11 @@ const serviceSchema = new Schema(
       required: true,
       min: 0,
     },
+    image: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     media: {
       type: [String], // array of URLs or paths
       required: true,

@@ -1,0 +1,35 @@
+# Service Image Update Endpoint (YAML Diff)
+
+# This file shows only the diff/patch needed to add the service image update endpoint to your OpenAPI YAML.
+
+patch:
+  summary: Update service image
+  tags:
+    - Service
+  parameters:
+    - in: path
+      name: serviceId
+      required: true
+      schema:
+        type: string
+      description: The ID of the service to update
+  requestBody:
+    required: true
+    content:
+      multipart/form-data:
+        schema:
+          type: object
+          properties:
+            image:
+              type: string
+              format: binary
+              description: Service image file (required, max 1)
+  responses:
+    '200':
+      description: Service image updated successfully
+    '400':
+      description: Invalid input
+    '404':
+      description: Service not found
+    '500':
+      description: Server error

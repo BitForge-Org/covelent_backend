@@ -20,7 +20,7 @@ const createBooking = asyncHandler(async (req, res) => {
     paymentMethod,
   } = req.body;
 
-  const userId = req.user._id;
+  // const userId = req.user._id;
   // const existingBooking = await Booking.findOne({
   //   user: userId,
   //   service: serviceId,

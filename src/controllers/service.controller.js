@@ -25,10 +25,7 @@ const createService = asyncHandler(async (req, res) => {
       );
     }
 
-    const isServiceExists = await Service.findOne({
-      $or: [{ title }],
-    });
-
+    const isServiceExists = await Service.findOne({ $or: [{ title }] });
     if (isServiceExists) {
       throw new ApiError(400, 'Service with this title already exists');
     }
@@ -36,14 +33,32 @@ const createService = asyncHandler(async (req, res) => {
     // Handle media upload (up to 5 files)
     let media = [];
     if (req.files && req.files.media) {
-      if (req.files.media.length > 5) {
+      const mediaFiles = Array.isArray(req.files.media)
+        ? req.files.media
+        : [req.files.media];
+      if (mediaFiles.length > 5) {
         throw new ApiError(400, 'A maximum of 5 media files are allowed');
       }
-      for (const file of req.files.media) {
+      for (const file of mediaFiles) {
         const uploaded = await uploadOnCloudinary(file.path, 'service/media');
         if (uploaded && uploaded.secure_url) {
           media.push(uploaded.secure_url);
         }
+      }
+    }
+
+    // Handle image upload (max 1 file)
+    let image = '';
+    if (req.files && req.files.image) {
+      const imageFile = Array.isArray(req.files.image)
+        ? req.files.image[0]
+        : req.files.image;
+      const uploaded = await uploadOnCloudinary(
+        imageFile.path,
+        'service/image'
+      );
+      if (uploaded && uploaded.secure_url) {
+        image = uploaded.secure_url;
       }
     }
 
@@ -67,6 +82,7 @@ const createService = asyncHandler(async (req, res) => {
       category,
       price,
       duration,
+      image,
       media,
       locationAvailable: parsedLocationAvailable,
     });
@@ -89,6 +105,53 @@ const createService = asyncHandler(async (req, res) => {
   }
 });
 
+// Update service image (max 1)
+const updateServiceImage = asyncHandler(async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    if (!serviceId) {
+      throw new ApiError(400, 'Service ID is required');
+    }
+    if (!req.files || !req.files.image) {
+      throw new ApiError(400, 'Image file is required');
+    }
+    const imageFile = Array.isArray(req.files.image)
+      ? req.files.image[0]
+      : req.files.image;
+    const uploaded = await uploadOnCloudinary(imageFile.path, 'service/image');
+    if (!uploaded || !uploaded.secure_url) {
+      throw new ApiError(500, 'Image upload failed');
+    }
+    const updatedService = await Service.findByIdAndUpdate(
+      serviceId,
+      { image: uploaded.secure_url },
+      { new: true }
+    );
+    if (!updatedService) {
+      throw new ApiError(404, 'Service not found');
+    }
+    // Invalidate cache if needed
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+    }
+    await redisClient.del('services:all');
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          updatedService,
+          'Service image updated successfully'
+        )
+      );
+  } catch (error) {
+    logger.error(error);
+    throw new ApiError(
+      error.statusCode || 500,
+      error.message || 'Failed to update service image'
+    );
+  }
+});
 const getServices = asyncHandler(async (req, res) => {
   const { categoryId, minPrice, maxPrice, avgRating, isFeatured } = req.query;
 
@@ -169,4 +232,4 @@ const getFeaturedServices = asyncHandler(async (req, res) => {
     );
 });
 
-export { createService, getServices, getFeaturedServices };
+export { createService, getServices, getFeaturedServices, updateServiceImage };

@@ -9,19 +9,22 @@ import { isAdmin } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.route('/').post(
-  isAdmin,
+// Create service (image: max 1, media: up to 5)
+router.post(
+  '/',
   upload.fields([
-    {
-      name: 'media',
-      maxCount: 5,
-    },
-    {
-      name: 'icon',
-      maxCount: 1,
-    },
+    { name: 'image', maxCount: 1 },
+    { name: 'media', maxCount: 5 },
   ]),
   createService
+);
+
+// Update service image (max 1)
+import { updateServiceImage } from '../controllers/service.controller.js';
+router.patch(
+  '/:serviceId/image',
+  upload.fields([{ name: 'image', maxCount: 1 }]),
+  updateServiceImage
 );
 
 router.route('/featured-services').get(getFeaturedServices);

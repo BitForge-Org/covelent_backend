@@ -56,10 +56,10 @@ paths:
                   type: number
                   description: Duration in minutes
                   example: 60
-                icon:
+                image:
                   type: string
                   format: binary
-                  description: Icon image file (optional)
+                  description: 'Service image file (required, max 1)'
                 media:
                   type: array
                   items:
@@ -70,13 +70,6 @@ paths:
                   type: string
                   description: |
                     JSON stringified array of locations, e.g. '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
-      responses:
-        '201':
-          description: Service created successfully
-        '400':
-          description: Invalid input
-        '500':
-          description: Server error
     get:
       summary: Get all services with optional filters
       tags:
@@ -159,6 +152,9 @@ paths:
                           duration:
                             type: number
                             minimum: 0
+                          image:
+                            type: string
+                            maxItems: 1
                           media:
                             type: array
                             maxItems: 5
@@ -229,6 +225,38 @@ paths:
                   message:
                     type: string
                     example: Featured services retrieved successfully
+        '500':
+          description: Server error
+  '/services/{serviceId}/image':
+    patch:
+      summary: Update service image
+      tags:
+        - Service
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+          description: The ID of the service to update
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: 'Service image file (required, max 1)'
+      responses:
+        '200':
+          description: Service image updated successfully
+        '400':
+          description: Invalid input
+        '404':
+          description: Service not found
         '500':
           description: Server error
   /categories:

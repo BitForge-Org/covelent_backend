@@ -83,17 +83,44 @@ const bookingSchema = new Schema(
       },
     },
     payment: {
-      orderId: { type: String },
-      paymentId: { type: String },
-      signature: { type: String },
-      status: {
-        type: String,
-        enum: ['pending', 'paid', 'refunded', 'failed'],
-        default: 'pending',
-      },
       paymentMethod: {
         type: String,
-        enum: ['online', 'cash'],
+        enum: ['razorpay', 'cash', 'upi', 'card'],
+        required: true,
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'completed', 'failed', 'refunded'],
+        default: 'pending',
+      },
+      orderId: {
+        type: String, // Razorpay order ID
+      },
+      paymentId: {
+        type: String, // Razorpay payment ID
+      },
+      orderStatus: {
+        type: String, // Razorpay order status
+      },
+      paidAmount: {
+        type: Number,
+        default: 0,
+      },
+      paymentDate: {
+        type: Date,
+      },
+      failureReason: {
+        type: String,
+      },
+      refundId: {
+        type: String, // Razorpay refund ID if applicable
+      },
+      refundAmount: {
+        type: Number,
+        default: 0,
+      },
+      refundDate: {
+        type: Date,
       },
     },
     specialInstructions: {
