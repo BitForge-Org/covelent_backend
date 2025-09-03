@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import path from "path";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -16,6 +17,7 @@ cloudinary.config({
  * @param {string} [folder] - Optional Cloudinary folder to upload the file into.
  * @returns {Promise<Object|null>} The Cloudinary upload response object if successful, or null if upload fails or no file path is provided.
  */
+const UPLOADS_ROOT = path.resolve("uploads/tmp");   // Use your actual uploads temp dir here
 const uploadOnCloudinary = async (localFilePath, folder) => {
   try {
     if (!localFilePath) return null;
@@ -25,12 +27,26 @@ const uploadOnCloudinary = async (localFilePath, folder) => {
       resource_type: "auto",
       folder: targetFolder,
     });
-    // file has been uploaded successfull
+    // file has been uploaded successfully
     //console.log("file is uploaded on cloudinary ", response.url);
-    fs.unlinkSync(localFilePath);
+    const absoluteFilePath = path.resolve(localFilePath);
+    if (absoluteFilePath.startsWith(UPLOADS_ROOT)) {
+      fs.unlinkSync(absoluteFilePath);
+    } else {
+      console.warn(`Unsafe file path detected for deletion: ${absoluteFilePath}`);
+    }
     return response;
   } catch (error) {
-    fs.unlinkSync(localFilePath); // remove the locally saved temporary file as the upload operation got failed
+    const absoluteFilePath = path.resolve(localFilePath);
+    if (absoluteFilePath.startsWith(UPLOADS_ROOT)) {
+      try {
+        fs.unlinkSync(absoluteFilePath); // remove locally saved temp file as upload failed
+      } catch (e) {
+        console.warn(`Failed to delete unsafe or missing file: ${absoluteFilePath}`, e);
+      }
+    } else {
+      console.warn(`Unsafe file path detected for deletion (error branch): ${absoluteFilePath}`);
+    }
     console.error(error);
     return error;
   }
