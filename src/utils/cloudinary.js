@@ -42,7 +42,7 @@ const uploadOnCloudinary = async (localFilePath, folder) => {
       try {
         fs.unlinkSync(absoluteFilePath); // remove locally saved temp file as upload failed
       } catch (e) {
-        console.warn(`Failed to delete unsafe or missing file: ${absoluteFilePath}`, e);
+        console.warn("Failed to delete unsafe or missing file:", absoluteFilePath, e);
       }
     } else {
       console.warn(`Unsafe file path detected for deletion (error branch): ${absoluteFilePath}`);
