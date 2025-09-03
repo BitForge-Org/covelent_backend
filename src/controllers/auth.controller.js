@@ -359,9 +359,12 @@ const verifyOtp = asyncHandler(async (req, res) => {
   if (!otp) {
     throw new ApiError(400, "OTP is required");
   }
+  if (typeof otp !== "string") {
+    throw new ApiError(400, "Invalid OTP type");
+  }
 
   const user = await User.findOne({
-    resetPasswordToken: otp,
+    resetPasswordToken: { $eq: otp },
     resetPasswordExpires: { $gt: Date.now() },
     isActive: true,
     isVerified: true,
