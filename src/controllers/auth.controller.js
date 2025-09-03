@@ -10,6 +10,25 @@ import { sendMail } from "../utils/EmailService.js";
 import crypto from "crypto";
 import { APP_URL } from "../constants.js";
 
+// Directory where local uploaded files are temporarily stored
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+
+/**
+ * Verifies that a given file path (possibly provided by the user) is safely inside UPLOAD_DIR.
+ * Returns the normalized absolute path if valid, or null otherwise.
+ * @param {string} inputPath
+ * @returns {string|null}
+ */
+function getSafeUploadPath(inputPath) {
+  if (!inputPath) return null;
+  // Normalize (resolve) path against UPLOAD_DIR if not already absolute
+  let resolvedPath = path.resolve(inputPath);
+  if (!resolvedPath.startsWith(UPLOAD_DIR)) {
+    return null;
+  }
+  return resolvedPath;
+}
+
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password, role, dateOfBirth, phoneNumber } =
     req.body;
@@ -41,14 +60,18 @@ const registerUser = asyncHandler(async (req, res) => {
   if ([fullName, email, password, role].some((field) => field?.trim() === ""))
     if (role === "provider") {
       // If role is 'provider', aadhar and pan files are required
-      if (!aadharImageLocalPath || !fs.existsSync(aadharImageLocalPath)) {
-        if (avatarLocalPath && fs.existsSync(avatarLocalPath))
-          fs.unlinkSync(avatarLocalPath);
+      const safeAadharImagePath = getSafeUploadPath(aadharImageLocalPath);
+      if (!safeAadharImagePath || !fs.existsSync(safeAadharImagePath)) {
+        const safeAvatarPath = getSafeUploadPath(avatarLocalPath);
+        if (safeAvatarPath && fs.existsSync(safeAvatarPath))
+          fs.unlinkSync(safeAvatarPath);
         throw new ApiError(400, "Aadhar file is required for provider role");
       }
-      if (!panImageLocalPath || !fs.existsSync(panImageLocalPath)) {
-        if (avatarLocalPath && fs.existsSync(avatarLocalPath))
-          fs.unlinkSync(avatarLocalPath);
+      const safePanImagePath = getSafeUploadPath(panImageLocalPath);
+      if (!safePanImagePath || !fs.existsSync(safePanImagePath)) {
+        const safeAvatarPath = getSafeUploadPath(avatarLocalPath);
+        if (safeAvatarPath && fs.existsSync(safeAvatarPath))
+          fs.unlinkSync(safeAvatarPath);
         throw new ApiError(400, "PAN file is required for provider role");
       }
     }
@@ -62,8 +85,11 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existedUser) {
     console.warn(`[REGISTER] Duplicate email: ${email}`);
     // Clean up uploaded files if user exists
-    if (avatarLocalPath && fs.existsSync(avatarLocalPath))
-      fs.unlinkSync(avatarLocalPath);
+    {
+      const safeAvatarPath = getSafeUploadPath(avatarLocalPath);
+      if (safeAvatarPath && fs.existsSync(safeAvatarPath))
+        fs.unlinkSync(safeAvatarPath);
+    }
     throw new ApiError(409, "User with email or username already exists");
   }
 
