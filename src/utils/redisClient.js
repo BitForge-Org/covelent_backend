@@ -10,6 +10,13 @@ export const redisClient = createClient({
     },
     connectTimeout: 10000,
   },
+  logger: {
+    isEnabled: true,
+    level: 'info',
+    log: (level, message) => {
+      logger.log(level, 'Redis Client:', message);
+    },
+  },
 });
 
 redisClient.on('error', (err) => {

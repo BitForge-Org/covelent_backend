@@ -8,7 +8,7 @@ import logger from '../utils/logger.js';
 
 const createCategory = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
-
+  await initRedis();
   if (!name || !description) {
     throw new ApiError(400, 'Name and description are required');
   }
@@ -28,8 +28,10 @@ const createCategory = asyncHandler(async (req, res) => {
     icon: icon ? icon.secure_url : null, // Use secure_url if icon is uploaded
   });
 
-  // Invalidate categories cache after creating a new category
   await redisClient.del('categories:all');
+
+  // Invalidate categories cache after creating a new category
+  // await redisClient.del('categories:all');
 
   return res
     .status(201)
