@@ -6,6 +6,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
+
+// Define the root upload directories, adjust as needed per your configuration.
+const UPLOAD_ROOT = path.resolve("uploads"); // Assuming all uploads go under ./uploads/
 import { sendMail } from "../utils/EmailService.js";
 import crypto from "crypto";
 import { APP_URL } from "../constants.js";
@@ -27,6 +30,28 @@ function getSafeUploadPath(inputPath) {
     return null;
   }
   return resolvedPath;
+}
+
+/**
+ * Safely removes uploaded files with path traversal protection
+ * @param {string[]} filePaths - Array of file paths to remove
+ */
+function cleanupUploadedFiles(filePaths) {
+  filePaths.forEach(filePath => {
+    if (!filePath) return;
+    
+    const safeFilePath = getSafeUploadPath(filePath);
+    if (safeFilePath && fs.existsSync(safeFilePath)) {
+      try {
+        fs.unlinkSync(safeFilePath);
+        console.log(`[CLEANUP] Removed file: ${safeFilePath}`);
+      } catch (error) {
+        console.error(`[CLEANUP] Failed to remove file ${safeFilePath}:`, error);
+      }
+    } else if (filePath) {
+      console.warn(`[SECURITY] Refused to unlink file outside upload dir: ${filePath}`);
+    }
+  });
 }
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -57,24 +82,25 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // Validate required fields including role and dateOfBirth
-  if ([fullName, email, password, role].some((field) => field?.trim() === ""))
-    if (role === "provider") {
-      // If role is 'provider', aadhar and pan files are required
-      const safeAadharImagePath = getSafeUploadPath(aadharImageLocalPath);
-      if (!safeAadharImagePath || !fs.existsSync(safeAadharImagePath)) {
-        const safeAvatarPath = getSafeUploadPath(avatarLocalPath);
-        if (safeAvatarPath && fs.existsSync(safeAvatarPath))
-          fs.unlinkSync(safeAvatarPath);
-        throw new ApiError(400, "Aadhar file is required for provider role");
-      }
-      const safePanImagePath = getSafeUploadPath(panImageLocalPath);
-      if (!safePanImagePath || !fs.existsSync(safePanImagePath)) {
-        const safeAvatarPath = getSafeUploadPath(avatarLocalPath);
-        if (safeAvatarPath && fs.existsSync(safeAvatarPath))
-          fs.unlinkSync(safeAvatarPath);
-        throw new ApiError(400, "PAN file is required for provider role");
-      }
+  if ([fullName, email, password, role].some((field) => field?.trim() === "")) {
+    cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath, panImageLocalPath]);
+    throw new ApiError(400, "All required fields must be provided");
+  }
+
+  if (role === "provider") {
+    // If role is 'provider', aadhar and pan files are required
+    const safeAadharImagePath = getSafeUploadPath(aadharImageLocalPath);
+    if (!safeAadharImagePath || !fs.existsSync(safeAadharImagePath)) {
+      cleanupUploadedFiles([avatarLocalPath, panImageLocalPath]);
+      throw new ApiError(400, "Aadhar file is required for provider role");
     }
+    
+    const safePanImagePath = getSafeUploadPath(panImageLocalPath);
+    if (!safePanImagePath || !fs.existsSync(safePanImagePath)) {
+      cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath]);
+      throw new ApiError(400, "PAN file is required for provider role");
+    }
+  }
 
   const existedUser = await User.findOne({
     $or: [{ email }],
@@ -85,11 +111,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existedUser) {
     console.warn(`[REGISTER] Duplicate email: ${email}`);
     // Clean up uploaded files if user exists
-    {
-      const safeAvatarPath = getSafeUploadPath(avatarLocalPath);
-      if (safeAvatarPath && fs.existsSync(safeAvatarPath))
-        fs.unlinkSync(safeAvatarPath);
-    }
+    cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath, panImageLocalPath]);
     throw new ApiError(409, "User with email or username already exists");
   }
 
