@@ -58,10 +58,14 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
   if (dateOfBirth !== undefined) updateFields.dateOfBirth = dateOfBirth;
   if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
 
-  const user = await User.findByIdAndUpdate(req.user._id, updateFields, {
-    new: true,
-    runValidators: true,
-  }).select(
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: updateFields },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select(
     "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
   );
 
