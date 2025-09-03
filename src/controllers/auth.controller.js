@@ -389,7 +389,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findOne({
-    _id: id,
+    _id: { $eq: id },
   });
 
   if (!user) {
