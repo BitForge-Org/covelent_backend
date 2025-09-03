@@ -304,7 +304,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     throw new ApiError(401, "User account is not active or not verified");
 
   // Generate 6-digit OTP and expiry
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = crypto.randomInt(100000, 1000000).toString();
   user.resetPasswordToken = otp;
   user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 min
   await user.save({ validateBeforeSave: false });
