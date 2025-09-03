@@ -6,6 +6,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
+
+// Define the root upload directories, adjust as needed per your configuration.
+const UPLOAD_ROOT = path.resolve("uploads"); // Assuming all uploads go under ./uploads/
 import { sendMail } from "../utils/EmailService.js";
 import crypto from "crypto";
 import { APP_URL } from "../constants.js";
@@ -42,8 +45,15 @@ const registerUser = asyncHandler(async (req, res) => {
     if (role === "provider") {
       // If role is 'provider', aadhar and pan files are required
       if (!aadharImageLocalPath || !fs.existsSync(aadharImageLocalPath)) {
-        if (avatarLocalPath && fs.existsSync(avatarLocalPath))
-          fs.unlinkSync(avatarLocalPath);
+        // Validate if the file path is under the upload root before unlinking
+        if (avatarLocalPath) {
+          const resolvedAvatarPath = path.resolve(avatarLocalPath);
+          if (resolvedAvatarPath.startsWith(UPLOAD_ROOT)) {
+            if (fs.existsSync(resolvedAvatarPath)) fs.unlinkSync(resolvedAvatarPath);
+          } else {
+            console.warn(`[SECURITY] Refused to unlink avatar outside upload dir: ${resolvedAvatarPath}`);
+          }
+        }
         throw new ApiError(400, "Aadhar file is required for provider role");
       }
       if (!panImageLocalPath || !fs.existsSync(panImageLocalPath)) {
@@ -62,8 +72,14 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existedUser) {
     console.warn(`[REGISTER] Duplicate email: ${email}`);
     // Clean up uploaded files if user exists
-    if (avatarLocalPath && fs.existsSync(avatarLocalPath))
-      fs.unlinkSync(avatarLocalPath);
+    if (avatarLocalPath) {
+      const resolvedAvatarPath = path.resolve(avatarLocalPath);
+      if (resolvedAvatarPath.startsWith(UPLOAD_ROOT)) {
+        if (fs.existsSync(resolvedAvatarPath)) fs.unlinkSync(resolvedAvatarPath);
+      } else {
+        console.warn(`[SECURITY] Refused to unlink avatar outside upload dir: ${resolvedAvatarPath}`);
+      }
+    }
     throw new ApiError(409, "User with email or username already exists");
   }
 
