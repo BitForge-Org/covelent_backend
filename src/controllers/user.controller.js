@@ -30,7 +30,30 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       );
   }
 
-  // Only update allowed fields
+  // Type validation to prevent NoSQL injection
+  if (typeof fullName !== "string" || typeof email !== "string") {
+    return res
+      .status(400)
+      .json(
+        new ApiResponse(400, null, "Full Name and Email must be strings")
+      );
+  }
+  if (dateOfBirth !== undefined && typeof dateOfBirth !== "string") {
+    return res
+      .status(400)
+      .json(
+        new ApiResponse(400, null, "Date of Birth must be a string")
+      );
+  }
+  if (phoneNumber !== undefined && typeof phoneNumber !== "string") {
+    return res
+      .status(400)
+      .json(
+        new ApiResponse(400, null, "Phone Number must be a string")
+      );
+  }
+
+  // Only update allowed fields with validated values
   const updateFields = { fullName, email };
   if (dateOfBirth !== undefined) updateFields.dateOfBirth = dateOfBirth;
   if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
