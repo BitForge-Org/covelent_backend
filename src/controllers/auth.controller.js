@@ -46,7 +46,7 @@ function cleanupUploadedFiles(filePaths) {
         fs.unlinkSync(safeFilePath);
         console.log(`[CLEANUP] Removed file: ${safeFilePath}`);
       } catch (error) {
-        console.error(`[CLEANUP] Failed to remove file ${safeFilePath}:`, error);
+        console.error("[CLEANUP] Failed to remove file: %s", safeFilePath, error);
       }
     } else if (filePath) {
       console.warn(`[SECURITY] Refused to unlink file outside upload dir: ${filePath}`);
