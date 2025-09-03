@@ -1,7 +1,9 @@
 import path from 'path';
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import morgan from "morgan";
+import { csrf } from "lusca";
 
 import { generalLimiter, authLimiter } from './utils/rateLimiter.js';
 import { setupSwagger } from './swagger.js';
@@ -28,6 +30,7 @@ app.use(
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 app.use(cookieParser());
+app.use(csrf());
 
 import userRouter from './routes/user.routes.js';
 import healthcheckRouter from './routes/healthcheck.routes.js';

@@ -1,14 +1,60 @@
-import jwt from 'jsonwebtoken';
-import fs from 'fs';
-import path from 'path';
 
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiError } from '../utils/ApiError.js';
-import { User } from '../models/user.model.js';
-import { uploadOnCloudinary } from '../utils/cloudinary.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
-import { sendMail } from '../utils/EmailService.js';
 import logger from '../utils/logger.js';
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { User } from "../models/user.model.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
+
+// Define the root upload directories, adjust as needed per your configuration.
+const UPLOAD_ROOT = path.resolve("uploads"); // Assuming all uploads go under ./uploads/
+import { sendMail } from "../utils/EmailService.js";
+import crypto from "crypto";
+import { APP_URL } from "../constants.js";
+
+// Directory where local uploaded files are temporarily stored
+const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+
+/**
+ * Verifies that a given file path (possibly provided by the user) is safely inside UPLOAD_DIR.
+ * Returns the normalized absolute path if valid, or null otherwise.
+ * @param {string} inputPath
+ * @returns {string|null}
+ */
+function getSafeUploadPath(inputPath) {
+  if (!inputPath) return null;
+  // Normalize (resolve) path against UPLOAD_DIR if not already absolute
+  let resolvedPath = path.resolve(inputPath);
+  if (!resolvedPath.startsWith(UPLOAD_DIR)) {
+    return null;
+  }
+  return resolvedPath;
+}
+
+/**
+ * Safely removes uploaded files with path traversal protection
+ * @param {string[]} filePaths - Array of file paths to remove
+ */
+function cleanupUploadedFiles(filePaths) {
+  filePaths.forEach(filePath => {
+    if (!filePath) return;
+    
+    const safeFilePath = getSafeUploadPath(filePath);
+    if (safeFilePath && fs.existsSync(safeFilePath)) {
+      try {
+        fs.unlinkSync(safeFilePath);
+        console.log(`[CLEANUP] Removed file: ${safeFilePath}`);
+      } catch (error) {
+        console.error("[CLEANUP] Failed to remove file: %s", safeFilePath, error);
+      }
+    } else if (filePath) {
+      console.warn(`[SECURITY] Refused to unlink file outside upload dir: ${filePath}`);
+    }
+  });
+}
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password, role, dateOfBirth, phoneNumber } =
@@ -38,20 +84,25 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // Validate required fields including role and dateOfBirth
-  if ([fullName, email, password, role].some((field) => field?.trim() === ''))
-    if (role === 'provider') {
-      // If role is 'provider', aadhar and pan files are required
-      if (!aadharImageLocalPath || !fs.existsSync(aadharImageLocalPath)) {
-        if (avatarLocalPath && fs.existsSync(avatarLocalPath))
-          fs.unlinkSync(avatarLocalPath);
-        throw new ApiError(400, 'Aadhar file is required for provider role');
-      }
-      if (!panImageLocalPath || !fs.existsSync(panImageLocalPath)) {
-        if (avatarLocalPath && fs.existsSync(avatarLocalPath))
-          fs.unlinkSync(avatarLocalPath);
-        throw new ApiError(400, 'PAN file is required for provider role');
-      }
+  if ([fullName, email, password, role].some((field) => field?.trim() === "")) {
+    cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath, panImageLocalPath]);
+    throw new ApiError(400, "All required fields must be provided");
+  }
+
+  if (role === "provider") {
+    // If role is 'provider', aadhar and pan files are required
+    const safeAadharImagePath = getSafeUploadPath(aadharImageLocalPath);
+    if (!safeAadharImagePath || !fs.existsSync(safeAadharImagePath)) {
+      cleanupUploadedFiles([avatarLocalPath, panImageLocalPath]);
+      throw new ApiError(400, "Aadhar file is required for provider role");
     }
+    
+    const safePanImagePath = getSafeUploadPath(panImageLocalPath);
+    if (!safePanImagePath || !fs.existsSync(safePanImagePath)) {
+      cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath]);
+      throw new ApiError(400, "PAN file is required for provider role");
+    }
+  }
 
   const existedUser = await User.findOne({
     $or: [{ email }],
@@ -62,9 +113,9 @@ const registerUser = asyncHandler(async (req, res) => {
   if (existedUser) {
     logger.warn(`[REGISTER] Duplicate email: ${email}`);
     // Clean up uploaded files if user exists
-    if (avatarLocalPath && fs.existsSync(avatarLocalPath))
-      fs.unlinkSync(avatarLocalPath);
-    throw new ApiError(409, 'User with email or username already exists');
+
+    cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath, panImageLocalPath]);
+    throw new ApiError(409, "User with email or username already exists");
   }
 
   const avatar = avatarLocalPath
@@ -176,8 +227,11 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!email) {
     throw new ApiError(400, 'email is required');
   }
+  if (typeof email !== "string") {
+    throw new ApiError(400, "Invalid email format");
+  }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: { $eq: email } });
   if (!user) {
     logger.warn(`[LOGIN] User not found: ${email}`);
     throw new ApiError(404, 'User does not exist');
@@ -296,15 +350,17 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   logger.info('forgot password request for:', email);
-  if (!email) throw new ApiError(400, 'Email is required');
 
-  const user = await User.findOne({ email });
-  if (!user) throw new ApiError(404, 'User with this email does not exist');
+  if (!email) throw new ApiError(400, "Email is required");
+  if (typeof email !== "string") throw new ApiError(400, "Invalid email format");
+
+  const user = await User.findOne({ email: { $eq: email } });
+  if (!user) throw new ApiError(404, "User with this email does not exist");
   if (!user.isActive || !user.isVerified)
     throw new ApiError(401, 'User account is not active or not verified');
 
   // Generate 6-digit OTP and expiry
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otp = crypto.randomInt(100000, 1000000).toString();
   user.resetPasswordToken = otp;
   user.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 min
   await user.save({ validateBeforeSave: false });
@@ -363,8 +419,11 @@ const verifyOtp = asyncHandler(async (req, res) => {
   if (!email) {
     throw new ApiError(400, 'Email is required');
   }
+  if (typeof otp !== "string") {
+    throw new ApiError(400, "Invalid OTP type");
+  }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email : {$eq : email} });
 
   if (!user) {
     throw new ApiError(404, 'User not found');
@@ -398,7 +457,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findOne({
-    email: email,
+    email: { $eq: email },
   });
 
   if (!user) {

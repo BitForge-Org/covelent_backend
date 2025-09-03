@@ -158,7 +158,7 @@ const getServices = asyncHandler(async (req, res) => {
   const filter = {};
 
   if (categoryId) {
-    filter.category = categoryId; // directly use ObjectId
+    filter.category = { $eq: categoryId }; // Mitigate NoSQL injection
   }
 
   if (minPrice || maxPrice) {
