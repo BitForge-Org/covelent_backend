@@ -88,15 +88,46 @@ const createService = asyncHandler(async (req, res) => {
   }
 });
 
-const getServiceByCategory = asyncHandler(async (req, res) => {
-  console.log("Fetching services by category...");
-  const { categoryId } = req.params;
+const getServices = asyncHandler(async (req, res) => {
+  const { categoryId, minPrice, maxPrice, avgRating, isFeatured } = req.query;
 
-  if (!categoryId) {
-    throw new ApiError(400, "Category ID is required");
+  const filter = {};
+
+  if (categoryId) {
+    filter.category = categoryId; // directly use ObjectId
   }
 
-  // const cacheKey = `services:category:${categoryId}`;
+  if (minPrice || maxPrice) {
+    filter.price = {};
+    if (minPrice) filter.price.$gte = Number(minPrice);
+    if (maxPrice) filter.price.$lte = Number(maxPrice);
+  }
+
+  if (avgRating) {
+    filter.avgRating = { $gte: Number(avgRating) }; // min rating
+  }
+
+  if (isFeatured) {
+    filter.isFeatured = isFeatured === "true";
+  }
+
+  const cacheKey = `services:${JSON.stringify(filter)}`;
+
+  // TODO: Redis cache logic if needed
+
+  const services = await Service.find(filter).populate("category");
+
+  if (!services || services.length === 0) {
+    return res.status(404).json(new ApiResponse(404, [], "No services found"));
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, services, "Services retrieved successfully"));
+});
+
+const getFeaturedServices = asyncHandler(async (req, res) => {
+  // const cacheKey = "services:featured";
 
   // Try to get from Redis cache
   // if (!redisClient.isOpen) {
@@ -111,82 +142,29 @@ const getServiceByCategory = asyncHandler(async (req, res) => {
   //       new ApiResponse(
   //         200,
   //         services,
-  //         "Services retrieved successfully (cache)"
+  //         "Featured services retrieved successfully (cache)"
   //       )
   //     );
   // }
 
   // If not cached, fetch from DB
-  const services = await Service.find({ category: categoryId }).populate(
-    "category"
-  );
+  const services = await Service.find({ isFeatured: true });
 
   if (!services || services.length === 0) {
     return res
       .status(404)
-      .json(new ApiResponse(404, null, "No services found"));
+      .json(new ApiResponse(404, null, "No featured services found"));
   }
 
   // Cache the result
   // await redisClient.set(cacheKey, JSON.stringify(services), { EX: 3600 }); // cache for 1 hour
 
+  console.log("res", res);
   return res
     .status(200)
-    .json(new ApiResponse(200, services, "Services retrieved successfully"));
-});
-
-const getFeaturedServices = asyncHandler(async (req, res) => {
-  console.log("Fetching featured services...");
-  try {
-    // const cacheKey = "services:featured";
-
-    // // Try to get from Redis cache
-    // if (!redisClient.isOpen) {
-    //   await redisClient.connect();
-    // }
-    // const cached = await redisClient.get(cacheKey);
-    // if (cached) {
-    //   const services = JSON.parse(cached);
-    //   return res
-    //     .status(200)
-    //     .json(
-    //       new ApiResponse(
-    //         200,
-    //         services,
-    //         "Featured services retrieved successfully (cache)"
-    //       )
-    //     );
-    // }
-
-    // If not cached, fetch from DB
-    const services = await Service.find({ isFeatured: true });
-
-    if (!services || services.length === 0) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, null, "No featured services found"));
-    }
-
-    // // Cache the result
-    // await redisClient.set(cacheKey, JSON.stringify(services), { EX: 3600 }); // cache for 1 hour
-
-    // console.log("res", res);
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          services,
-          "Featured services retrieved successfully"
-        )
-      );
-  } catch (error) {
-    console.log(error);
-    throw new ApiError(
-      error.statusCode || 500,
-      error.message || "Failed to retrieve featured services"
+    .json(
+      new ApiResponse(200, services, "Featured services retrieved successfully")
     );
-  }
 });
 
-export { createService, getServiceByCategory, getFeaturedServices };
+export { createService, getServices, getFeaturedServices };

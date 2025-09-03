@@ -7,7 +7,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
-    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+    "swagger-bundler": "swagger-cli bundle docs/swagger.yaml --outfile docs/swagger-bundled.yaml --type yaml",
+    "dev": "nodemon"
   },
   "keywords": [
     "node"
@@ -35,7 +36,9 @@
     "nodemailer": "^7.0.5",
     "prettier": "^3.5.3",
     "redis": "^5.7.0",
+    "swagger-cli": "^4.0.4",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
   }
 }

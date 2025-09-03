@@ -61,6 +61,7 @@ if (!isLocal && cluster.isPrimary) {
         console.log(
           `Worker ${process.pid} running server at port : ${process.env.PORT}`
         );
+        console.log(`Swagger UI available at http://localhost:${process.env.PORT}/api-docs`);
       });
     })
     .catch((err) => {
