@@ -176,8 +176,11 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!email) {
     throw new ApiError(400, "email is required");
   }
+  if (typeof email !== "string") {
+    throw new ApiError(400, "Invalid email format");
+  }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: { $eq: email } });
   if (!user) {
     console.warn(`[LOGIN] User not found: ${email}`);
     throw new ApiError(404, "User does not exist");
