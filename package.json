@@ -8,7 +8,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
     "swagger-bundler": "swagger-cli bundle docs/swagger.yaml --outfile docs/swagger-bundled.yaml --type yaml",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix ."
   },
   "keywords": [
     "node"
@@ -16,6 +18,10 @@
   "author": "Tejas Sonawane",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^9.34.0",
+    "eslint": "^9.34.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "nodemon": "^3.1.10"
   },
   "dependencies": {
@@ -34,11 +40,13 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
-    "prettier": "^3.5.3",
+    "prettier": "^3.6.2",
+    "razorpay": "^2.9.6",
     "redis": "^5.7.0",
     "swagger-cli": "^4.0.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "winston": "^3.17.0",
     "yamljs": "^0.3.0",
     "lusca": "^1.7.0"
   }

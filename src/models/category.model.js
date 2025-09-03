@@ -1,32 +1,4 @@
-import mongoose, { Schema } from "mongoose";
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     Category:
- *       type: object
- *       required:
- *         - name
- *         - description
- *         - icon
- *       properties:
- *         _id:
- *           type: string
- *           description: Category ID
- *         name:
- *           type: string
- *         description:
- *           type: string
- *         icon:
- *           type: string
- *         createdAt:
- *           type: string
- *           format: date-time
- *         updatedAt:
- *           type: string
- *           format: date-time
- */
+import mongoose, { Schema } from 'mongoose';
 
 const categorySchema = new Schema(
   {
@@ -53,4 +25,4 @@ const categorySchema = new Schema(
     timestamps: true,
   }
 );
-export const Category = mongoose.model("Category", categorySchema);
+export const Category = mongoose.model('Category', categorySchema);

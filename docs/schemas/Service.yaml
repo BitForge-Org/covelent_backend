@@ -16,6 +16,9 @@ Service:
     duration:
       type: number
       minimum: 0
+    image:
+      type: string
+      maxItems: 1
     media:
       type: array
       maxItems: 5

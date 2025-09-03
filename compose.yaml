@@ -1,0 +1,28 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: covelent-server
+    environment:
+      - NODE_ENV=development
+      - MONGO_URI=${MONGODB_URI}
+    depends_on:
+      - redis
+
+    ports:
+      - "8000:8000"
+    volumes:
+    - .:/usr/src/app
+    - node_modules:/usr/src/app/node_modules
+
+  redis:
+    image: "redis:alpine"
+    container_name: covelent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+volumes:
+  node_modules:
+  redis-data:

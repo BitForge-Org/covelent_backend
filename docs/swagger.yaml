@@ -15,12 +15,19 @@ tags:
     description: Category management
   - name: Service
     description: Service management and retrieval
+  - name: User
+    description: User management and retrieval
+  - name: ProviderApplication
+    description: Provider application management
 
 paths:
   /services:
     $ref: './paths/services.yaml#/~1services'
   /services/featured-services:
     $ref: './paths/featured-services.yaml'
+  /services/{serviceId}/image:
+    $ref: './paths/service-image-diff.yaml#'
+
   /categories:
     $ref: './paths/categories.yaml#/~1categories'
   /users/current-user:
@@ -29,10 +36,43 @@ paths:
     $ref: './paths/users/update-account.yaml#/~1update-account'
   /users/avatar:
     $ref: './paths/users/avatar.yaml#/~1avatar'
+  /provider-applications:
+    $ref: './paths/provider-application.yaml#/~1provider-applications'
+
+  /provider-applications/{id}:
+    $ref: './paths/provider-application.yaml#/~1provider-applications~1{id}'
+
+  /provider-applications/{id}/status:
+    $ref: './paths/provider-application.yaml#/~1provider-applications~1{id}~1status'
+
+  /bookings:
+    $ref: './paths/booking.yaml#/~1bookings'
+  /bookings/available:
+    $ref: './paths/booking.yaml#/~1bookings~1available'
+  /bookings/history:
+    $ref: './paths/booking.yaml#/~1booking~1history'
+
+  # Auth endpoints - Fixed references
+  /auth/register:
+    $ref: './paths/auth.yaml#/~1auth~1register'
+  /auth/login:
+    $ref: './paths/auth.yaml#/~1auth~1login'
+  /auth/logout:
+    $ref: './paths/auth.yaml#/~1auth~1logout'
+  /auth/refresh-token:
+    $ref: './paths/auth.yaml#/~1auth~1refresh-token'
+  /auth/change-password:
+    $ref: './paths/auth.yaml#/~1auth~1change-password'
+  /auth/forgot-password:
+    $ref: './paths/auth.yaml#/~1auth~1forgot-password'
+  /auth/reset-password:
+    $ref: './paths/auth.yaml#/~1auth~1reset-password'
+  /auth/verify-otp:
+    $ref: './paths/auth.yaml#/~1auth~1verify-otp'
 
 components:
   securitySchemes:
-    BearerAuth:            
+    BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
@@ -40,6 +80,8 @@ components:
     User:
       $ref: './schemas/User.yaml#/User'
     Service:
-     $ref: './schemas/Service.yaml#/Service'
-
-
+      $ref: './schemas/Service.yaml#/Service'
+    providerApplication:
+      $ref: './schemas/providerApplication.yaml#/ProviderApplication'
+    Booking:
+      $ref: './schemas/booking.yaml#/Booking'

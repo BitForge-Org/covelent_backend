@@ -13,6 +13,10 @@ tags:
     description: Category management
   - name: Service
     description: Service management and retrieval
+  - name: User
+    description: User management and retrieval
+  - name: ProviderApplication
+    description: Provider application management
 paths:
   /services:
     post:
@@ -52,10 +56,10 @@ paths:
                   type: number
                   description: Duration in minutes
                   example: 60
-                icon:
+                image:
                   type: string
                   format: binary
-                  description: Icon image file (optional)
+                  description: 'Service image file (required, max 1)'
                 media:
                   type: array
                   items:
@@ -66,13 +70,6 @@ paths:
                   type: string
                   description: |
                     JSON stringified array of locations, e.g. '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
-      responses:
-        '201':
-          description: Service created successfully
-        '400':
-          description: Invalid input
-        '500':
-          description: Server error
     get:
       summary: Get all services with optional filters
       tags:
@@ -155,6 +152,9 @@ paths:
                           duration:
                             type: number
                             minimum: 0
+                          image:
+                            type: string
+                            maxItems: 1
                           media:
                             type: array
                             maxItems: 5
@@ -225,6 +225,38 @@ paths:
                   message:
                     type: string
                     example: Featured services retrieved successfully
+        '500':
+          description: Server error
+  '/services/{serviceId}/image':
+    patch:
+      summary: Update service image
+      tags:
+        - Service
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+          description: The ID of the service to update
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: 'Service image file (required, max 1)'
+      responses:
+        '200':
+          description: Service image updated successfully
+        '400':
+          description: Invalid input
+        '404':
+          description: Service not found
         '500':
           description: Server error
   /categories:
@@ -382,6 +414,547 @@ paths:
                     $ref: '#/components/schemas/User'
         '400':
           description: Avatar file is missing
+  /provider-applications:
+    post:
+      summary: Create a new provider application
+      tags:
+        - ProviderApplication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - provider
+                - service
+              properties:
+                provider:
+                  type: string
+                  description: Provider User ObjectId
+                  example: 60f7c0b8e1b1c8a1b8e1b1c8
+                service:
+                  type: string
+                  description: Service ObjectId
+                  example: 60f7c0b8e1b1c8a1b8e1b1c9
+      responses:
+        '201':
+          description: Provider application created successfully
+        '400':
+          description: Invalid input
+        '500':
+          description: Server error
+    get:
+      summary: Get all provider applications (admin only)
+      tags:
+        - ProviderApplication
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - rejected
+              - suspended
+          description: Filter by application status
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Results per page
+      responses:
+        '200':
+          description: Applications fetched successfully
+        '400':
+          description: Invalid filter
+        '500':
+          description: Server error
+  '/provider-applications/{id}':
+    get:
+      summary: Get a single provider application by ID
+      tags:
+        - ProviderApplication
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Provider application ObjectId
+      responses:
+        '200':
+          description: Application fetched successfully
+        '400':
+          description: Invalid ID
+        '404':
+          description: Provider application not found
+        '500':
+          description: Server error
+  '/provider-applications/{id}/status':
+    patch:
+      summary: Update application status (admin only)
+      tags:
+        - ProviderApplication
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Provider application ObjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - applicationStatus
+              properties:
+                applicationStatus:
+                  type: string
+                  enum:
+                    - pending
+                    - approved
+                    - rejected
+                    - suspended
+                  description: New status
+                  example: approved
+                adminNotes:
+                  type: string
+                  description: Optional admin notes
+      responses:
+        '200':
+          description: Application status updated successfully
+        '400':
+          description: Invalid status or ID
+        '404':
+          description: Provider application not found
+        '500':
+          description: Server error
+  /bookings:
+    post:
+      summary: Create a new booking
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serviceId:
+                  type: string
+                scheduledDate:
+                  type: string
+                  format: date
+                scheduledTime:
+                  type: string
+                  format: time
+                specialInstructions:
+                  type: string
+                location:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                    city:
+                      type: string
+                    state:
+                      type: string
+                    pincode:
+                      type: string
+                    coordinates:
+                      type: array
+                      items:
+                        type: number
+                paymentMethod:
+                  type: string
+                  enum:
+                    - cash
+                    - online
+      responses:
+        '201':
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      booking:
+                        $ref: '#/components/schemas/Booking'
+                      order:
+                        type: object
+                        nullable: true
+                  message:
+                    type: string
+  /bookings/available:
+    get:
+      summary: Get available bookings for provider (approved applications)
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of available bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+  /bookings/history:
+    get:
+      summary: Get booking history for logged-in user
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+          description: Filter bookings by status
+      responses:
+        '200':
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                role:
+                  type: string
+                  enum:
+                    - user
+                    - provider
+                    - admin
+                dateOfBirth:
+                  type: string
+                  format: date
+                phoneNumber:
+                  type: string
+                avatar:
+                  type: string
+                  format: binary
+                aadharImage:
+                  type: string
+                  format: binary
+                panImage:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
+                      role:
+                        type: string
+                      dateOfBirth:
+                        type: string
+                      isVerified:
+                        type: boolean
+                      isActive:
+                        type: boolean
+                      phoneNumber:
+                        type: string
+                  message:
+                    type: string
+  /auth/login:
+    post:
+      summary: Login user
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
+                  message:
+                    type: string
+  /auth/logout:
+    post:
+      summary: Logout user
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                  message:
+                    type: string
+  /auth/refresh-token:
+    post:
+      summary: Refresh access token
+      tags:
+        - Auth
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Access token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
+                  message:
+                    type: string
+  /auth/change-password:
+    post:
+      summary: Change current password
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                  message:
+                    type: string
+  /auth/forgot-password:
+    post:
+      summary: Request password reset OTP
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset OTP sent to email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                  message:
+                    type: string
+  /auth/reset-password:
+    post:
+      summary: Reset password using OTP
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                  message:
+                    type: string
+  /auth/verify-otp:
+    post:
+      summary: Verify OTP for password reset
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                otp:
+                  type: string
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                  message:
+                    type: string
 components:
   securitySchemes:
     BearerAuth:
@@ -438,3 +1011,72 @@ components:
           type: string
     Service:
       $ref: '#/paths/~1services/get/responses/200/content/application~1json/schema/properties/data/items/Service'
+    providerApplication:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectId
+          description: Unique identifier for the provider application.
+        provider:
+          type: string
+          format: objectId
+          description: Reference to the User who is the provider.
+        service:
+          type: string
+          format: objectId
+          description: Reference to the Service being applied for.
+        applicationStatus:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+            - suspended
+          default: pending
+          description: Status of the application.
+        adminNotes:
+          type: string
+          description: Notes from the admin regarding the application.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the application was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the application was last updated.
+      required:
+        - provider
+        - service
+        - applicationStatus
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        service_id:
+          type: string
+        provider_id:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - cancelled
+      required:
+        - id
+        - user_id
+        - listing_id
+        - start_date
+        - end_date
+        - status

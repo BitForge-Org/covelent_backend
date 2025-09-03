@@ -1,7 +1,13 @@
 {
-  "watch": ["src", "docs/**/*.yaml", ".env"],
-    "ignore": ["docs/swagger-bundled.yaml"],
-
+  "watch": [
+    "src",
+    "docs/**/*.yaml",
+    ".env"
+  ],
+  "ignore": [
+    "docs/swagger-bundled.yaml"
+  ],
   "ext": "js,json,yaml",
-  "exec": "npm run swagger-bundler && node --experimental-json-modules -r dotenv/config src/index.js"
+  "exec": "yarn swagger-bundler && yarn lint:fix && node --experimental-json-modules -r dotenv/config src/index.js",
+  "legacyWatch": true
 }

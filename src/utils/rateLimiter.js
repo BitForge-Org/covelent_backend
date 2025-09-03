@@ -12,10 +12,11 @@
  * @type {import("express-rate-limit").RateLimitRequestHandler}
  */
 // utils/rateLimiter.js
-import rateLimit from "express-rate-limit";
+import rateLimit from 'express-rate-limit';
+import logger from './logger.js';
 
 // Check if rate limiter should be disabled via .env
-const rateLimiterOff = process.env.RATE_LIMITER_OFF === "true";
+const rateLimiterOff = process.env.RATE_LIMITER_OFF === 'true';
 
 // No-op middleware
 const noop = (req, res, next) => next();
@@ -26,11 +27,11 @@ export const generalLimiter = rateLimiterOff
   : rateLimit({
       windowMs: 15 * 60 * 1000,
       max: 20,
-      message: "Too many requests, please try again later.",
+      message: 'Too many requests, please try again later.',
       standardHeaders: true,
       legacyHeaders: false,
       handler: (req, res, next, options) => {
-        console.warn(
+        logger.warn(
           `[RateLimiter] General limiter triggered for IP: ${req.ip} at ${new Date().toISOString()}`
         );
         res.status(options.statusCode).json({ message: options.message });
@@ -43,9 +44,9 @@ export const authLimiter = rateLimiterOff
   : rateLimit({
       windowMs: 10 * 60 * 1000,
       max: 20,
-      message: "Too many login attempts. Try again in 10 minutes.",
+      message: 'Too many login attempts. Try again in 10 minutes.',
       handler: (req, res, next, options) => {
-        console.warn(
+        logger.warn(
           `[RateLimiter] Auth limiter triggered for IP: ${req.ip} at ${new Date().toISOString()}`
         );
         res.status(options.statusCode).json({ message: options.message });

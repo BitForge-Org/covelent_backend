@@ -1,6 +1,9 @@
-import { v2 as cloudinary } from "cloudinary";
-import fs from "fs";
+import { v2 as cloudinary } from 'cloudinary';
+import fs from 'fs';
+import logger from './logger.js';
+
 import path from "path";
+
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -21,13 +24,13 @@ const UPLOADS_ROOT = path.resolve("uploads/tmp");   // Use your actual uploads t
 const uploadOnCloudinary = async (localFilePath, folder) => {
   try {
     if (!localFilePath) return null;
-    const targetFolder = folder || "public";
+    const targetFolder = folder || 'public';
     //upload the file on cloudinary
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "auto",
+      resource_type: 'auto',
       folder: targetFolder,
     });
-    // file has been uploaded successfully
+
     //console.log("file is uploaded on cloudinary ", response.url);
     const absoluteFilePath = path.resolve(localFilePath);
     if (absoluteFilePath.startsWith(UPLOADS_ROOT)) {
@@ -37,17 +40,18 @@ const uploadOnCloudinary = async (localFilePath, folder) => {
     }
     return response;
   } catch (error) {
+
     const absoluteFilePath = path.resolve(localFilePath);
     if (absoluteFilePath.startsWith(UPLOADS_ROOT)) {
       try {
         fs.unlinkSync(absoluteFilePath); // remove locally saved temp file as upload failed
       } catch (e) {
-        console.warn("Failed to delete unsafe or missing file:", absoluteFilePath, e);
+        logger.warn("Failed to delete unsafe or missing file:", absoluteFilePath, e);
       }
     } else {
-      console.warn(`Unsafe file path detected for deletion (error branch): ${absoluteFilePath}`);
+      logger.warn(`Unsafe file path detected for deletion (error branch): ${absoluteFilePath}`);
     }
-    console.error(error);
+    logger.error(error);
     return error;
   }
 };

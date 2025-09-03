@@ -1,0 +1,39 @@
+ProviderApplication:
+  type: object
+  properties:
+    _id:
+      type: string
+      format: objectId
+      description: Unique identifier for the provider application.
+    provider:
+      type: string
+      format: objectId
+      description: Reference to the User who is the provider.
+    service:
+      type: string
+      format: objectId
+      description: Reference to the Service being applied for.
+    applicationStatus:
+      type: string
+      enum:
+        - pending
+        - approved
+        - rejected
+        - suspended
+      default: pending
+      description: Status of the application.
+    adminNotes:
+      type: string
+      description: Notes from the admin regarding the application.
+    createdAt:
+      type: string
+      format: date-time
+      description: Timestamp when the application was created.
+    updatedAt:
+      type: string
+      format: date-time
+      description: Timestamp when the application was last updated.
+  required:
+    - provider
+    - service
+    - applicationStatus

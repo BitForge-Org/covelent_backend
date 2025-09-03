@@ -1,76 +1,53 @@
-/**
- * Entry point for the backend server application.
- *
- * - Loads environment variables from a `.env` file using dotenv.
- * - Uses Node.js cluster module to utilize all CPU cores for better performance.
- * - On the primary process, forks worker processes equal to the number of CPU cores.
- * - Automatically respawns worker processes if they exit unexpectedly.
- * - Each worker connects to the database and starts the Express server.
- *
- * @module index
- * @requires dotenv
- * @requires ./db/index.js
- * @requires ./app.js
- * @requires cluster
- * @requires os
- *
- * @function
- * @name main
- * @description Initializes environment, sets up clustering, connects to the database, and starts the server.
- *
- * @example
- * // To start the server, run:
- * // node src/index.js
- */
-// require('dotenv').config({path: './env'})
-import dotenv from "dotenv";
-dotenv.config({
-  path: "./.env",
-});
+import dotenv from 'dotenv';
+import cluster from 'cluster';
+import os from 'os';
 
-import connectDB from "./db/index.js";
-import { app } from "./app.js";
-import cluster from "cluster";
-import os from "os";
-import { logHealthStats } from "./controllers/healthcheck.controller.js";
+import connectDB from './db/index.js';
+import { app } from './app.js';
+
+import logger from './utils/logger.js';
+dotenv.config({
+  path: './.env',
+});
 
 // Disable cluster if running locally
 const isLocal =
-  process.env.NODE_ENV === "development" || process.env.CLUSTER_MODE === "off";
+  process.env.NODE_ENV === 'development' || process.env.CLUSTER_MODE === 'off';
 
 if (!isLocal && cluster.isPrimary) {
   const numCPUs = os.cpus().length;
-  console.log(`Primary process ${process.pid} is running`);
+  logger.warn(`Primary process ${process.pid} is running`);
   // Fork workers.
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
   // Listen for worker exit events and restart workers automatically
-  cluster.on("exit", (worker, code, signal) => {
-    console.warn(`Worker ${worker.process.pid} died. Restarting...`);
+  cluster.on('exit', (worker) => {
+    logger.warn(`Worker ${worker.process.pid} died. Restarting...`);
     cluster.fork();
   });
   // NOTE: If using sessions or WebSockets, implement sticky sessions or shared storage (e.g., Redis)
 } else {
   connectDB()
     .then(() => {
-      console.log(
-        `MongoDB connected (Worker ${process.pid}) !! DB HOST: ${process.env.MONGODB_URI || "localhost"}`
+      logger.info(
+        `MongoDB connected (Worker ${process.pid}) !! DB HOST: ${process.env.MONGODB_URI || 'localhost'}`
       );
       app.listen(process.env.PORT || 8000, () => {
-        console.log(
+        logger.info(
           `Worker ${process.pid} running server at port : ${process.env.PORT}`
         );
-        console.log(`Swagger UI available at http://localhost:${process.env.PORT}/api-docs`);
+        logger.info(
+          `Swagger UI available at http://localhost:${process.env.PORT}/api-docs`
+        );
       });
     })
     .catch((err) => {
-      console.log("MONGO db connection failed !!! ", err);
+      logger.error('MONGO db connection failed !!! ', err);
     });
 }
 
 // Run health logging every 1 minute
-typeof setInterval !== "undefined" && setInterval(logHealthStats, 60 * 1000);
 
 /*
 import express from "express"
