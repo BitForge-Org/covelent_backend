@@ -296,8 +296,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   if (!email) throw new ApiError(400, "Email is required");
+  if (typeof email !== "string") throw new ApiError(400, "Invalid email format");
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: { $eq: email } });
   if (!user) throw new ApiError(404, "User with this email does not exist");
   if (!user.isActive || !user.isVerified)
     throw new ApiError(401, "User account is not active or not verified");
