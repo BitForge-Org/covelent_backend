@@ -1,9 +1,10 @@
+import session from 'express-session';
 import path from 'path';
-import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import morgan from "morgan";
-import { csrf } from "lusca";
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import lusca from 'lusca';
+const { csrf } = lusca;
 
 import { generalLimiter, authLimiter } from './utils/rateLimiter.js';
 import { setupSwagger } from './swagger.js';
@@ -29,8 +30,23 @@ app.use(
 );
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
+
 app.use(cookieParser());
-app.use(csrf());
+
+// Session middleware (required for lusca)
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false }, // Set to true if using HTTPS
+  })
+);
+// CSRF token endpoint for frontend
+app.get('/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+// app.use(csrf());
 
 import userRouter from './routes/user.routes.js';
 import healthcheckRouter from './routes/healthcheck.routes.js';

@@ -1,22 +1,19 @@
-
 import logger from '../utils/logger.js';
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
-import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import jwt from "jsonwebtoken";
-import fs from "fs";
-import path from "path";
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { ApiError } from '../utils/ApiError.js';
+import { User } from '../models/user.model.js';
+import { uploadOnCloudinary } from '../utils/cloudinary.js';
+import { ApiResponse } from '../utils/ApiResponse.js';
+import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
 
 // Define the root upload directories, adjust as needed per your configuration.
-const UPLOAD_ROOT = path.resolve("uploads"); // Assuming all uploads go under ./uploads/
-import { sendMail } from "../utils/EmailService.js";
-import crypto from "crypto";
-import { APP_URL } from "../constants.js";
+import { sendMail } from '../utils/EmailService.js';
+import crypto from 'crypto';
 
 // Directory where local uploaded files are temporarily stored
-const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 
 /**
  * Verifies that a given file path (possibly provided by the user) is safely inside UPLOAD_DIR.
@@ -39,19 +36,25 @@ function getSafeUploadPath(inputPath) {
  * @param {string[]} filePaths - Array of file paths to remove
  */
 function cleanupUploadedFiles(filePaths) {
-  filePaths.forEach(filePath => {
+  filePaths.forEach((filePath) => {
     if (!filePath) return;
-    
+
     const safeFilePath = getSafeUploadPath(filePath);
     if (safeFilePath && fs.existsSync(safeFilePath)) {
       try {
         fs.unlinkSync(safeFilePath);
-        console.log(`[CLEANUP] Removed file: ${safeFilePath}`);
+        logger.log(`[CLEANUP] Removed file: ${safeFilePath}`);
       } catch (error) {
-        console.error("[CLEANUP] Failed to remove file: %s", safeFilePath, error);
+        logger.error(
+          '[CLEANUP] Failed to remove file: %s',
+          safeFilePath,
+          error
+        );
       }
     } else if (filePath) {
-      console.warn(`[SECURITY] Refused to unlink file outside upload dir: ${filePath}`);
+      logger.warn(
+        `[SECURITY] Refused to unlink file outside upload dir: ${filePath}`
+      );
     }
   });
 }
@@ -84,23 +87,27 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // Validate required fields including role and dateOfBirth
-  if ([fullName, email, password, role].some((field) => field?.trim() === "")) {
-    cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath, panImageLocalPath]);
-    throw new ApiError(400, "All required fields must be provided");
+  if ([fullName, email, password, role].some((field) => field?.trim() === '')) {
+    cleanupUploadedFiles([
+      avatarLocalPath,
+      aadharImageLocalPath,
+      panImageLocalPath,
+    ]);
+    throw new ApiError(400, 'All required fields must be provided');
   }
 
-  if (role === "provider") {
+  if (role === 'provider') {
     // If role is 'provider', aadhar and pan files are required
     const safeAadharImagePath = getSafeUploadPath(aadharImageLocalPath);
     if (!safeAadharImagePath || !fs.existsSync(safeAadharImagePath)) {
       cleanupUploadedFiles([avatarLocalPath, panImageLocalPath]);
-      throw new ApiError(400, "Aadhar file is required for provider role");
+      throw new ApiError(400, 'Aadhar file is required for provider role');
     }
-    
+
     const safePanImagePath = getSafeUploadPath(panImageLocalPath);
     if (!safePanImagePath || !fs.existsSync(safePanImagePath)) {
       cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath]);
-      throw new ApiError(400, "PAN file is required for provider role");
+      throw new ApiError(400, 'PAN file is required for provider role');
     }
   }
 
@@ -114,8 +121,12 @@ const registerUser = asyncHandler(async (req, res) => {
     logger.warn(`[REGISTER] Duplicate email: ${email}`);
     // Clean up uploaded files if user exists
 
-    cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath, panImageLocalPath]);
-    throw new ApiError(409, "User with email or username already exists");
+    cleanupUploadedFiles([
+      avatarLocalPath,
+      aadharImageLocalPath,
+      panImageLocalPath,
+    ]);
+    throw new ApiError(409, 'User with email or username already exists');
   }
 
   const avatar = avatarLocalPath
@@ -227,8 +238,8 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!email) {
     throw new ApiError(400, 'email is required');
   }
-  if (typeof email !== "string") {
-    throw new ApiError(400, "Invalid email format");
+  if (typeof email !== 'string') {
+    throw new ApiError(400, 'Invalid email format');
   }
 
   const user = await User.findOne({ email: { $eq: email } });
@@ -351,11 +362,12 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   logger.info('forgot password request for:', email);
 
-  if (!email) throw new ApiError(400, "Email is required");
-  if (typeof email !== "string") throw new ApiError(400, "Invalid email format");
+  if (!email) throw new ApiError(400, 'Email is required');
+  if (typeof email !== 'string')
+    throw new ApiError(400, 'Invalid email format');
 
   const user = await User.findOne({ email: { $eq: email } });
-  if (!user) throw new ApiError(404, "User with this email does not exist");
+  if (!user) throw new ApiError(404, 'User with this email does not exist');
   if (!user.isActive || !user.isVerified)
     throw new ApiError(401, 'User account is not active or not verified');
 
@@ -419,11 +431,11 @@ const verifyOtp = asyncHandler(async (req, res) => {
   if (!email) {
     throw new ApiError(400, 'Email is required');
   }
-  if (typeof otp !== "string") {
-    throw new ApiError(400, "Invalid OTP type");
+  if (typeof otp !== 'string') {
+    throw new ApiError(400, 'Invalid OTP type');
   }
 
-  const user = await User.findOne({ email : {$eq : email} });
+  const user = await User.findOne({ email: { $eq: email } });
 
   if (!user) {
     throw new ApiError(404, 'User not found');
