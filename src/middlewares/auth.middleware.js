@@ -28,7 +28,7 @@ export const verifyJWT = asyncHandler(async (req, _, next) => {
     req.userRole = user.role;
     next();
   } catch (error) {
-    throw new ApiError(401, error?.message || 'Invalid access token');
+    next(error);
   }
 });
 

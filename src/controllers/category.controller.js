@@ -25,10 +25,10 @@ const createCategory = asyncHandler(async (req, res) => {
   const category = await Category.create({
     name,
     description,
-    icon: icon ? icon.secure_url : null, // Use secure_url if icon is uploaded
+    icon: icon ? icon.secure_url : null, // Use secure_url if the icon is uploaded
   });
 
-  // Invalidate categories cache after creating a new category
+  // Invalidate category cache after creating a new category
   await redisClient.del('categories:all');
 
   return res

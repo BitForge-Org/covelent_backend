@@ -37,6 +37,7 @@ import authRouter from './routes/auth.routes.js';
 import apiLoggerMiddleware from './middlewares/apiLogger.middleware.js';
 import providerApplicationRouter from './routes/provider-application.routes.js';
 import BookingRouter from './routes/booking.routes.js';
+import errorHandler from './middlewares/errorHandler.middleware.js';
 
 app.use('/api/v1/users', authLimiter, userRouter); // 👈 apply authLimiter to user routes
 app.use('/api/v1/auth', authLimiter, authRouter); // 👈 apply authLimiter to auth routes
@@ -54,15 +55,7 @@ setupSwagger(app);
 // });
 
 // Global error handler
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    errors: err.errors || [],
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
-  });
-});
+app.use(errorHandler);
 
 // Example route usage (add your routes here)
 // app.use("/api/health", healthcheckRouter);
