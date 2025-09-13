@@ -555,9 +555,18 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - serviceId
+                - selectedPricingOption
+                - scheduledDate
+                - scheduledTime
+                - paymentMethod
               properties:
                 serviceId:
                   type: string
+                selectedPricingOption:
+                  type: string
+                  description: The ObjectId of the chosen pricing option
                 scheduledDate:
                   type: string
                   format: date
@@ -569,18 +578,15 @@ paths:
                 location:
                   type: object
                   properties:
-                    address:
-                      type: string
-                    city:
-                      type: string
-                    state:
-                      type: string
-                    pincode:
-                      type: string
-                    coordinates:
-                      type: array
-                      items:
-                        type: number
+                    latitude:
+                      type: number
+                      format: double
+                    longitude:
+                      type: number
+                      format: double
+                  required:
+                    - latitude
+                    - longitude
                 paymentMethod:
                   type: string
                   enum:

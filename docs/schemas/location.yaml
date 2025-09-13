@@ -1,0 +1,12 @@
+Location:
+  type: object
+  properties:
+    latitude:
+      type: number
+      format: double
+    longitude:
+      type: number
+      format: double
+  required:
+    - latitude
+    - longitude
