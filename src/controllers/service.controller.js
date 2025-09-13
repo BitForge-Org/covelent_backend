@@ -8,21 +8,30 @@ import logger from '../utils/logger.js';
 
 const createService = asyncHandler(async (req, res) => {
   try {
-    const { title, description, category, price, duration, locationAvailable } =
+    const { title, description, category, pricingOptions, locationAvailable } =
       req.body;
 
     // Validate required fields
-    if (
-      !title ||
-      !description ||
-      !category ||
-      price === undefined ||
-      duration === undefined
-    ) {
+    if (!title || !description || !category) {
       throw new ApiError(
         400,
         'Title, description, category, price, and duration are required'
       );
+    }
+    let parsedPricingOptions = [];
+    if (pricingOptions) {
+      try {
+        parsedPricingOptions =
+          typeof pricingOptions === 'string'
+            ? JSON.parse(pricingOptions)
+            : pricingOptions;
+      } catch (err) {
+        throw new ApiError(400, 'Invalid pricingOptions format');
+      }
+    }
+
+    if (!parsedPricingOptions.length) {
+      throw new ApiError(400, 'At least one pricing option is required');
     }
 
     const isServiceExists = await Service.findOne({ $or: [{ title }] });
@@ -80,8 +89,7 @@ const createService = asyncHandler(async (req, res) => {
       title,
       description,
       category,
-      price,
-      duration,
+      pricingOptions: parsedPricingOptions,
       image,
       media,
       locationAvailable: parsedLocationAvailable,
@@ -162,9 +170,15 @@ const getServices = asyncHandler(async (req, res) => {
   }
 
   if (minPrice || maxPrice) {
-    filter.price = {};
-    if (minPrice) filter.price.$gte = Number(minPrice);
-    if (maxPrice) filter.price.$lte = Number(maxPrice);
+    filter.pricingOptions = { $elemMatch: {} };
+    if (minPrice)
+      filter.pricingOptions.$elemMatch.price = { $gte: Number(minPrice) };
+    if (maxPrice) {
+      filter.pricingOptions.$elemMatch.price = {
+        ...(filter.pricingOptions.$elemMatch.price || {}),
+        $lte: Number(maxPrice),
+      };
+    }
   }
 
   if (avgRating) {

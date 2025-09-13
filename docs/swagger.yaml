@@ -52,6 +52,11 @@ paths:
   /bookings/history:
     $ref: './paths/booking.yaml#/~1booking~1history'
 
+  /addresses:
+    $ref: './paths/address.yaml#/~1addresses'
+  /addresses/{id}:
+    $ref: './paths/address.yaml#/~1addresses~1{id}'
+
   # Auth endpoints - Fixed references
   /auth/register:
     $ref: './paths/auth.yaml#/~1auth~1register'
@@ -59,6 +64,8 @@ paths:
     $ref: './paths/auth.yaml#/~1auth~1login'
   /auth/logout:
     $ref: './paths/auth.yaml#/~1auth~1logout'
+  /auth/login/provider:
+    $ref: './paths/auth.yaml#/~1auth~1login~1provider'
   /auth/refresh-token:
     $ref: './paths/auth.yaml#/~1auth~1refresh-token'
   /auth/change-password:
@@ -85,3 +92,5 @@ components:
       $ref: './schemas/providerApplication.yaml#/ProviderApplication'
     Booking:
       $ref: './schemas/booking.yaml#/Booking'
+    Address:
+      $ref: './schemas/address.yaml#/Address'

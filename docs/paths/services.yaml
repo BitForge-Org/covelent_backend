@@ -13,8 +13,7 @@
               - title
               - description
               - category
-              - price
-              - duration
+              - pricingOptions
             properties:
               title:
                 type: string
@@ -28,14 +27,12 @@
                 type: string
                 description: Category ObjectId
                 example: 60f7c0b8e1b1c8a1b8e1b1c8
-              price:
-                type: number
-                description: Service price
-                example: 1000
-              duration:
-                type: number
-                description: Duration in minutes
-                example: 60
+              pricingOptions:
+                type: string
+                description: >
+                  JSON stringified array of pricing options.  
+                  Example:  
+                  '[{"label":"1 BHK","price":1000,"duration":60},{"label":"2 BHK","price":1500,"duration":90}]'
               image:
                 type: string
                 format: binary
@@ -49,7 +46,7 @@
               locationAvailable:
                 type: string
                 description: >
-                  JSON stringified array of locations, e.g.
+                  JSON stringified array of locations, e.g.  
                   '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
   get:
     summary: Get all services with optional filters

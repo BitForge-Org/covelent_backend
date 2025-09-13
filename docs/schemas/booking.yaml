@@ -1,21 +1,112 @@
 Booking:
   type: object
   properties:
-    id:
+    _id:
       type: string
-    user_id:
+    user:
       type: string
-    service_id:
+    provider:
       type: string
-    provider_id:
+    service:
       type: string
-    start_date:
+    selectedPricingOption:
+      type: string
+      description: ID of the chosen pricing option
+    bookingStatus:
+      type: string
+      enum: [pending, confirmed, in-progress, completed, cancelled, rejected]
+    scheduledDate:
       type: string
       format: date
-    end_date:
+    scheduledTime:
       type: string
-      format: date
-    status:
+      example: '14:30'
+    location:
+      type: object
+      properties:
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        coordinates:
+          type: object
+          properties:
+            lan:
+              type: number
+            lat:
+              type: number
+    pricing:
+      type: object
+      properties:
+        basePrice:
+          type: number
+        additionalCharges:
+          type: number
+        discount:
+          type: number
+        totalAmount:
+          type: number
+    payment:
+      type: object
+      properties:
+        paymentMethod:
+          type: string
+          enum: [razorpay, cash, upi, card]
+        status:
+          type: string
+          enum: [pending, completed, failed, refunded]
+        orderId:
+          type: string
+        paymentId:
+          type: string
+        paidAmount:
+          type: number
+        paymentDate:
+          type: string
+          format: date-time
+        refundId:
+          type: string
+        refundAmount:
+          type: number
+        refundDate:
+          type: string
+          format: date-time
+    specialInstructions:
       type: string
-      enum: [pending, confirmed, cancelled]
-  required: [id, user_id, listing_id, start_date, end_date, status]
+    cancellationReason:
+      type: string
+    rejectionReason:
+      type: string
+    completedAt:
+      type: string
+      format: date-time
+    cancelledAt:
+      type: string
+      format: date-time
+    rating:
+      type: number
+      minimum: 1
+      maximum: 5
+    review:
+      type: string
+    reviewDate:
+      type: string
+      format: date-time
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - user
+    - service
+    - bookingStatus
+    - scheduledDate
+    - scheduledTime
+    - pricing
+    - payment

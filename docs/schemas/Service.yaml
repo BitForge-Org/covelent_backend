@@ -10,15 +10,23 @@ Service:
       type: string
     category:
       type: string
-    price:
-      type: number
-      minimum: 0
-    duration:
-      type: number
-      minimum: 0
+    pricingOptions:
+      type: array
+      items:
+        type: object
+        properties:
+          _id:
+            type: string
+          label:
+            type: string
+          price:
+            type: number
+            minimum: 0
+          duration:
+            type: number
+            minimum: 0
     image:
       type: string
-      maxItems: 1
     media:
       type: array
       maxItems: 5

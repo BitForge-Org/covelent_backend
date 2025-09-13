@@ -9,10 +9,9 @@ import mongoose from 'mongoose';
 import razorpay from '../utils/razorpay.js';
 
 const createBooking = asyncHandler(async (req, res) => {
-  // Prevent booking if user already has a booking for the same service with 'pending' or 'in-progress' status
-
   const {
     serviceId,
+    selectedPricingOption,
     scheduledTime,
     specialInstructions,
     scheduledDate,
@@ -20,31 +19,21 @@ const createBooking = asyncHandler(async (req, res) => {
     paymentMethod,
   } = req.body;
 
-  // const userId = req.user._id;
-  // const existingBooking = await Booking.findOne({
-  //   user: userId,
-  //   service: serviceId,
-  //   bookingStatus: { $in: ['pending', 'in-progress'] },
-  // });
-  // if (existingBooking) {
-  //   throw new ApiError(
-  //     400,
-  //     'You already have a booking for this service with pending or in-progress status.'
-  //   );
-  // }
-  // if (req.user.role !== 'user') {
-  //   throw new ApiError(403, 'Only users can create bookings');
-  // }
-
   const service = await Service.findById(serviceId);
   if (!service || !service.isActive) {
     throw new ApiError(404, 'Service not found or inactive');
+  }
+
+  const option = service.pricingOptions.id(selectedPricingOption);
+  if (!option) {
+    throw new ApiError(400, 'Invalid pricing option selected');
   }
 
   const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
   if (scheduledDateTime <= new Date()) {
     throw new ApiError(400, 'Scheduled date and time must be in the future');
   }
+
   if (
     !location ||
     !location.address ||
@@ -66,14 +55,11 @@ const createBooking = asyncHandler(async (req, res) => {
         {
           user: req.user._id,
           service: serviceId,
-          providerApplication: service.providerApplication,
           scheduledDate,
           scheduledTime,
           specialInstructions: specialInstructions || '',
-          pricing: {
-            basePrice: service.price,
-            totalAmount: service.price,
-          },
+          selectedPricingOption: option._id,
+          finalPrice: option.price,
           location,
           payment: { paymentMethod },
         },
@@ -83,7 +69,7 @@ const createBooking = asyncHandler(async (req, res) => {
 
     if (paymentMethod !== 'cash') {
       order = await razorpay.orders.create({
-        amount: service.price * 100,
+        amount: option.price * 100,
         currency: 'INR',
         receipt: `receipt_${booking[0]._id}`,
       });
@@ -91,6 +77,7 @@ const createBooking = asyncHandler(async (req, res) => {
       booking[0].payment.orderId = order.id;
       await booking[0].save({ session });
     }
+
     await session.commitTransaction();
     session.endSession();
     return res
@@ -101,7 +88,10 @@ const createBooking = asyncHandler(async (req, res) => {
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
-    throw new ApiError(500, 'Booking creation failed, please try again' + err);
+    throw new ApiError(
+      500,
+      'Booking creation failed, please try again: ' + err
+    );
   }
 });
 
@@ -111,12 +101,23 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
   if (status) {
     filter.bookingStatus = status;
   }
-  const bookings = await Booking.find(filter).populate('service');
-  if (!bookings || bookings.length === 0) {
-    return res
-      .status(200)
-      .json(new ApiResponse(200, { bookings: [] }, 'No bookings found'));
-  }
+  const bookings = await Booking.find(filter)
+    .populate({
+      path: 'service',
+      select: 'title description category image pricingOptions',
+      populate: { path: 'category', select: 'name' }, // if category is ref
+    })
+    .lean();
+
+  bookings.forEach((booking) => {
+    if (booking.service && booking.selectedPricingOption) {
+      const option = booking.service.pricingOptions.find(
+        (opt) => opt._id.toString() === booking.selectedPricingOption.toString()
+      );
+      booking.selectedOptionDetails = option || null;
+    }
+  });
+
   return res
     .status(200)
     .json(new ApiResponse(200, { bookings }, 'Bookings retrieved'));

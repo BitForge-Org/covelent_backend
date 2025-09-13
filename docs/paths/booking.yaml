@@ -11,9 +11,18 @@
         application/json:
           schema:
             type: object
+            required:
+              - serviceId
+              - selectedPricingOption
+              - scheduledDate
+              - scheduledTime
+              - paymentMethod
             properties:
               serviceId:
                 type: string
+              selectedPricingOption:
+                type: string
+                description: The ObjectId of the chosen pricing option
               scheduledDate:
                 type: string
                 format: date
@@ -23,20 +32,7 @@
               specialInstructions:
                 type: string
               location:
-                type: object
-                properties:
-                  address:
-                    type: string
-                  city:
-                    type: string
-                  state:
-                    type: string
-                  pincode:
-                    type: string
-                  coordinates:
-                    type: array
-                    items:
-                      type: number
+                $ref: './../schemas/location.yaml#/Location'
               paymentMethod:
                 type: string
                 enum: [cash, online]

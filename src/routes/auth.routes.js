@@ -8,6 +8,7 @@ import {
   forgotPassword,
   resetPassword,
   verifyOtp,
+  loginProvider,
 } from '../controllers/auth.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -32,6 +33,8 @@ router.route('/register').post(
 );
 
 router.route('/login').post(loginUser);
+
+router.route('/login/provider').post(loginProvider);
 
 //secured routes
 router.route('/logout').post(verifyJWT, logoutUser);

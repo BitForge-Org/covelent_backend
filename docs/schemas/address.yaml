@@ -1,0 +1,39 @@
+Address:
+  type: object
+  properties:
+    fullName:
+      type: string
+    phone:
+      type: string
+      format: phone
+    houseNo:
+      type: string
+    street:
+      type: string
+    city:
+      type: string
+    state:
+      type: string
+    pincode:
+      type: string
+    country:
+      type: string
+    coordinates:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+  required:
+    [
+      street,
+      city,
+      state,
+      pincode,
+      country,
+      coordinates,
+      houseNo,
+      fullName,
+      phone,
+    ]

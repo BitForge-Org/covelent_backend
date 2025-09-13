@@ -20,14 +20,14 @@ const bookingSchema = new Schema(
     bookingStatus: {
       type: String,
       enum: [
-        'pending',
-        'confirmed',
-        'in-progress',
-        'completed',
-        'cancelled',
-        'rejected',
+        'booking-requested',
+        'booking-confirmed',
+        'booking-in-progress',
+        'booking-completed',
+        'booking-cancelled',
+        'booking-rejected',
       ],
-      default: 'pending',
+      default: 'booking-requested',
     },
     scheduledDate: {
       type: Date,
@@ -37,50 +37,21 @@ const bookingSchema = new Schema(
       type: String,
       required: true,
     },
-
     location: {
-      address: {
-        type: String,
-        required: true,
-      },
-      city: {
-        type: String,
-        required: true,
-      },
-      state: {
-        type: String,
-        required: true,
-      },
-      pincode: {
-        type: String,
-        required: true,
-      },
-      coordinates: {
-        lat: { type: Number },
-        lng: { type: Number },
-      },
+      type: Schema.Types.ObjectId,
+      ref: 'Address',
+      required: true,
     },
-    pricing: {
-      basePrice: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-      additionalCharges: {
-        type: Number,
-        default: 0,
-        min: 0,
-      },
-      discount: {
-        type: Number,
-        default: 0,
-        min: 0,
-      },
-      totalAmount: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
+    selectedPricingOption: {
+      type: Schema.Types.ObjectId, // Refers to service.pricingOptions._id
+      required: true,
+    },
+
+    // Snapshot of final price (for history & invoices)
+    finalPrice: {
+      type: Number,
+      required: true,
+      min: 0,
     },
     payment: {
       paymentMethod: {

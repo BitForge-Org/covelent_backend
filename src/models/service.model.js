@@ -20,16 +20,14 @@ const serviceSchema = new Schema(
       ref: 'Category',
       required: true,
     },
-    price: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    duration: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+    pricingOptions: [
+      {
+        _id: { type: Schema.Types.ObjectId, auto: true }, // unique ID for option
+        label: { type: String, required: true, trim: true }, // e.g. "1 BHK Cleaning"
+        price: { type: Number, required: true, min: 0 },
+        duration: { type: Number, required: true, min: 0 },
+      },
+    ],
     image: {
       type: String,
       required: true,

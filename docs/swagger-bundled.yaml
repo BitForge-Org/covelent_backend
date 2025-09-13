@@ -33,8 +33,7 @@ paths:
                 - title
                 - description
                 - category
-                - price
-                - duration
+                - pricingOptions
               properties:
                 title:
                   type: string
@@ -48,14 +47,10 @@ paths:
                   type: string
                   description: Category ObjectId
                   example: 60f7c0b8e1b1c8a1b8e1b1c8
-                price:
-                  type: number
-                  description: Service price
-                  example: 1000
-                duration:
-                  type: number
-                  description: Duration in minutes
-                  example: 60
+                pricingOptions:
+                  type: string
+                  description: |
+                    JSON stringified array of pricing options.   Example:   '[{"label":"1 BHK","price":1000,"duration":60},{"label":"2 BHK","price":1500,"duration":90}]'
                 image:
                   type: string
                   format: binary
@@ -69,7 +64,7 @@ paths:
                 locationAvailable:
                   type: string
                   description: |
-                    JSON stringified array of locations, e.g. '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
+                    JSON stringified array of locations, e.g.   '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
     get:
       summary: Get all services with optional filters
       tags:
@@ -146,15 +141,23 @@ paths:
                             type: string
                           category:
                             type: string
-                          price:
-                            type: number
-                            minimum: 0
-                          duration:
-                            type: number
-                            minimum: 0
+                          pricingOptions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                _id:
+                                  type: string
+                                label:
+                                  type: string
+                                price:
+                                  type: number
+                                  minimum: 0
+                                duration:
+                                  type: number
+                                  minimum: 0
                           image:
                             type: string
-                            maxItems: 1
                           media:
                             type: array
                             maxItems: 5
@@ -662,6 +665,143 @@ paths:
                           $ref: '#/components/schemas/Booking'
                   message:
                     type: string
+  /addresses:
+    get:
+      summary: Get all addresses for the logged-in user
+      tags:
+        - Address
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of addresses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Address'
+                  message:
+                    type: string
+    post:
+      summary: Add a new address
+      tags:
+        - Address
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Address'
+      responses:
+        '201':
+          description: Address created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Address'
+                  message:
+                    type: string
+  '/addresses/{id}':
+    get:
+      summary: Get a single address by ID
+      tags:
+        - Address
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Address ID
+      responses:
+        '200':
+          description: Address details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Address'
+                  message:
+                    type: string
+    put:
+      summary: Update an address
+      tags:
+        - Address
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Address ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Address'
+      responses:
+        '200':
+          description: Address updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Address'
+                  message:
+                    type: string
+    delete:
+      summary: Delete an address
+      tags:
+        - Address
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Address ID
+      responses:
+        '200':
+          description: Address deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Address'
+                  message:
+                    type: string
   /auth/register:
     post:
       summary: Register a new user
@@ -791,6 +931,45 @@ paths:
                     type: boolean
                   data:
                     type: object
+                  message:
+                    type: string
+  /auth/login/provider:
+    post:
+      summary: Login provider
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Provider logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      accessToken:
+                        type: string
+                      refreshToken:
+                        type: string
                   message:
                     type: string
   /auth/refresh-token:
@@ -1053,30 +1232,163 @@ components:
     Booking:
       type: object
       properties:
-        id:
+        _id:
           type: string
-        user_id:
+        user:
           type: string
-        service_id:
+        provider:
           type: string
-        provider_id:
+        service:
           type: string
-        start_date:
+        selectedPricingOption:
           type: string
-          format: date
-        end_date:
-          type: string
-          format: date
-        status:
+          description: ID of the chosen pricing option
+        bookingStatus:
           type: string
           enum:
             - pending
             - confirmed
+            - in-progress
+            - completed
             - cancelled
+            - rejected
+        scheduledDate:
+          type: string
+          format: date
+        scheduledTime:
+          type: string
+          example: '14:30'
+        location:
+          type: object
+          properties:
+            address:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            pincode:
+              type: string
+            coordinates:
+              type: object
+              properties:
+                lan:
+                  type: number
+                lat:
+                  type: number
+        pricing:
+          type: object
+          properties:
+            basePrice:
+              type: number
+            additionalCharges:
+              type: number
+            discount:
+              type: number
+            totalAmount:
+              type: number
+        payment:
+          type: object
+          properties:
+            paymentMethod:
+              type: string
+              enum:
+                - razorpay
+                - cash
+                - upi
+                - card
+            status:
+              type: string
+              enum:
+                - pending
+                - completed
+                - failed
+                - refunded
+            orderId:
+              type: string
+            paymentId:
+              type: string
+            paidAmount:
+              type: number
+            paymentDate:
+              type: string
+              format: date-time
+            refundId:
+              type: string
+            refundAmount:
+              type: number
+            refundDate:
+              type: string
+              format: date-time
+        specialInstructions:
+          type: string
+        cancellationReason:
+          type: string
+        rejectionReason:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+        cancelledAt:
+          type: string
+          format: date-time
+        rating:
+          type: number
+          minimum: 1
+          maximum: 5
+        review:
+          type: string
+        reviewDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
       required:
-        - id
-        - user_id
-        - listing_id
-        - start_date
-        - end_date
-        - status
+        - user
+        - service
+        - bookingStatus
+        - scheduledDate
+        - scheduledTime
+        - pricing
+        - payment
+    Address:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+          format: phone
+        houseNo:
+          type: string
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        pincode:
+          type: string
+        country:
+          type: string
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+      required:
+        - street
+        - city
+        - state
+        - pincode
+        - country
+        - coordinates
+        - houseNo
+        - fullName
+        - phone

@@ -107,6 +107,46 @@
                 message:
                   type: string
 
+/auth/login/provider:
+  post:
+    summary: Login provider
+    tags:
+      - Auth
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              email:
+                type: string
+                format: email
+              password:
+                type: string
+                format: password
+    responses:
+      '200':
+        description: Provider logged in successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    user:
+                      $ref: '../schemas/User.yaml#/User'
+                    accessToken:
+                      type: string
+                    refreshToken:
+                      type: string
+                message:
+                  type: string
+
 /auth/logout:
   post:
     summary: Logout user

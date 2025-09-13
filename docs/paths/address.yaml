@@ -1,0 +1,139 @@
+# Address API paths
+/addresses:
+  get:
+    summary: Get all addresses for the logged-in user
+    tags:
+      - Address
+    security:
+      - BearerAuth: []
+    responses:
+      '200':
+        description: List of addresses
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: array
+                  items:
+                    $ref: './../schemas/address.yaml#/Address'
+                message:
+                  type: string
+  post:
+    summary: Add a new address
+    tags:
+      - Address
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './../schemas/address.yaml#/Address'
+    responses:
+      '201':
+        description: Address created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  $ref: './../schemas/address.yaml#/Address'
+                message:
+                  type: string
+
+/addresses/{id}:
+  get:
+    summary: Get a single address by ID
+    tags:
+      - Address
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: Address ID
+    responses:
+      '200':
+        description: Address details
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  $ref: './../schemas/address.yaml#/Address'
+                message:
+                  type: string
+  put:
+    summary: Update an address
+    tags:
+      - Address
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: Address ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './../schemas/address.yaml#/Address'
+    responses:
+      '200':
+        description: Address updated
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  $ref: './../schemas/address.yaml#/Address'
+                message:
+                  type: string
+  delete:
+    summary: Delete an address
+    tags:
+      - Address
+    security:
+      - BearerAuth: []
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+        description: Address ID
+    responses:
+      '200':
+        description: Address deleted
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  $ref: './../schemas/address.yaml#/Address'
+                message:
+                  type: string

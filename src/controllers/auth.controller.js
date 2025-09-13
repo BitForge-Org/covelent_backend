@@ -248,6 +248,71 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'User does not exist');
   }
 
+  // if (user.role !== 'user') {
+  //   logger.warn(`[LOGIN] Unauthorized role for user login: ${email}`);
+  //   throw new ApiError(403, 'User is not authorized as user');
+  // }
+
+  if (!user.isActive) {
+    throw new ApiError(401, 'User account is not active');
+  }
+  if (!user.isVerified) {
+    throw new ApiError(401, 'User account is not verified');
+  }
+
+  if (!(await user.isPasswordCorrect(password))) {
+    logger.error(`[LOGIN] Invalid credentials for: ${email}`);
+    throw new ApiError(401, 'Invalid user credentials');
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
+  );
+
+  const options = { httpOnly: true, secure: true };
+
+  logger.info(`[LOGIN] Success for email: ${email}`);
+
+  return res
+    .status(200)
+    .cookie('accessToken', accessToken, options)
+    .cookie('refreshToken', refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { user: loggedInUser, accessToken, refreshToken },
+        'User logged In Successfully'
+      )
+    );
+});
+
+const loginProvider = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  logger.info(`[LOGIN] Attempt for email: ${email}`);
+
+  if (!email) {
+    throw new ApiError(400, 'email is required');
+  }
+  if (typeof email !== 'string') {
+    throw new ApiError(400, 'Invalid email format');
+  }
+
+  const user = await User.findOne({ email: { $eq: email } });
+  if (!user) {
+    logger.warn(`[LOGIN] User not found: ${email}`);
+    throw new ApiError(404, 'User does not exist');
+  }
+
+  if (user.role !== 'provider') {
+    logger.warn(`[LOGIN] Unauthorized role for provider login: ${email}`);
+    throw new ApiError(403, 'User is not authorized as provider');
+  }
+
   if (!user.isActive) {
     throw new ApiError(401, 'User account is not active');
   }
@@ -495,4 +560,5 @@ export {
   forgotPassword,
   resetPassword,
   verifyOtp,
+  loginProvider,
 };
