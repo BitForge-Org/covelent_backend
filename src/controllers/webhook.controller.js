@@ -7,7 +7,7 @@ import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
 
 // Webhook handler for Razorpay events
-const handleRazorpayWebhook = asyncHandler(async (req, res) => {
+const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
@@ -155,7 +155,7 @@ const handleOrderPaid = async (order) => {
 };
 
 // Verify payment manually (for client-side verification)
-const verifyPayment = asyncHandler(async (req, res) => {
+const verifyPayment = asyncHandler(async (req, res, next) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
     req.body;
 
@@ -217,7 +217,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
 });
 
 // Get payment status for a booking
-const getPaymentStatus = asyncHandler(async (req, res) => {
+const getPaymentStatus = asyncHandler(async (req, res, next) => {
   const { bookingId } = req.params;
 
   const booking = await Booking.findById(bookingId).select(

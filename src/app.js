@@ -57,6 +57,8 @@ import apiLoggerMiddleware from './middlewares/apiLogger.middleware.js';
 import providerApplicationRouter from './routes/provider-application.routes.js';
 import BookingRouter from './routes/booking.routes.js';
 import AddressRouter from './routes/address.routers.js';
+import adminRouter from './routes/admin.routes.js';
+app.use('/api/v1/admin', authLimiter, adminRouter); // 👈 apply authLimiter to admin routes
 
 app.use('/api/v1/users', authLimiter, userRouter); // 👈 apply authLimiter to user routes
 app.use('/api/v1/auth', authLimiter, authRouter); // 👈 apply authLimiter to auth routes

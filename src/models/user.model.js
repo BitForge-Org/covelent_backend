@@ -75,12 +75,17 @@ const userSchema = new Schema({
     },
     isVerified: { type: Boolean, default: false },
   },
+  isComplete: {
+    type: Boolean,
+    default: false,
+  },
   dateOfBirth: {
     type: Date,
   },
   refreshToken: {
     type: String,
   },
+
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
 });

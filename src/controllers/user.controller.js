@@ -5,7 +5,7 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import logger from '../utils/logger.js';
 
-const getCurrentUser = asyncHandler(async (req, res) => {
+const getCurrentUser = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user._id).select(
     '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
   );
@@ -14,7 +14,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, 'User fetched successfully'));
 });
 
-const updateAccountDetails = asyncHandler(async (req, res) => {
+const updateAccountDetails = asyncHandler(async (req, res, next) => {
   const { fullName, email, dateOfBirth, phoneNumber } = req.body;
 
   if (!fullName || !email) {
@@ -31,33 +31,26 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
   }
 
   // Type validation to prevent NoSQL injection
-  if (typeof fullName !== "string" || typeof email !== "string") {
+  if (typeof fullName !== 'string' || typeof email !== 'string') {
     return res
       .status(400)
-      .json(
-        new ApiResponse(400, null, "Full Name and Email must be strings")
-      );
+      .json(new ApiResponse(400, null, 'Full Name and Email must be strings'));
   }
-  if (dateOfBirth !== undefined && typeof dateOfBirth !== "string") {
+  if (dateOfBirth !== undefined && typeof dateOfBirth !== 'string') {
     return res
       .status(400)
-      .json(
-        new ApiResponse(400, null, "Date of Birth must be a string")
-      );
+      .json(new ApiResponse(400, null, 'Date of Birth must be a string'));
   }
-  if (phoneNumber !== undefined && typeof phoneNumber !== "string") {
+  if (phoneNumber !== undefined && typeof phoneNumber !== 'string') {
     return res
       .status(400)
-      .json(
-        new ApiResponse(400, null, "Phone Number must be a string")
-      );
+      .json(new ApiResponse(400, null, 'Phone Number must be a string'));
   }
 
   // Only update allowed fields with validated values
   const updateFields = { fullName, email };
   if (dateOfBirth !== undefined) updateFields.dateOfBirth = dateOfBirth;
   if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
-
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
@@ -67,7 +60,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       runValidators: true,
     }
   ).select(
-    "-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken"
+    '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
   );
 
   logger.info(`[USER] Update account for user: ${req.user._id}`);
@@ -77,7 +70,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, 'Account details updated successfully'));
 });
 
-const updateUserAvatar = asyncHandler(async (req, res) => {
+const updateUserAvatar = asyncHandler(async (req, res, next) => {
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {

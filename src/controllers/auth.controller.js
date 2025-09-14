@@ -60,8 +60,15 @@ function cleanupUploadedFiles(filePaths) {
 }
 
 const registerUser = asyncHandler(async (req, res) => {
-  const { fullName, email, password, role, dateOfBirth, phoneNumber } =
-    req.body;
+  // Enforce endpoint-based role assignment
+  // If called from /register/provider, req._fromProviderRegistration will be true
+  // Otherwise, always set role to 'user'
+  let { fullName, email, password, role, dateOfBirth, phoneNumber } = req.body;
+  if (req._fromProviderRegistration) {
+    role = 'provider';
+  } else {
+    role = 'user';
+  }
 
   let avatarLocalPath, aadharImageLocalPath, panImageLocalPath;
   if (
@@ -96,19 +103,11 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'All required fields must be provided');
   }
 
+  // For provider, PAN and Aadhar are not required at registration. They will upload later.
+  // Set isComplete: false for provider, true for user
+  let isComplete = true;
   if (role === 'provider') {
-    // If role is 'provider', aadhar and pan files are required
-    const safeAadharImagePath = getSafeUploadPath(aadharImageLocalPath);
-    if (!safeAadharImagePath || !fs.existsSync(safeAadharImagePath)) {
-      cleanupUploadedFiles([avatarLocalPath, panImageLocalPath]);
-      throw new ApiError(400, 'Aadhar file is required for provider role');
-    }
-
-    const safePanImagePath = getSafeUploadPath(panImageLocalPath);
-    if (!safePanImagePath || !fs.existsSync(safePanImagePath)) {
-      cleanupUploadedFiles([avatarLocalPath, aadharImageLocalPath]);
-      throw new ApiError(400, 'PAN file is required for provider role');
-    }
+    isComplete = false;
   }
 
   const existedUser = await User.findOne({
@@ -155,6 +154,7 @@ const registerUser = asyncHandler(async (req, res) => {
       link: panImage?.url || req.body.pan?.link || '',
     },
     role,
+    isComplete,
     dateOfBirth,
     phoneNumber,
   });
@@ -210,6 +210,66 @@ const registerUser = asyncHandler(async (req, res) => {
       'User registered Successfully'
     )
   );
+});
+
+export const registerProvider = asyncHandler(async (req, res, next) => {
+  try {
+    // Mark this request as coming from the provider registration endpoint
+    req._fromProviderRegistration = true;
+    return registerUser(req, res, next);
+  } catch (error) {
+    logger.error('Provider registration error:', error);
+    return next(error);
+  }
+});
+
+// Provider uploads PAN and Aadhar after registration
+export const uploadProviderDocuments = asyncHandler(async (req, res) => {
+  const userId = req.user?._id;
+  if (!userId) throw new ApiError(401, 'Unauthorized');
+  const user = await User.findById(userId);
+  if (!user || user.role !== 'provider') throw new ApiError(403, 'Forbidden');
+
+  let aadharImageLocalPath, panImageLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.aadharImage) &&
+    req.files.aadharImage.length > 0
+  ) {
+    aadharImageLocalPath = req.files.aadharImage[0].path;
+  }
+  if (
+    req.files &&
+    Array.isArray(req.files.panImage) &&
+    req.files.panImage.length > 0
+  ) {
+    panImageLocalPath = req.files.panImage[0].path;
+  }
+
+  let aadharImage, panImage;
+  if (aadharImageLocalPath) {
+    aadharImage = await uploadOnCloudinary(aadharImageLocalPath, 'aadhar');
+    user.aadhar.link = aadharImage?.url || '';
+  }
+  if (panImageLocalPath) {
+    panImage = await uploadOnCloudinary(panImageLocalPath, 'pan');
+    user.pan.link = panImage?.url || '';
+  }
+
+  // If both uploaded, set isComplete true
+  if (user.aadhar.link && user.pan.link) {
+    user.isComplete = true;
+  }
+  await user.save();
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { isComplete: user.isComplete, aadhar: user.aadhar, pan: user.pan },
+        'Documents uploaded'
+      )
+    );
 });
 
 const generateAccessAndRefreshTokens = async (userId) => {

@@ -5,7 +5,7 @@ import { ProviderApplication } from '../models/provider-application.model.js';
 import { User } from '../models/user.model.js';
 
 // Create a new provider application
-const createProviderApplication = asyncHandler(async (req, res) => {
+const createProviderApplication = asyncHandler(async (req, res, next) => {
   const { service } = req.body;
 
   if (!service) {
@@ -55,7 +55,7 @@ const createProviderApplication = asyncHandler(async (req, res) => {
 });
 
 // Update application status (only status & optional notes)
-const updateApplicationStatus = asyncHandler(async (req, res) => {
+const updateApplicationStatus = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { applicationStatus, adminNotes } = req.body;
 
@@ -93,7 +93,7 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
 });
 
 // Get all applications (with filters & pagination)
-const getApplications = asyncHandler(async (req, res) => {
+const getApplications = asyncHandler(async (req, res, next) => {
   const { status, page = 1, limit = 10 } = req.query;
 
   const filter = {};
@@ -121,7 +121,7 @@ const getApplications = asyncHandler(async (req, res) => {
 });
 
 // Get single application
-const getApplicationById = asyncHandler(async (req, res) => {
+const getApplicationById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
   const application = await ProviderApplication.findById(id);
@@ -137,7 +137,7 @@ const getApplicationById = asyncHandler(async (req, res) => {
     );
 });
 
-const getApplicationsByProvider = asyncHandler(async (req, res) => {
+const getApplicationsByProvider = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const application = await ProviderApplication.findById(id);
 

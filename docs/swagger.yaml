@@ -76,6 +76,10 @@ paths:
     $ref: './paths/auth.yaml#/~1auth~1reset-password'
   /auth/verify-otp:
     $ref: './paths/auth.yaml#/~1auth~1verify-otp'
+  /auth/register/provider:
+    $ref: './paths/auth.yaml#/~1auth~1register~1provider'
+  /auth/provider/upload-documents:
+    $ref: './paths/auth.yaml#/~1auth~1provider~1upload-documents'
 
 components:
   securitySchemes:

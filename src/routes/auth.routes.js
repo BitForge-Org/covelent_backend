@@ -9,6 +9,7 @@ import {
   resetPassword,
   verifyOtp,
   loginProvider,
+  registerProvider,
 } from '../controllers/auth.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -20,16 +21,29 @@ router.route('/register').post(
       name: 'avatar',
       maxCount: 1,
     },
+  ]),
+  registerUser
+);
+
+import { uploadProviderDocuments } from '../controllers/auth.controller.js';
+// Provider uploads PAN and Aadhar after registration
+router.route('/provider/upload-documents').post(
+  verifyJWT,
+  upload.fields([
+    { name: 'aadharImage', maxCount: 1 },
+    { name: 'panImage', maxCount: 1 },
+  ]),
+  uploadProviderDocuments
+);
+
+router.route('/register/provider').post(
+  upload.fields([
     {
-      name: 'aadharImage',
-      maxCount: 1,
-    },
-    {
-      name: 'panImage',
+      name: 'avatar',
       maxCount: 1,
     },
   ]),
-  registerUser
+  registerProvider
 );
 
 router.route('/login').post(loginUser);
