@@ -14,7 +14,10 @@
           schema:
             type: object
             properties:
-              aadharImage:
+              aadharFrontImage:
+                type: string
+                format: binary
+              aadharBackImage:
                 type: string
                 format: binary
               panImage:

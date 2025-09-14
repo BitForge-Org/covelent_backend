@@ -1229,7 +1229,10 @@ paths:
             schema:
               type: object
               properties:
-                aadharImage:
+                aadharFrontImage:
+                  type: string
+                  format: binary
+                aadharBackImage:
                   type: string
                   format: binary
                 panImage:
@@ -1291,7 +1294,9 @@ components:
         aadhar:
           type: object
           properties:
-            link:
+            frontImage:
+              type: string
+            backImage:
               type: string
             number:
               type: string

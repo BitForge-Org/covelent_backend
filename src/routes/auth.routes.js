@@ -30,7 +30,8 @@ import { uploadProviderDocuments } from '../controllers/auth.controller.js';
 router.route('/provider/upload-documents').post(
   verifyJWT,
   upload.fields([
-    { name: 'aadharImage', maxCount: 1 },
+    { name: 'aadharFrontImage', maxCount: 1 },
+    { name: 'aadharBackImage', maxCount: 1 },
     { name: 'panImage', maxCount: 1 },
   ]),
   uploadProviderDocuments

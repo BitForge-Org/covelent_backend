@@ -224,19 +224,26 @@ export const registerProvider = asyncHandler(async (req, res, next) => {
 });
 
 // Provider uploads PAN and Aadhar after registration
-export const uploadProviderDocuments = asyncHandler(async (req, res) => {
+export const uploadProviderDocuments = asyncHandler(async (req, res, next) => {
   const userId = req.user?._id;
   if (!userId) throw new ApiError(401, 'Unauthorized');
   const user = await User.findById(userId);
   if (!user || user.role !== 'provider') throw new ApiError(403, 'Forbidden');
 
-  let aadharImageLocalPath, panImageLocalPath;
+  let aadharFrontImageLocalPath, aadharBackImageLocalPath, panImageLocalPath;
   if (
     req.files &&
-    Array.isArray(req.files.aadharImage) &&
-    req.files.aadharImage.length > 0
+    Array.isArray(req.files.aadharFrontImage) &&
+    req.files.aadharFrontImage.length > 0
   ) {
-    aadharImageLocalPath = req.files.aadharImage[0].path;
+    aadharFrontImageLocalPath = req.files.aadharFrontImage[0].path;
+  }
+  if (
+    req.files &&
+    Array.isArray(req.files.aadharBackImage) &&
+    req.files.aadharBackImage.length > 0
+  ) {
+    aadharBackImageLocalPath = req.files.aadharBackImage[0].path;
   }
   if (
     req.files &&
@@ -246,18 +253,28 @@ export const uploadProviderDocuments = asyncHandler(async (req, res) => {
     panImageLocalPath = req.files.panImage[0].path;
   }
 
-  let aadharImage, panImage;
-  if (aadharImageLocalPath) {
-    aadharImage = await uploadOnCloudinary(aadharImageLocalPath, 'aadhar');
-    user.aadhar.link = aadharImage?.url || '';
+  let aadharFrontImage, aadharBackImage, panImage;
+  if (aadharFrontImageLocalPath) {
+    aadharFrontImage = await uploadOnCloudinary(
+      aadharFrontImageLocalPath,
+      'aadhar'
+    );
+    user.aadhar.frontImage = aadharFrontImage?.url || '';
+  }
+  if (aadharBackImageLocalPath) {
+    aadharBackImage = await uploadOnCloudinary(
+      aadharBackImageLocalPath,
+      'aadhar'
+    );
+    user.aadhar.backImage = aadharBackImage?.url || '';
   }
   if (panImageLocalPath) {
     panImage = await uploadOnCloudinary(panImageLocalPath, 'pan');
     user.pan.link = panImage?.url || '';
   }
 
-  // If both uploaded, set isComplete true
-  if (user.aadhar.link && user.pan.link) {
+  // If both aadhar images and pan are uploaded, set isComplete true
+  if (user.aadhar.frontImage && user.aadhar.backImage && user.pan.link) {
     user.isComplete = true;
   }
   await user.save();

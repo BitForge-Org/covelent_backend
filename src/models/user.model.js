@@ -54,7 +54,8 @@ const userSchema = new Schema({
     default: 'user',
   },
   aadhar: {
-    link: { type: String, required: false },
+    frontImage: { type: String, required: false },
+    backImage: { type: String, required: false },
     number: {
       type: String,
       unique: true,
