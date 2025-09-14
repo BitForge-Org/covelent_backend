@@ -440,6 +440,15 @@ paths:
                   type: string
                   description: Service ObjectId
                   example: 60f7c0b8e1b1c8a1b8e1b1c9
+                availableLocations:
+                  type: array
+                  items:
+                    type: string
+                    description: ObjectId referencing Service.locationAvailable (subdocument)
+                  description: Array of ObjectIds referencing Service.locationAvailable
+                  example:
+                    - '650000000000000000000001'
+                    - '650000000000000000000002'
       responses:
         '201':
           description: Provider application created successfully
@@ -693,6 +702,129 @@ paths:
                           $ref: '#/components/schemas/Booking'
                   message:
                     type: string
+  /bookings/accepted:
+    get:
+      summary: Get accepted bookings or booking history for provider
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          required: false
+          description: 'Filter bookings by status (booking-confirmed, booking-in-progress, booking-completed)'
+      responses:
+        '200':
+          description: Accepted bookings/history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
+  /bookings/reject:
+    post:
+      summary: Provider rejects a booking (does not change booking status)
+      description: |
+        Provider can reject a booking. This does not change the booking status, but records the rejection for this provider. Rejected bookings will not be shown to this provider in getAvailableBookings.
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+              properties:
+                bookingId:
+                  type: string
+                  description: The ObjectId of the booking to reject
+                reason:
+                  type: string
+                  description: Optional reason for rejection
+      responses:
+        '200':
+          description: Booking rejected for this provider (not shown in available bookings)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Invalid request
+        '404':
+          description: Booking not found
+        '500':
+          description: Server error
+  /bookings/accept:
+    post:
+      summary: Provider accepts a booking
+      tags:
+        - Bookings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+              properties:
+                bookingId:
+                  type: string
+                  description: The ObjectId of the booking to accept
+      responses:
+        '200':
+          description: Booking accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      booking:
+                        $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+        '400':
+          description: Invalid request or booking status
+        '403':
+          description: Provider not approved for this service
+        '404':
+          description: Booking not found
+        '500':
+          description: Server error
   /addresses:
     get:
       summary: Get all addresses for the logged-in user
@@ -1332,6 +1464,16 @@ components:
           type: string
           format: objectId
           description: Reference to the Service being applied for.
+        availableLocations:
+          type: array
+          items:
+            type: string
+            format: objectId
+            description: ObjectId referencing Service.locationAvailable (subdocument)
+          description: Array of ObjectIds referencing Service.locationAvailable
+          example:
+            - '650000000000000000000001'
+            - '650000000000000000000002'
         applicationStatus:
           type: string
           enum:

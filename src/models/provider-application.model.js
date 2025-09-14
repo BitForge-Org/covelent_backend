@@ -20,19 +20,13 @@ const providerApplicationSchema = new Schema(
     adminNotes: {
       type: String,
     },
-    availableLocations: {
-      type: [
-        {
-          city: { type: String, required: false },
-          state: { type: String, required: false },
-          coordinates: {
-            lat: { type: Number, required: false },
-            lng: { type: Number, required: false },
-          },
-        },
-      ],
-      required: false,
-    },
+    availableLocations: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Service', // Reference to Service.locationAvailable subdocument
+        required: false,
+      },
+    ],
   },
   {
     timestamps: true,

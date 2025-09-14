@@ -6,7 +6,7 @@ import { User } from '../models/user.model.js';
 
 // Create a new provider application
 const createProviderApplication = asyncHandler(async (req, res, next) => {
-  const { service } = req.body;
+  const { service, availableLocations } = req.body;
 
   if (!service) {
     throw new ApiError(400, 'Service is required');
@@ -40,6 +40,9 @@ const createProviderApplication = asyncHandler(async (req, res, next) => {
   const newApplication = await ProviderApplication.create({
     provider: req.user._id,
     service,
+    availableLocations: Array.isArray(availableLocations)
+      ? availableLocations
+      : [],
     applicationStatus: 'pending',
   });
 

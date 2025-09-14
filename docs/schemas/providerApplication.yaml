@@ -13,6 +13,14 @@ ProviderApplication:
       type: string
       format: objectId
       description: Reference to the Service being applied for.
+    availableLocations:
+      type: array
+      items:
+        type: string
+        format: objectId
+        description: ObjectId referencing Service.locationAvailable (subdocument)
+      description: Array of ObjectIds referencing Service.locationAvailable
+      example: ['650000000000000000000001', '650000000000000000000002']
     applicationStatus:
       type: string
       enum:

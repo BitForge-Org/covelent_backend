@@ -1,3 +1,6 @@
+import { ProviderRejection } from '../models/provider-rejection.model.js';
+// Provider accepts a booking (transactional)
+
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
@@ -118,6 +121,7 @@ const createBooking = asyncHandler(async (req, res) => {
   }
 });
 
+// Get user's booking history with optional status filter
 const getBookingsHistory = asyncHandler(async (req, res) => {
   const { status } = req.query;
   const filter = { user: req.user._id };
@@ -146,6 +150,7 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { bookings }, 'Bookings retrieved'));
 });
 
+// Get bookings for services where user is an approved provider
 const getAvailableBookings = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
@@ -162,28 +167,66 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
         new ApiResponse(
           200,
           { bookings: [] },
-          'No approved provider applications found' + approvedProviderApps
+          'No approved provider applications found'
         )
       );
   }
 
-  // Get all service IDs from these provider applications
-  const serviceIds = approvedProviderApps.map((app) => app.service.toString());
+  // Get all service IDs and availableLocations from these provider applications
+  const serviceIdToLocations = {};
+  approvedProviderApps.forEach((app) => {
+    const sid = app.service.toString();
+    if (!serviceIdToLocations[sid]) serviceIdToLocations[sid] = new Set();
+    (app.availableLocations || []).forEach((locId) =>
+      serviceIdToLocations[sid].add(locId.toString())
+    );
+  });
+  let serviceIds = Object.keys(serviceIdToLocations);
 
-  // Find bookings where the service matches any of these service IDs and status is 'pending'
+  // Exclude bookings that this provider has rejected
+  const rejectedBookings = await ProviderRejection.find({ provider: userId });
+  const rejectedBookingIds = new Set(
+    rejectedBookings.map((r) => r.booking.toString())
+  );
+
+  // Find bookings where the service matches and status is 'booking-requested', and not expired
+  const now = new Date();
   const bookings = await Booking.find({
     service: { $in: serviceIds },
-    bookingStatus: 'pending',
+    bookingStatus: 'booking-requested',
+    $expr: {
+      $gt: [
+        {
+          $dateFromString: {
+            dateString: { $concat: ['$scheduledDate', 'T', '$scheduledTime'] },
+          },
+        },
+        now,
+      ],
+    },
+    _id: { $nin: Array.from(rejectedBookingIds) },
   }).populate('service');
 
-  if (!bookings.length) {
+  // Filter bookings to only those where the booking location matches provider's approved locations
+  const filteredBookings = bookings.filter((booking) => {
+    const sid = booking.service._id.toString();
+    const bookingLocId = booking.locationAvailable
+      ? booking.locationAvailable.toString()
+      : null;
+    if (!bookingLocId) return false;
+    return (
+      serviceIdToLocations[sid] && serviceIdToLocations[sid].has(bookingLocId)
+    );
+  });
+
+  if (!filteredBookings.length) {
     return res
       .status(200)
       .json(
         new ApiResponse(
           204,
           { bookings: [] },
-          'No pending bookings found for your approved services'
+          'No booking-requested bookings found for your approved services and locations'
         )
       );
   }
@@ -193,10 +236,147 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { bookings },
-        'Pending bookings for your approved services retrieved'
+        { bookings: filteredBookings },
+        'Booking-requested bookings for your approved services and locations retrieved'
       )
     );
 });
+const acceptBooking = asyncHandler(async (req, res) => {
+  const providerId = req.user._id;
+  const { bookingId } = req.body;
 
-export { createBooking, getBookingsHistory, getAvailableBookings };
+  if (!bookingId) {
+    throw new ApiError(400, 'Booking ID is required');
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    // Find the booking with a pessimistic lock (for update)
+    const booking = await Booking.findOne({ _id: bookingId })
+      .session(session)
+      .populate('service');
+    if (!booking) {
+      throw new ApiError(404, 'Booking not found');
+    }
+
+    // Only allow accepting if booking is pending
+    if (
+      booking.bookingStatus !== 'pending' &&
+      booking.bookingStatus !== 'booking-requested'
+    ) {
+      throw new ApiError(
+        400,
+        'Booking cannot be accepted in its current status'
+      );
+    }
+
+    // Check if provider has an approved application for this service and location
+    const providerApp = await ProviderApplication.findOne({
+      provider: providerId,
+      service: booking.service._id,
+      applicationStatus: 'approved',
+      availableLocations: { $exists: true, $ne: [] },
+    }).session(session);
+    if (!providerApp) {
+      throw new ApiError(403, 'You are not approved for this service');
+    }
+
+    // Assign provider and update status
+    booking.provider = providerId;
+    booking.bookingStatus = 'booking-confirmed';
+    await booking.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { booking }, 'Booking accepted successfully'));
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new ApiError(500, 'Failed to accept booking: ' + err);
+  }
+});
+
+// Get accepted bookings or booking history for provider with filter
+const getAcceptedBookings = asyncHandler(async (req, res) => {
+  const providerId = req.user._id;
+  const { status } = req.query;
+  const filter = { provider: providerId };
+  if (status) {
+    filter.bookingStatus = status;
+  } else {
+    filter.bookingStatus = {
+      $in: ['booking-confirmed', 'booking-in-progress', 'booking-completed'],
+    };
+  }
+  const bookings = await Booking.find(filter)
+    .populate({
+      path: 'service',
+      select: 'title description category image pricingOptions',
+      populate: { path: 'category', select: 'name' },
+    })
+    .lean();
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { bookings }, 'Accepted bookings/history retrieved')
+    );
+});
+
+// Provider rejects a booking (no booking status change, just record rejection)
+import logger from '../utils/logger.js';
+const rejectBooking = asyncHandler(async (req, res) => {
+  try {
+    const providerId = req.user._id;
+    const { bookingId, reason } = req.body;
+
+    if (!bookingId) {
+      throw new ApiError(400, 'Booking ID is required');
+    }
+
+    // Find the booking to get the service
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      throw new ApiError(404, 'Booking not found');
+    }
+
+    // Check if already rejected
+    const alreadyRejected = await ProviderRejection.findOne({
+      provider: providerId,
+      booking: bookingId,
+    });
+    if (alreadyRejected) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(200, {}, 'Booking already rejected by this provider')
+        );
+    }
+
+    // Create a rejection record (include service for easier queries)
+    await ProviderRejection.create({
+      provider: providerId,
+      booking: bookingId,
+      service: booking.service,
+      reason,
+    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, 'Booking rejected for this provider'));
+  } catch (err) {
+    logger.error('Error in rejectBooking:', err);
+    throw err;
+  }
+});
+
+export {
+  createBooking,
+  getBookingsHistory,
+  getAvailableBookings,
+  acceptBooking,
+  getAcceptedBookings,
+  rejectBooking,
+};

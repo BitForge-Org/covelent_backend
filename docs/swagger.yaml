@@ -51,6 +51,13 @@ paths:
     $ref: './paths/booking.yaml#/~1bookings~1available'
   /bookings/history:
     $ref: './paths/booking.yaml#/~1booking~1history'
+  /bookings/accepted:
+    $ref: './paths/booking.yaml#/~1bookings~1accepted'
+  /bookings/reject:
+    $ref: './paths/booking.yaml#/~1bookings~1reject'
+
+  /bookings/accept:
+    $ref: './paths/booking.yaml#/~1bookings~1accept'
 
   /addresses:
     $ref: './paths/address.yaml#/~1addresses'

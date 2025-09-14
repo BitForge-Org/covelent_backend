@@ -21,6 +21,14 @@
                 type: string
                 description: Service ObjectId
                 example: 60f7c0b8e1b1c8a1b8e1b1c9
+              availableLocations:
+                type: array
+                items:
+                  type: string
+                  description: ObjectId referencing Service.locationAvailable (subdocument)
+                description: Array of ObjectIds referencing Service.locationAvailable
+                example:
+                  ['650000000000000000000001', '650000000000000000000002']
     responses:
       '201':
         description: Provider application created successfully
