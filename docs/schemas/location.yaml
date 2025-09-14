@@ -1,6 +1,18 @@
 Location:
   type: object
   properties:
+    houseNo:
+      type: string
+    street:
+      type: string
+    city:
+      type: string
+    state:
+      type: string
+    pincode:
+      type: string
+    country:
+      type: string
     latitude:
       type: number
       format: double
@@ -8,5 +20,11 @@ Location:
       type: number
       format: double
   required:
+    - houseNo
+    - street
+    - city
+    - state
+    - pincode
+    - country
     - latitude
     - longitude
