@@ -576,35 +576,39 @@ paths:
                 specialInstructions:
                   type: string
                 location:
-                  type: object
-                  properties:
-                    houseNo:
-                      type: string
-                    street:
-                      type: string
-                    city:
-                      type: string
-                    state:
-                      type: string
-                    pincode:
-                      type: string
-                    country:
-                      type: string
-                    latitude:
-                      type: number
-                      format: double
-                    longitude:
-                      type: number
-                      format: double
-                  required:
-                    - houseNo
-                    - street
-                    - city
-                    - state
-                    - pincode
-                    - country
-                    - latitude
-                    - longitude
+                  oneOf:
+                    - type: string
+                      description: Address ObjectId reference
+                      example: 6503e2c1f1a2b3c4d5e6f7a8
+                    - type: object
+                      properties:
+                        houseNo:
+                          type: string
+                        street:
+                          type: string
+                        city:
+                          type: string
+                        state:
+                          type: string
+                        pincode:
+                          type: string
+                        country:
+                          type: string
+                        latitude:
+                          type: number
+                          format: double
+                        longitude:
+                          type: number
+                          format: double
+                      required:
+                        - houseNo
+                        - street
+                        - city
+                        - state
+                        - pincode
+                        - country
+                        - latitude
+                        - longitude
                 paymentMethod:
                   type: string
                   enum:

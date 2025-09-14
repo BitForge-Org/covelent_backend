@@ -1,9 +1,11 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
+
 import { Booking } from '../models/booking.model.js';
 import { ProviderApplication } from '../models/provider-application.model.js';
 import { Service } from '../models/service.model.js';
+import { Address } from '../models/address.model.js';
 // import { Notification } from '../models/notification.model.js';
 import mongoose from 'mongoose';
 import razorpay from '../utils/razorpay.js';
@@ -34,15 +36,36 @@ const createBooking = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Scheduled date and time must be in the future');
   }
 
+  // Location logic: Accepts either an address ObjectId or a full address object
+  let addressId;
+  if (!location) {
+    throw new ApiError(400, 'Location is required');
+  }
   if (
-    !location ||
-    !location.address ||
-    !location.city ||
-    !location.state ||
-    !location.pincode ||
-    !location.coordinates
+    typeof location === 'string' ||
+    (location._id && typeof location._id === 'string')
   ) {
-    throw new ApiError(400, 'Location details are required');
+    // If location is an address ID or object with _id
+    addressId = location._id || location;
+    const addressExists = await Address.findById(addressId);
+    if (!addressExists) {
+      throw new ApiError(400, 'Provided address not found');
+    }
+  } else if (
+    location.address &&
+    location.city &&
+    location.state &&
+    location.pincode &&
+    location.coordinates
+  ) {
+    // If location is a full address object, create new Address
+    const newAddress = await Address.create({
+      user: req.user._id,
+      ...location,
+    });
+    addressId = newAddress._id;
+  } else {
+    throw new ApiError(400, 'Invalid location details');
   }
 
   const session = await mongoose.startSession();
@@ -60,7 +83,7 @@ const createBooking = asyncHandler(async (req, res) => {
           specialInstructions: specialInstructions || '',
           selectedPricingOption: option._id,
           finalPrice: option.price,
-          location,
+          location: addressId,
           payment: { paymentMethod },
         },
       ],
@@ -114,7 +137,7 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
       const option = booking.service.pricingOptions.find(
         (opt) => opt._id.toString() === booking.selectedPricingOption.toString()
       );
-      booking.selectedOptionDetails = option || null;
+      booking.selectedPricingOption = option || null;
     }
   });
 
