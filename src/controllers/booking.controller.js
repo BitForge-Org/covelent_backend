@@ -123,31 +123,46 @@ const createBooking = asyncHandler(async (req, res) => {
 
 // Get user's booking history with optional status filter
 const getBookingsHistory = asyncHandler(async (req, res) => {
-  const { status } = req.query;
-  const filter = { user: req.user._id };
-  if (status) {
-    filter.bookingStatus = status;
-  }
-  const bookings = await Booking.find(filter)
-    .populate({
-      path: 'service',
-      select: 'title description category image pricingOptions',
-      populate: { path: 'category', select: 'name' }, // if category is ref
-    })
-    .lean();
-
-  bookings.forEach((booking) => {
-    if (booking.service && booking.selectedPricingOption) {
-      const option = booking.service.pricingOptions.find(
-        (opt) => opt._id.toString() === booking.selectedPricingOption.toString()
-      );
-      booking.selectedPricingOption = option || null;
+  try {
+    const { status } = req.query;
+    const filter = { user: req.user._id };
+    if (status) {
+      filter.bookingStatus = status;
     }
-  });
+    const bookings = await Booking.find(filter)
+      .populate({
+        path: 'service',
+        select: 'title description category image pricingOptions',
+        populate: { path: 'category', select: 'name' }, // if category is ref
+      })
+      .lean();
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, { bookings }, 'Bookings retrieved'));
+    bookings.forEach((booking) => {
+      if (
+        booking.service &&
+        Array.isArray(booking.service.pricingOptions) &&
+        booking.selectedPricingOption !== null
+      ) {
+        const option = booking.service.pricingOptions.find(
+          (opt) =>
+            opt &&
+            opt._id &&
+            booking.selectedPricingOption &&
+            opt._id.toString() === booking.selectedPricingOption.toString()
+        );
+        booking.selectedPricingOption = option || null;
+      } else {
+        booking.selectedPricingOption = null;
+      }
+    });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { bookings }, 'Bookings retrieved'));
+  } catch (error) {
+    logger.error('Error in getBookingsHistory:', error);
+    throw new ApiError(500, 'Failed to retrieve bookings history');
+  }
 });
 
 // Get bookings for services where user is an approved provider
