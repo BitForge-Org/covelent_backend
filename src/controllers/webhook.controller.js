@@ -8,28 +8,27 @@ import logger from '../utils/logger.js';
 
 // Webhook handler for Razorpay events
 const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
-  const webhookSecret = process.env.RAZORPAY_KEY_SECRET;
-
-  if (!webhookSecret) {
-    throw new ApiError(500, 'Webhook secret not configured');
-  }
-
-  // Verify webhook signature
-  const signature = req.headers['x-razorpay-signature'];
-  const body = JSON.stringify(req.body);
-
-  const expectedSignature = crypto
-    .createHmac('sha256', webhookSecret)
-    .update(body)
-    .digest('hex');
-
-  if (signature !== expectedSignature) {
-    throw new ApiError(400, 'Invalid webhook signature');
-  }
-
-  const event = req.body;
-
   try {
+    const webhookSecret = process.env.RAZORPAY_KEY_SECRET;
+
+    if (!webhookSecret) {
+      throw new ApiError(500, 'Webhook secret not configured');
+    }
+
+    // Verify webhook signature
+    const signature = req.headers['x-razorpay-signature'];
+    const rawBody = req.rawBody;
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(rawBody)
+      .digest('hex');
+
+    if (signature !== expectedSignature) {
+      throw new ApiError(400, 'Invalid webhook signature: ' + signature);
+    }
+
+    const event = req.body;
+
     switch (event.event) {
       case 'payment.captured':
         await handlePaymentCaptured(event.payload.payment.entity);
@@ -156,25 +155,28 @@ const handleOrderPaid = async (order) => {
 
 // Verify payment manually (for client-side verification)
 const verifyPayment = asyncHandler(async (req, res, next) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-    req.body;
-
-  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    throw new ApiError(400, 'Missing required payment verification parameters');
-  }
-
-  // Verify signature
-  const body = razorpay_order_id + '|' + razorpay_payment_id;
-  const expectedSignature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-    .update(body.toString())
-    .digest('hex');
-
-  if (expectedSignature !== razorpay_signature) {
-    throw new ApiError(400, 'Invalid payment signature');
-  }
-
   try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      throw new ApiError(
+        400,
+        'Missing required payment verification parameters'
+      );
+    }
+
+    // Verify signature
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      throw new ApiError(400, 'Invalid payment signature');
+    }
+
     // Find and update booking
     const booking = await Booking.findOne({
       'payment.orderId': razorpay_order_id,
@@ -218,34 +220,39 @@ const verifyPayment = asyncHandler(async (req, res, next) => {
 
 // Get payment status for a booking
 const getPaymentStatus = asyncHandler(async (req, res, next) => {
-  const { bookingId } = req.params;
+  try {
+    const { bookingId } = req.params;
 
-  const booking = await Booking.findById(bookingId).select(
-    'payment bookingStatus'
-  );
+    const booking = await Booking.findById(bookingId).select(
+      'payment bookingStatus'
+    );
 
-  if (!booking) {
-    throw new ApiError(404, 'Booking not found');
+    if (!booking) {
+      throw new ApiError(404, 'Booking not found');
+    }
+
+    // Check if user owns this booking
+    if (booking.user.toString() !== req.user._id.toString()) {
+      throw new ApiError(403, 'Access denied');
+    }
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          paymentStatus: booking.payment.paymentStatus,
+          bookingStatus: booking.bookingStatus,
+          orderId: booking.payment.orderId,
+          paymentId: booking.payment.paymentId,
+          paidAmount: booking.payment.paidAmount,
+        },
+        'Payment status retrieved successfully'
+      )
+    );
+  } catch (error) {
+    logger.error('Get payment status error:', error);
+    throw new ApiError(500, 'Failed to retrieve payment status');
   }
-
-  // Check if user owns this booking
-  if (booking.user.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, 'Access denied');
-  }
-
-  return res.status(200).json(
-    new ApiResponse(
-      200,
-      {
-        paymentStatus: booking.payment.paymentStatus,
-        bookingStatus: booking.bookingStatus,
-        orderId: booking.payment.orderId,
-        paymentId: booking.payment.paymentId,
-        paidAmount: booking.payment.paidAmount,
-      },
-      'Payment status retrieved successfully'
-    )
-  );
 });
 
 export { handleRazorpayWebhook, verifyPayment, getPaymentStatus };

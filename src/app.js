@@ -73,6 +73,16 @@ app.use('/api/v1/bookings', BookingRouter);
 app.use('/api/v1/addresses', AddressRouter);
 
 // Webhook routes
+// Razorpay webhook: capture raw body for signature verification
+app.use(
+  '/api/v1/webhook/razorpay',
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+    limit: '16kb',
+  })
+);
 app.use('/api/v1/webhook', webhookRouter);
 
 setupSwagger(app);
