@@ -127,7 +127,7 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
     const { status } = req.query;
     const filter = { user: req.user._id };
     if (status) {
-      filter.bookingStatus = status;
+      filter.bookingStatus = { $eq: status };
     }
     const bookings = await Booking.find(filter)
       .populate({
