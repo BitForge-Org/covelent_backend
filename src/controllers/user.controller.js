@@ -5,7 +5,7 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import logger from '../utils/logger.js';
 
-const getCurrentUser = asyncHandler(async (req, res, next) => {
+const getCurrentUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(
     '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
   );
@@ -14,7 +14,7 @@ const getCurrentUser = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, user, 'User fetched successfully'));
 });
 
-const updateAccountDetails = asyncHandler(async (req, res, next) => {
+const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullName, email, dateOfBirth, phoneNumber } = req.body;
 
   if (!fullName || !email) {
@@ -70,7 +70,7 @@ const updateAccountDetails = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, user, 'Account details updated successfully'));
 });
 
-const updateUserAvatar = asyncHandler(async (req, res, next) => {
+const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {

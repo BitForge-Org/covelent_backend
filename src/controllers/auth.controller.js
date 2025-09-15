@@ -224,7 +224,7 @@ export const registerProvider = asyncHandler(async (req, res, next) => {
 });
 
 // Provider uploads PAN and Aadhar after registration
-export const uploadProviderDocuments = asyncHandler(async (req, res, next) => {
+export const uploadProviderDocuments = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   if (!userId) throw new ApiError(401, 'Unauthorized');
   const user = await User.findById(userId);
