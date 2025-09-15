@@ -33,7 +33,7 @@ if (!isLocal && cluster.isPrimary) {
       logger.info(
         `MongoDB connected (Worker ${process.pid}) !! DB HOST: ${process.env.MONGODB_URI || 'localhost'}`
       );
-      app.listen(process.env.PORT || 8000, () => {
+      app.listen(process.env.PORT || 80, () => {
         logger.info(
           `Worker ${process.pid} running server at port : ${process.env.PORT}`
         );

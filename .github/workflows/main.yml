@@ -13,14 +13,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Copy project to EC2
+      - name: Copy project to EC2 (excluding .env)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "."
-          target: "~/app"
+          source: '.'
+          target: '~/app'
+          exclude: |
+            .env
+            /node_modules
+            /logs
 
       - name: Deploy on EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -30,6 +34,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/app
-            docker-compose down
-            docker-compose build --no-cache
-            docker-compose up -d
+            docker-compose --env-file /home/ec2-user/configs/covelent.env down
+            docker-compose --env-file /home/ec2-user/configs/covelent.env build --no-cache
+            docker-compose --env-file /home/ec2-user/configs/covelent.env up -d
