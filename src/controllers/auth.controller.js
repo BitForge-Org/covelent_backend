@@ -104,10 +104,10 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // For provider, PAN and Aadhar are not required at registration. They will upload later.
-  // Set isComplete: false for provider, true for user
-  let isComplete = true;
+  // Set isProfileCompleted: false for provider, true for user
+  let isProfileCompleted = true;
   if (role === 'provider') {
-    isComplete = false;
+    isProfileCompleted = false;
   }
 
   const existedUser = await User.findOne({
@@ -154,7 +154,7 @@ const registerUser = asyncHandler(async (req, res) => {
       link: panImage?.url || req.body.pan?.link || '',
     },
     role,
-    isComplete,
+    isProfileCompleted,
     dateOfBirth,
     phoneNumber,
   });
@@ -274,20 +274,22 @@ export const uploadProviderDocuments = asyncHandler(async (req, res) => {
     user.pan.link = panImage?.url || '';
   }
 
-  // If both aadhar images and pan are uploaded, set isComplete true
+  // If both aadhar images and pan are uploaded, set isProfileCompleted true
   if (user.aadhar.frontImage && user.aadhar.backImage && user.pan.link) {
-    user.isComplete = true;
+    user.isProfileCompleted = true;
   }
   await user.save();
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { isComplete: user.isComplete, aadhar: user.aadhar, pan: user.pan },
-        'Documents uploaded'
-      )
-    );
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        isProfileCompleted: user.isProfileCompleted,
+        aadhar: user.aadhar,
+        pan: user.pan,
+      },
+      'Documents uploaded'
+    )
+  );
 });
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -390,13 +392,13 @@ const loginProvider = asyncHandler(async (req, res) => {
     logger.warn(`[LOGIN] Unauthorized role for provider login: ${email}`);
     throw new ApiError(403, 'User is not authorized as provider');
   }
-
-  if (!user.isActive) {
-    throw new ApiError(401, 'User account is not active');
-  }
-  if (!user.isVerified) {
-    throw new ApiError(401, 'User account is not verified');
-  }
+  //
+  // if (!user.isActive) {
+  //   throw new ApiError(401, 'User account is not active');
+  // }
+  // if (!user.isVerified) {
+  //   throw new ApiError(401, 'User account is not verified');
+  // }
 
   if (!(await user.isPasswordCorrect(password))) {
     logger.error(`[LOGIN] Invalid credentials for: ${email}`);
