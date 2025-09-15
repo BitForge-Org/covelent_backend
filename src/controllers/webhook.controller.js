@@ -8,7 +8,7 @@ import logger from '../utils/logger.js';
 
 // Webhook handler for Razorpay events
 const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
-  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const webhookSecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!webhookSecret) {
     throw new ApiError(500, 'Webhook secret not configured');

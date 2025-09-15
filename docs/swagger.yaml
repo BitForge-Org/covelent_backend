@@ -90,6 +90,14 @@ paths:
   /auth/provider/upload-documents:
     $ref: './paths/auth.yaml#/~1auth~1provider~1upload-documents'
 
+  # Webhook endpoints
+  /webhook/razorpay:
+    $ref: './paths/webhook.yaml#/~1webhook~1razorpay'
+  /webhook/verify-payment:
+    $ref: './paths/webhook.yaml#/~1webhook~1verify-payment'
+  /webhook/payment-status/{bookingId}:
+    $ref: './paths/webhook.yaml#/~1webhook~1payment-status~1{bookingId}'
+
 components:
   securitySchemes:
     BearerAuth:
