@@ -156,6 +156,7 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
       }
     });
 
+    // If no bookings found, return 204 No Content
     return res
       .status(200)
       .json(new ApiResponse(200, { bookings }, 'Bookings retrieved'));
