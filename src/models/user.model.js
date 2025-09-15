@@ -76,7 +76,7 @@ const userSchema = new Schema({
     },
     isVerified: { type: Boolean, default: false },
   },
-  isComplete: {
+  isProfileCompleted: {
     type: Boolean,
     default: false,
   },

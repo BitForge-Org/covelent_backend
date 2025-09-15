@@ -1290,7 +1290,7 @@ paths:
     post:
       summary: Register a new provider (role always 'provider')
       description: |
-        Register a new provider. The role is always set to 'provider' regardless of what is sent in the request. PAN and Aadhar are not required at registration; they can be uploaded later. The profile will have `isComplete: false` until documents are uploaded.
+        Register a new provider. The role is always set to 'provider' regardless of what is sent in the request. PAN and Aadhar are not required at registration; they can be uploaded later. The profile will have `isProfileCompleted: false` until documents are uploaded.
       tags:
         - Auth
       requestBody:
@@ -1351,7 +1351,7 @@ paths:
     post:
       summary: Provider uploads PAN and Aadhar documents
       description: |
-        Allows a provider to upload PAN and Aadhar images after registration. Sets `isComplete` to true when both are uploaded.
+        Allows a provider to upload PAN and Aadhar images after registration. Sets `isProfileCompleted` to true when both are uploaded.
       tags:
         - Auth
       security:
@@ -1385,7 +1385,7 @@ paths:
                   data:
                     type: object
                     properties:
-                      isComplete:
+                      isProfileCompleted:
                         type: boolean
                       aadhar:
                         type: object
