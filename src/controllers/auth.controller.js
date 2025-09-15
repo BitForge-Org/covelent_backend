@@ -333,9 +333,10 @@ const loginUser = asyncHandler(async (req, res) => {
   //   throw new ApiError(403, 'User is not authorized as user');
   // }
 
-  if (!user.isActive) {
-    throw new ApiError(401, 'User account is not active');
-  }
+  // if (!user.isActive) {
+  //   throw new ApiError(401, 'User account is not active');
+  // }
+
   if (!user.isVerified) {
     throw new ApiError(401, 'User account is not verified');
   }
