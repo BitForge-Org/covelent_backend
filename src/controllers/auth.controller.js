@@ -228,7 +228,8 @@ export const uploadProviderDocuments = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   if (!userId) throw new ApiError(401, 'Unauthorized');
   const user = await User.findById(userId);
-  if (!user || user.role !== 'provider') throw new ApiError(403, 'Forbidden');
+  if (!user || user.role !== 'provider')
+    throw new ApiError(403, 'Forbidden, User Role Should be Provider');
 
   let aadharFrontImageLocalPath, aadharBackImageLocalPath, panImageLocalPath;
   if (
