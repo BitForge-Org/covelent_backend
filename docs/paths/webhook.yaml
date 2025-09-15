@@ -1,0 +1,62 @@
+/webhook/razorpay:
+  post:
+    summary: Handle Razorpay webhook events
+    description: Receives webhook events from Razorpay. No authentication required.
+    tags:
+      - Webhook
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      '200':
+        description: Webhook processed successfully
+      '400':
+        description: Invalid payload
+
+/webhook/verify-payment:
+  post:
+    summary: Verify payment
+    description: Verifies a payment after a transaction is completed. Requires JWT authentication.
+    tags:
+      - Webhook
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      '200':
+        description: Payment verified successfully
+      '400':
+        description: Invalid or failed verification
+      '401':
+        description: Unauthorized
+
+/webhook/payment-status/{bookingId}:
+  get:
+    summary: Get payment status
+    description: Retrieves the payment status for a specific booking. Requires JWT authentication.
+    tags:
+      - Webhook
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: bookingId
+        required: true
+        schema:
+          type: string
+        description: The booking ID to check payment status for.
+    responses:
+      '200':
+        description: Payment status retrieved successfully
+      '400':
+        description: Invalid booking ID
+      '401':
+        description: Unauthorized

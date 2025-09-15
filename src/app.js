@@ -58,6 +58,9 @@ import providerApplicationRouter from './routes/provider-application.routes.js';
 import BookingRouter from './routes/booking.routes.js';
 import AddressRouter from './routes/address.routers.js';
 import adminRouter from './routes/admin.routes.js';
+
+import webhookRouter from './routes/webhook.routes.js';
+
 app.use('/api/v1/admin', authLimiter, adminRouter); // 👈 apply authLimiter to admin routes
 
 app.use('/api/v1/users', authLimiter, userRouter); // 👈 apply authLimiter to user routes
@@ -68,6 +71,9 @@ app.use('/api/v1/services', serviceRoutes);
 app.use('/api/v1/provider-applications', providerApplicationRouter);
 app.use('/api/v1/bookings', BookingRouter);
 app.use('/api/v1/addresses', AddressRouter);
+
+// Webhook routes
+app.use('/api/v1/webhook', webhookRouter);
 
 setupSwagger(app);
 
