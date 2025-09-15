@@ -41,12 +41,16 @@ export function logHealthStats() {
     nodeVersion: meta.nodeVersion,
     meta,
   };
-  storeHealthLog(healthStats);
+  // storeHealthLog(healthStats);
+  return healthStats;
 }
 
+const healthdata = logHealthStats();
 // Healthcheck API: just return success
-const healthcheck = asyncHandler(async (req, res, next) => {
-  return res.status(200).json(new ApiResponse(200, null, 'Server is healthy'));
+const healthcheck = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, healthdata, 'Server is healthy'));
 });
 
 export { healthcheck };
