@@ -1653,6 +1653,16 @@ components:
               type: number
             longitude:
               type: number
+        isDefault:
+          type: boolean
+          default: false
+        addressType:
+          type: string
+          enum:
+            - Home
+            - Work
+            - Other
+          default: Other
       required:
         - street
         - city

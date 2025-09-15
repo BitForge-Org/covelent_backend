@@ -6,8 +6,47 @@ import mongoose from 'mongoose';
 import logger from '../utils/logger.js';
 
 const addAddress = asyncHandler(async (req, res) => {
+  const {
+    fullName,
+    phone,
+    houseNo,
+    street,
+    city,
+    state,
+    pincode,
+    coordinates,
+    isDefault,
+    addressType,
+  } = req.body;
+
+  if (
+    !fullName ||
+    !phone ||
+    !houseNo ||
+    !street ||
+    !city ||
+    !state ||
+    !pincode ||
+    !addressType
+  ) {
+    throw new ApiError(400, 'All address fields are required');
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const {
+    if (isDefault) {
+      // If the new address is set as default, unset previous default addresses
+      await Address.updateMany(
+        { user: req.user._id, isDefault: true },
+        { isDefault: false },
+        { session }
+      );
+    }
+
+    const newAddress = new Address({
+      user: req.user._id,
       fullName,
       phone,
       houseNo,
@@ -18,64 +57,19 @@ const addAddress = asyncHandler(async (req, res) => {
       coordinates,
       isDefault,
       addressType,
-    } = req.body;
+    });
 
-    if (
-      !fullName ||
-      !phone ||
-      !houseNo ||
-      !street ||
-      !city ||
-      !state ||
-      !pincode ||
-      !addressType
-    ) {
-      throw new ApiError(400, 'All address fields are required');
-    }
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
-    try {
-      if (isDefault) {
-        // If the new address is set as default, unset previous default addresses
-        await Address.updateMany(
-          { user: req.user._id, isDefault: true },
-          { isDefault: false },
-          { session }
-        );
-      }
-
-      const newAddress = new Address({
-        user: req.user._id,
-        fullName,
-        phone,
-        houseNo,
-        street,
-        city,
-        state,
-        pincode,
-        coordinates,
-        isDefault,
-        addressType,
-      });
-
-      await newAddress.save({ session });
-      await session.commitTransaction();
-      res
-        .status(201)
-        .json(new ApiResponse(201, 'Address added successfully', newAddress));
-    } catch (error) {
-      logger.error('Error adding address:', error);
-      await session.abortTransaction();
-      throw new ApiError(500, 'Failed to add address', error);
-    } finally {
-      session.endSession();
-    }
+    await newAddress.save({ session });
+    await session.commitTransaction();
+    res
+      .status(201)
+      .json(new ApiResponse(201, 'Address added successfully', newAddress));
   } catch (error) {
-    logger.error('Error fetching addresses:', error);
-    logger.log(error);
-    throw new ApiError(500, 'Failed to fetch addresses', error);
+    logger.error('Error adding address:', error);
+    await session.abortTransaction();
+    throw new ApiError(500, 'Failed to add address', error);
+  } finally {
+    session.endSession();
   }
 });
 

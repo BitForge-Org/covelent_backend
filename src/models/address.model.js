@@ -16,7 +16,7 @@ const addressSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      matchMediach: [/^\d{10}$/, 'Please fill a valid 10-digit phone number'],
+      match: [/^\d{10}$/, 'Please fill a valid 10-digit phone number'],
     },
     houseNo: {
       type: String,
@@ -42,7 +42,7 @@ const addressSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      matchMediach: [/^\d{6}$/, 'Please fill a valid 6-digit pincode'],
+      match: [/^\d{6}$/, 'Please fill a valid 6-digit pincode'],
     },
     coordinates: {
       lat: { type: Number },
