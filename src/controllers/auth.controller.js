@@ -392,7 +392,7 @@ const loginProvider = asyncHandler(async (req, res) => {
     logger.warn(`[LOGIN] Unauthorized role for provider login: ${email}`);
     throw new ApiError(403, 'User is not authorized as provider');
   }
-
+  //
   // if (!user.isActive) {
   //   throw new ApiError(401, 'User account is not active');
   // }
