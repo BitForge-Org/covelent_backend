@@ -54,6 +54,11 @@
       - Service
     parameters:
       - in: query
+        name: title
+        schema:
+          type: string
+        description: Search services by title (case-insensitive)
+      - in: query
         name: categoryId
         schema:
           type: string

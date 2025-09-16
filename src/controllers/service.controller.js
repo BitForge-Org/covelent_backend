@@ -160,8 +160,10 @@ const updateServiceImage = asyncHandler(async (req, res) => {
     );
   }
 });
+
 const getServices = asyncHandler(async (req, res) => {
-  const { categoryId, minPrice, maxPrice, avgRating, isFeatured } = req.query;
+  const { categoryId, minPrice, maxPrice, avgRating, isFeatured, title } =
+    req.query;
 
   const filter = {};
 
@@ -187,6 +189,10 @@ const getServices = asyncHandler(async (req, res) => {
 
   if (isFeatured) {
     filter.isFeatured = isFeatured === 'true';
+  }
+
+  if (title) {
+    filter.title = { $regex: title, $options: 'i' };
   }
 
   // const cacheKey = `services:${JSON.stringify(filter)}`;
