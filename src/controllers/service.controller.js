@@ -136,7 +136,7 @@ const updateServiceImage = asyncHandler(async (req, res) => {
       { new: true }
     );
     if (!updatedService) {
-      throw new ApiError(404, 'Service not found');
+      throw new ApiError(204, 'Service not found');
     }
     // Invalidate cache if needed
     if (!redisClient.isOpen) {
@@ -202,7 +202,7 @@ const getServices = asyncHandler(async (req, res) => {
   const services = await Service.find(filter).populate('category');
 
   if (!services || services.length === 0) {
-    return res.status(404).json(new ApiResponse(404, [], 'No services found'));
+    return res.status(204).json(new ApiResponse(204, [], 'No services found'));
   }
 
   return res
@@ -237,8 +237,8 @@ const getFeaturedServices = asyncHandler(async (req, res) => {
 
   if (!services || services.length === 0) {
     return res
-      .status(404)
-      .json(new ApiResponse(404, null, 'No featured services found'));
+      .status(204)
+      .json(new ApiResponse(204, null, 'No featured services found'));
   }
 
   // Cache the result
@@ -261,7 +261,7 @@ const getServiceById = asyncHandler(async (req, res) => {
     }
     const service = await Service.findById(serviceId).populate('category');
     if (!service) {
-      throw new ApiError(404, 'Service not found');
+      throw new ApiError(204, 'Service not found');
     }
     return res
       .status(200)
