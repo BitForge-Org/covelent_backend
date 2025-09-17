@@ -1,3 +1,38 @@
+/bookings/{bookingId}:
+  get:
+    summary: Get booking by ID
+    description: Retrieve a single booking by its ObjectId, including populated service, user, provider, and location details.
+    tags:
+      - Bookings
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: path
+        name: bookingId
+        required: true
+        schema:
+          type: string
+        description: The ObjectId of the booking to retrieve
+    responses:
+      '200':
+        description: Booking retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  $ref: './../schemas/booking.yaml#/Booking'
+                message:
+                  type: string
+      '400':
+        description: Invalid booking ID
+      '404':
+        description: Booking not found
+      '500':
+        description: Server error
 /bookings/reject:
   post:
     summary: Provider rejects a booking (does not change booking status)
