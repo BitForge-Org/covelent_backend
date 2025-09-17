@@ -252,4 +252,30 @@ const getFeaturedServices = asyncHandler(async (req, res) => {
     );
 });
 
-export { createService, getServices, getFeaturedServices, updateServiceImage };
+// Get service by ID
+const getServiceById = asyncHandler(async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    if (!serviceId) {
+      throw new ApiError(400, 'Service ID is required');
+    }
+    const service = await Service.findById(serviceId).populate('category');
+    if (!service) {
+      throw new ApiError(404, 'Service not found');
+    }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, service, 'Service retrieved successfully'));
+  } catch (error) {
+    logger.error('Error in getServiceById:', error);
+    throw new ApiError(500, 'Failed to retrieve service');
+  }
+});
+
+export {
+  createService,
+  getServices,
+  getFeaturedServices,
+  updateServiceImage,
+  getServiceById,
+};

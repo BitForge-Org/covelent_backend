@@ -3,6 +3,7 @@ import {
   createService,
   getFeaturedServices,
   getServices,
+  getServiceById,
 } from '../controllers/service.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import { isAdmin } from '../middlewares/auth.middleware.js';
@@ -28,6 +29,9 @@ router.patch(
 );
 
 router.route('/featured-services').get(getFeaturedServices);
+
+// Get service by ID
+router.get('/:serviceId', getServiceById);
 
 router.route('/').get(getServices);
 

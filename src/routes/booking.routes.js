@@ -6,6 +6,7 @@ import {
   acceptBooking,
   getAcceptedBookings,
   rejectBooking,
+  getBookingById,
 } from '../controllers/booking.controller.js';
 
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -29,5 +30,8 @@ router.post('/accept', verifyJWT, acceptBooking);
 
 // Provider rejects a booking
 router.post('/reject', verifyJWT, rejectBooking);
+
+// Get booking by ID
+router.get('/:bookingId', verifyJWT, getBookingById);
 
 export default router;

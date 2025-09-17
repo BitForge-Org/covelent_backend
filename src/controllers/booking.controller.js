@@ -6,12 +6,15 @@ import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 
 import { Booking } from '../models/booking.model.js';
+// Get booking by ID
+
 import { ProviderApplication } from '../models/provider-application.model.js';
 import { Service } from '../models/service.model.js';
 import { Address } from '../models/address.model.js';
 // import { Notification } from '../models/notification.model.js';
 import mongoose from 'mongoose';
 import razorpay from '../utils/razorpay.js';
+import logger from '../utils/logger.js';
 
 const createBooking = asyncHandler(async (req, res) => {
   try {
@@ -398,7 +401,6 @@ const getAcceptedBookings = asyncHandler(async (req, res) => {
 });
 
 // Provider rejects a booking (no booking status change, just record rejection)
-import logger from '../utils/logger.js';
 const rejectBooking = asyncHandler(async (req, res) => {
   try {
     const providerId = req.user._id;
@@ -443,6 +445,53 @@ const rejectBooking = asyncHandler(async (req, res) => {
   }
 });
 
+const getBookingById = asyncHandler(async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    if (!bookingId) {
+      throw new ApiError(400, 'Booking ID is required');
+    }
+    const booking = await Booking.findById(bookingId)
+      .populate({
+        path: 'service',
+        select: 'title description category image pricingOptions',
+        populate: { path: 'category', select: 'name' },
+      })
+      .populate({ path: 'user', select: 'name email phone' })
+      .populate({ path: 'provider', select: 'name email phone' })
+      .populate({
+        path: 'location',
+        select: 'address city state pincode coordinates',
+      });
+    if (!booking) {
+      throw new ApiError(404, 'Booking not found');
+    }
+    // Attach selected pricing option details
+    if (
+      booking.service &&
+      Array.isArray(booking.service.pricingOptions) &&
+      booking.selectedPricingOption !== null
+    ) {
+      const option = booking.service.pricingOptions.find(
+        (opt) =>
+          opt &&
+          opt._id &&
+          booking.selectedPricingOption &&
+          opt._id.toString() === booking.selectedPricingOption.toString()
+      );
+      booking.selectedPricingOption = option || null;
+    } else {
+      booking.selectedPricingOption = null;
+    }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, booking, 'Booking retrieved'));
+  } catch (error) {
+    logger.error('Error in getBookingById:', error);
+    throw new ApiError(500, 'Failed to retrieve booking');
+  }
+});
+
 export {
   createBooking,
   getBookingsHistory,
@@ -450,4 +499,5 @@ export {
   acceptBooking,
   getAcceptedBookings,
   rejectBooking,
+  getBookingById,
 };
