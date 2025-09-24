@@ -1,4 +1,6 @@
 import session from 'express-session';
+import { initRedis } from './utils/redisClient.js';
+import logger from './utils/logger.js';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
@@ -10,6 +12,15 @@ import { generalLimiter, authLimiter } from './utils/rateLimiter.js';
 import { setupSwagger } from './swagger.js';
 
 const app = express();
+
+// Ensure Redis is connected at app startup
+initRedis()
+  .then(() => {
+    logger.info('Redis client connected at startup');
+  })
+  .catch((err) => {
+    logger.error('Redis client failed to connect at startup:', err);
+  });
 
 // Logger middleware
 app.use(apiLoggerMiddleware);

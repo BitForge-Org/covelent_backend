@@ -6,8 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     container_name: covelent-server
+    # env_file:
+    #   - /home/ec2-user/configs/covelent.env   # external .env file
     env_file:
-      - /home/ec2-user/configs/covelent.env   # external .env file
+      - .env  # external .env file
     depends_on:
       - redis
     ports:
