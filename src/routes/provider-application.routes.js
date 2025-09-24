@@ -28,6 +28,7 @@ import {
 } from '../controllers/provider-application.controller.js';
 
 import { isAdmin, verifyJWT } from '../middlewares/auth.middleware.js';
+import { upload } from '../middlewares/multer.middleware.js';
 
 const router = express.Router();
 
@@ -36,7 +37,16 @@ const router = express.Router();
  * @desc    Create new provider application
  * @access  Private (provider)
  */
-router.post('/', verifyJWT, createProviderApplication);
+router.post(
+  '/',
+  verifyJWT,
+  upload.fields([
+    { name: 'aadharFrontImage', maxCount: 1 },
+    { name: 'aadharBackImage', maxCount: 1 },
+    { name: 'panImage', maxCount: 1 },
+  ]),
+  createProviderApplication
+);
 
 /**
  * @route   PATCH /api/provider-applications/:id/status
@@ -65,5 +75,10 @@ router.get('/:id', verifyJWT, getApplicationById);
  * @access  Private (provider)
  */
 router.get('/provider/:id', verifyJWT, getApplicationsByProvider);
+/**
+ * @route   PATCH /api/provider-applications/provider/:providerId/verify-documents
+ * @desc    Admin verifies provider documents
+ * @access  Private (admin)
+ */
 
 export default router;
