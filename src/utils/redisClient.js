@@ -2,7 +2,7 @@ import { createClient } from 'redis';
 import logger from './logger.js';
 
 export const redisClient = createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379',
+  url: process.env.REDIS_URL || 'redis://redis:6379',
   socket: {
     reconnectStrategy: (retries) => {
       // Exponential backoff, max 30s
