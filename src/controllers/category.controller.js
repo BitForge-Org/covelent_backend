@@ -3,7 +3,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { Category } from '../models/category.model.js';
-import { redisClient, initRedis } from '../utils/redisClient.js';
+import { redisClient } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
 
 const createCategory = asyncHandler(async (req, res) => {
@@ -75,37 +75,36 @@ async function setCategoriesToCache(categories) {
 }
 
 const getAllCategories = asyncHandler(async (req, res) => {
+  // Try to get categories from Redis cache first
+  let categories = await getCategoriesFromCache();
+  if (categories && categories.length > 0) {
+    logger.info('Categories served from Redis cache');
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, categories, 'Categories retrieved from cache')
+      );
+  }
+
+  // If not cached, fetch from DB
   try {
-    const categories = await Category.find().sort({ createdAt: -1 });
+    categories = await Category.find().sort({ createdAt: -1 });
     if (categories.length === 0) {
       return res
         .status(404)
         .json(new ApiResponse(404, null, 'No categories found'));
     }
-    await setCategoriesToCache(categories); // Await to ensure cache is set
+    await setCategoriesToCache(categories);
     logger.info('Categories served from MongoDB');
-    // }
-
-    return res.status(200).json(
-      new ApiResponse(
-        200,
-        categories
-        // `Categories fetched successfully${cacheHit ? " (from cache)" : ""}`
-      )
-    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, categories, 'Categories retrieved from DB'));
   } catch (error) {
     logger.error(error);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, null, 'Failed to fetch categories'));
   }
-  let categories = await getCategoriesFromCache();
-  let cacheHit = !!categories;
-
-  if (cacheHit) {
-    logger.info('Categories served from Redis cache');
-  }
-
-  // let categories = null;
-
-  // if (!categories) {
 });
 
 export { createCategory, getAllCategories };
