@@ -23,4 +23,4 @@ COPY --chown=node:node . .
 EXPOSE 8000
 
 # Run the application.
-CMD ["yarn", "dev"]
+CMD ["node", "src/index.js"]

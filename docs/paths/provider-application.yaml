@@ -6,17 +6,12 @@
     requestBody:
       required: true
       content:
-        application/json:
+        multipart/form-data:
           schema:
             type: object
             required:
-              - provider
               - service
             properties:
-              provider:
-                type: string
-                description: Provider User ObjectId
-                example: 60f7c0b8e1b1c8a1b8e1b1c8
               service:
                 type: string
                 description: Service ObjectId
@@ -29,6 +24,18 @@
                 description: Array of ObjectIds referencing Service.locationAvailable
                 example:
                   ['650000000000000000000001', '650000000000000000000002']
+              aadharFrontImage:
+                type: string
+                format: binary
+                description: Aadhar front image file
+              aadharBackImage:
+                type: string
+                format: binary
+                description: Aadhar back image file
+              panImage:
+                type: string
+                format: binary
+                description: PAN image file
     responses:
       '201':
         description: Provider application created successfully
