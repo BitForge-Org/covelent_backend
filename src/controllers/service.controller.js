@@ -96,9 +96,6 @@ const createService = asyncHandler(async (req, res) => {
     });
 
     // Invalidate services cache after creating a new service
-    if (!redisClient.isOpen) {
-      await redisClient.connect();
-    }
     await redisClient.del('services:all');
 
     return res
@@ -138,10 +135,7 @@ const updateServiceImage = asyncHandler(async (req, res) => {
     if (!updatedService) {
       throw new ApiError(204, 'Service not found');
     }
-    // Invalidate cache if needed
-    if (!redisClient.isOpen) {
-      await redisClient.connect();
-    }
+    // Invalidate cache after updating service image
     await redisClient.del('services:all');
     return res
       .status(200)
@@ -214,10 +208,6 @@ const getFeaturedServices = asyncHandler(async (req, res) => {
   const cacheKey = 'services:featured';
 
   // Try to get from Redis cache
-
-  if (!redisClient.isOpen) {
-    await redisClient.connect();
-  }
   const cached = await redisClient.get(cacheKey);
   if (cached) {
     const services = JSON.parse(cached);

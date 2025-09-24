@@ -8,7 +8,6 @@ import logger from '../utils/logger.js';
 
 const createCategory = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
-  await initRedis();
   if (!name || !description) {
     throw new ApiError(400, 'Name and description are required');
   }
@@ -96,19 +95,6 @@ const getAllCategories = asyncHandler(async (req, res) => {
     );
   } catch (error) {
     logger.error(error);
-  }
-  if (!redisClient.isOpen) {
-    logger.warn('Redis client is not open. Attempting to connect...');
-    try {
-      await initRedis();
-      if (redisClient.isOpen) {
-        logger.info('Redis client connected successfully.');
-      } else {
-        logger.warn('Failed to connect Redis client.');
-      }
-    } catch (err) {
-      logger.error('Error connecting Redis client:', err.message);
-    }
   }
   let categories = await getCategoriesFromCache();
   let cacheHit = !!categories;
