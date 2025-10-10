@@ -1,0 +1,21 @@
+Pincode:
+  type: object
+  properties:
+    _id:
+      type: string
+    code:
+      type: string
+    city:
+      type: string
+      description: City ObjectId reference
+    area:
+      type: string
+      description: Area ObjectId reference
+    isServiceable:
+      type: boolean
+      default: true
+  required:
+    - code
+    - city
+    - area
+    - isServiceable

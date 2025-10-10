@@ -19,6 +19,8 @@ tags:
     description: User management and retrieval
   - name: ProviderApplication
     description: Provider application management
+  - name: LocationImport
+    description: Location import management
 paths:
   /services:
     post:
@@ -1535,6 +1537,482 @@ paths:
           description: Invalid booking ID
         '401':
           description: Unauthorized
+  /location-import/cities:
+    get:
+      summary: List all cities
+      tags:
+        - LocationImport
+      responses:
+        '200':
+          description: List of cities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/City'
+  /location-import/import:
+    post:
+      summary: Import city data (admin only)
+      tags:
+        - LocationImport
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cityName:
+                  type: string
+                pincodeRanges:
+                  type: array
+                  items:
+                    type: string
+                centerCoords:
+                  type: array
+                  items:
+                    type: number
+      responses:
+        '200':
+          description: City data imported successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                  message:
+                    type: string
+  '/location-import/cities/{cityId}':
+    get:
+      summary: Get city by id
+      tags:
+        - LocationImport
+      parameters:
+        - in: path
+          name: cityId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: City details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/City'
+  /location-import/areas:
+    get:
+      summary: List all areas
+      tags:
+        - LocationImport
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Items per page
+      responses:
+        '200':
+          description: List of areas with pagination
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  areas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Area'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      pages:
+                        type: integer
+        '404':
+          description: Area not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  '/location-import/areas/{areaId}':
+    get:
+      summary: Get area by id
+      tags:
+        - LocationImport
+      parameters:
+        - in: path
+          name: areaId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Area details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Area'
+        '404':
+          description: Area not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /location-import/subareas:
+    get:
+      summary: List all sub-areas
+      tags:
+        - LocationImport
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Items per page
+      responses:
+        '200':
+          description: List of sub-areas with pagination
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subAreas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubArea'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      pages:
+                        type: integer
+        '404':
+          description: SubArea not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  '/location-import/subareas/{subAreaId}':
+    get:
+      summary: Get sub-area by id
+      tags:
+        - LocationImport
+      parameters:
+        - in: path
+          name: subAreaId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sub-area details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubArea'
+        '404':
+          description: SubArea not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /location-import/pincodes:
+    get:
+      summary: List all pincodes
+      tags:
+        - LocationImport
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Items per page
+      responses:
+        '200':
+          description: List of pincodes with pagination
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pincodes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pincode'
+                  pagination:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      pages:
+                        type: integer
+        '404':
+          description: Pincode not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  '/location-import/pincodes/{pincodeId}':
+    get:
+      summary: Get pincode by id
+      tags:
+        - LocationImport
+      parameters:
+        - in: path
+          name: pincodeId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pincode details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pincode'
+        '404':
+          description: Pincode not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  '/location-import/import-status/{importLogId}':
+    get:
+      summary: Get import status by log id
+      tags:
+        - LocationImport
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: importLogId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Import status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: object
+  '/location-import/areas/{areaId}/subareas':
+    get:
+      summary: List sub-areas by area
+      tags:
+        - LocationImport
+      parameters:
+        - in: path
+          name: areaId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sub-areas listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubArea'
+  '/location-import/cities/{cityId}/areas':
+    get:
+      summary: List areas by city
+      tags:
+        - LocationImport
+      parameters:
+        - in: path
+          name: cityId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Areas listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Area'
+  '/location-import/areas/{areaId}/serviceability':
+    patch:
+      summary: Update area serviceability (admin only)
+      tags:
+        - LocationImport
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: areaId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serviceable:
+                  type: boolean
+      responses:
+        '200':
+          description: Area serviceability updated
+  '/location-import/subareas/{subAreaId}/serviceability':
+    patch:
+      summary: Update sub-area serviceability (admin only)
+      tags:
+        - LocationImport
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: subAreaId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serviceable:
+                  type: boolean
+      responses:
+        '200':
+          description: Sub-area serviceability updated
+  /location-import/areas/bulk-serviceability:
+    patch:
+      summary: Bulk update area serviceability (admin only)
+      tags:
+        - LocationImport
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                areaIds:
+                  type: array
+                  items:
+                    type: string
+                serviceable:
+                  type: boolean
+      responses:
+        '200':
+          description: Bulk area serviceability updated
+  '/location-import/pincode/{pincode}':
+    get:
+      summary: Get pincode details
+      tags:
+        - LocationImport
+      parameters:
+        - in: path
+          name: pincode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pincode details
+  /location-import/search:
+    get:
+      summary: 'Search locations (areas, subareas, pincodes)'
+      tags:
+        - LocationImport
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+          description: Search query
+      responses:
+        '200':
+          description: Search results
+        '400':
+          description: Bad Request - Query must be at least 2 characters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
 components:
   securitySchemes:
     BearerAuth:
@@ -1815,3 +2293,105 @@ components:
         - houseNo
         - fullName
         - phone
+    City:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        state:
+          type: string
+        country:
+          type: string
+        pincodeRanges:
+          type: array
+          items:
+            type: string
+        centerCoords:
+          type: array
+          items:
+            type: number
+            description:
+              - latitude
+              - longitude
+      required:
+        - name
+        - state
+        - country
+        - pincodeRanges
+        - centerCoords
+    Area:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        city:
+          type: string
+          description: City ObjectId reference
+        pincode:
+          type: string
+        serviceable:
+          type: boolean
+          default: true
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+      required:
+        - name
+        - city
+        - pincode
+        - serviceable
+        - coordinates
+    SubArea:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        area:
+          type: string
+          description: Area ObjectId reference
+        serviceable:
+          type: boolean
+          default: true
+        coordinates:
+          type: object
+          properties:
+            latitude:
+              type: number
+            longitude:
+              type: number
+      required:
+        - name
+        - area
+        - serviceable
+        - coordinates
+    Pincode:
+      type: object
+      properties:
+        _id:
+          type: string
+        code:
+          type: string
+        city:
+          type: string
+          description: City ObjectId reference
+        area:
+          type: string
+          description: Area ObjectId reference
+        isServiceable:
+          type: boolean
+          default: true
+      required:
+        - code
+        - city
+        - area
+        - isServiceable

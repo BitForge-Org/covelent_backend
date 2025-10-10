@@ -1,0 +1,26 @@
+City:
+  type: object
+  properties:
+    _id:
+      type: string
+    name:
+      type: string
+    state:
+      type: string
+    country:
+      type: string
+    pincodeRanges:
+      type: array
+      items:
+        type: string
+    centerCoords:
+      type: array
+      items:
+        type: number
+        description: [latitude, longitude]
+  required:
+    - name
+    - state
+    - country
+    - pincodeRanges
+    - centerCoords

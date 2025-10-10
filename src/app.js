@@ -69,6 +69,7 @@ import providerApplicationRouter from './routes/provider-application.routes.js';
 import BookingRouter from './routes/booking.routes.js';
 import AddressRouter from './routes/address.routers.js';
 import adminRouter from './routes/admin.routes.js';
+import locationRoutes from './routes/locationImport.routes.js';
 
 import webhookRouter from './routes/webhook.routes.js';
 
@@ -82,6 +83,7 @@ app.use('/api/v1/services', serviceRoutes);
 app.use('/api/v1/provider-applications', providerApplicationRouter);
 app.use('/api/v1/bookings', BookingRouter);
 app.use('/api/v1/addresses', AddressRouter);
+app.use('/api/v1/location-import', locationRoutes);
 
 // Webhook routes
 // Razorpay webhook: capture raw body for signature verification

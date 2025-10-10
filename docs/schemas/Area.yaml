@@ -1,0 +1,28 @@
+Area:
+  type: object
+  properties:
+    _id:
+      type: string
+    name:
+      type: string
+    city:
+      type: string
+      description: City ObjectId reference
+    pincode:
+      type: string
+    serviceable:
+      type: boolean
+      default: true
+    coordinates:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+  required:
+    - name
+    - city
+    - pincode
+    - serviceable
+    - coordinates

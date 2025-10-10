@@ -1,0 +1,76 @@
+custom,covelent,categories,_id,1,ObjectId,N,PRIMARY KEY,N,N,N
+custom,covelent,categories,name,2,string,N,N,N,N,N
+custom,covelent,categories,description,3,string,N,N,N,N,N
+custom,covelent,categories,icon,4,string,N,N,N,N,N
+custom,covelent,addresses,_id,1,ObjectId,N,PRIMARY KEY,N,N,N
+custom,covelent,addresses,user,2,ObjectId,N,N,N,N,N
+custom,covelent,addresses,fullName,3,string,N,N,N,N,N
+custom,covelent,addresses,phone,4,string,N,N,N,N,N
+custom,covelent,addresses,houseNo,5,string,N,N,N,N,N
+custom,covelent,addresses,street,6,string,N,N,N,N,N
+custom,covelent,addresses,city,7,string,N,N,N,N,N
+custom,covelent,addresses,state,8,string,N,N,N,N,N
+custom,covelent,addresses,pincode,9,string,N,N,N,N,N
+custom,covelent,addresses,isDefault,10,boolean,N,N,N,N,N
+custom,covelent,addresses,addressType,11,string,N,N,N,N,N
+custom,covelent,addresses,createdAt,12,datetime,N,N,N,N,N
+custom,covelent,addresses,updatedAt,13,datetime,N,N,N,N,N
+custom,covelent,addresses,__v,14,int,N,N,N,N,N
+custom,covelent,providerapplications,_id,1,ObjectId,N,PRIMARY KEY,N,N,N
+custom,covelent,providerapplications,provider,2,ObjectId,N,N,N,N,N
+custom,covelent,providerapplications,service,3,ObjectId,N,N,N,N,N
+custom,covelent,providerapplications,applicationStatus,4,string,N,N,N,N,N
+custom,covelent,providerapplications,availableLocations,5,array,N,N,N,N,N
+custom,covelent,providerapplications,createdAt,6,datetime,N,N,N,N,N
+custom,covelent,providerapplications,updatedAt,7,datetime,N,N,N,N,N
+custom,covelent,providerapplications,__v,8,int,N,N,N,N,N
+custom,covelent,providerapplications,adminNotes,9,string,N,N,N,N,N
+custom,covelent,users,_id,1,ObjectId,N,PRIMARY KEY,N,N,N
+custom,covelent,users,email,2,string,N,N,N,N,N
+custom,covelent,users,fullName,3,string,N,N,N,N,N
+custom,covelent,users,avatar,4,string,N,N,N,N,N
+custom,covelent,users,password,5,string,N,N,N,N,N
+custom,covelent,users,role,6,string,N,N,N,N,N
+custom,covelent,users,aadhar,7,object,N,N,N,N,N
+custom,covelent,users,pan,8,object,N,N,N,N,N
+custom,covelent,users,dateOfBirth,9,datetime,N,N,N,N,N
+custom,covelent,users,isActive,10,boolean,N,N,N,N,N
+custom,covelent,users,isVerified,11,boolean,N,N,N,N,N
+custom,covelent,users,__v,12,int,N,N,N,N,N
+custom,covelent,users,refreshToken,13,string,N,N,N,N,N
+custom,covelent,users,resetPasswordExpires,14,datetime,N,N,N,N,N
+custom,covelent,users,resetPasswordToken,15,string,N,N,N,N,N
+custom,covelent,users,isComplete,16,boolean,N,N,N,N,N
+custom,covelent,users,isProfileCompleted,17,boolean,N,N,N,N,N
+custom,covelent,users,phoneNumber,18,string,N,N,N,N,N
+custom,covelent,services,_id,1,ObjectId,N,PRIMARY KEY,N,N,N
+custom,covelent,services,title,2,string,N,N,N,N,N
+custom,covelent,services,description,3,string,N,N,N,N,N
+custom,covelent,services,category,4,ObjectId,N,N,N,N,N
+custom,covelent,services,duration,5,int,N,N,N,N,N
+custom,covelent,services,media,6,array,N,N,N,N,N
+custom,covelent,services,avgRating,7,int,N,N,N,N,N
+custom,covelent,services,ratingsCount,8,int,N,N,N,N,N
+custom,covelent,services,isActive,9,boolean,N,N,N,N,N
+custom,covelent,services,isFeatured,10,boolean,N,N,N,N,N
+custom,covelent,services,locationAvailable,11,array,N,N,N,N,N
+custom,covelent,services,createdAt,12,datetime,N,N,N,N,N
+custom,covelent,services,updatedAt,13,datetime,N,N,N,N,N
+custom,covelent,services,__v,14,int,N,N,N,N,N
+custom,covelent,services,image,15,string,N,N,N,N,N
+custom,covelent,services,pricingOptions,16,array,N,N,N,N,N
+custom,covelent,bookings,_id,1,ObjectId,N,PRIMARY KEY,N,N,N
+custom,covelent,bookings,user,2,ObjectId,N,N,N,N,N
+custom,covelent,bookings,service,3,ObjectId,N,N,N,N,N
+custom,covelent,bookings,bookingStatus,4,string,N,N,N,N,N
+custom,covelent,bookings,scheduledDate,5,datetime,N,N,N,N,N
+custom,covelent,bookings,scheduledTime,6,string,N,N,N,N,N
+custom,covelent,bookings,location,7,object,N,N,N,N,N
+custom,covelent,bookings,pricing,8,object,N,N,N,N,N
+custom,covelent,bookings,payment,9,object,N,N,N,N,N
+custom,covelent,bookings,specialInstructions,10,string,N,N,N,N,N
+custom,covelent,bookings,createdAt,11,datetime,N,N,N,N,N
+custom,covelent,bookings,updatedAt,12,datetime,N,N,N,N,N
+custom,covelent,bookings,__v,13,int,N,N,N,N,N
+custom,covelent,bookings,selectedPricingOption,14,ObjectId,N,N,N,N,N
+custom,covelent,bookings,finalPrice,15,int,N,N,N,N,N

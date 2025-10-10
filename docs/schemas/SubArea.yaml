@@ -1,0 +1,25 @@
+SubArea:
+  type: object
+  properties:
+    _id:
+      type: string
+    name:
+      type: string
+    area:
+      type: string
+      description: Area ObjectId reference
+    serviceable:
+      type: boolean
+      default: true
+    coordinates:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+  required:
+    - name
+    - area
+    - serviceable
+    - coordinates

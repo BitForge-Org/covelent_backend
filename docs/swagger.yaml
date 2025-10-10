@@ -21,6 +21,8 @@ tags:
     description: User management and retrieval
   - name: ProviderApplication
     description: Provider application management
+  - name: LocationImport
+    description: Location import management
 
 paths:
   /services:
@@ -103,6 +105,41 @@ paths:
   /webhook/payment-status/{bookingId}:
     $ref: './paths/webhook.yaml#/~1webhook~1payment-status~1{bookingId}'
 
+  /location-import/cities:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1cities'
+  /location-import/import:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1import'
+  /location-import/cities/{cityId}:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1cities~1{cityId}'
+  /location-import/areas:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1areas'
+  /location-import/areas/{areaId}:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1areas~1{areaId}'
+  /location-import/subareas:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1subareas'
+  /location-import/subareas/{subAreaId}:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1subareas~1{subAreaId}'
+  /location-import/pincodes:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1pincodes'
+  /location-import/pincodes/{pincodeId}:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1pincodes~1{pincodeId}'
+  /location-import/import-status/{importLogId}:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1import-status~1{importLogId}'
+  /location-import/areas/{areaId}/subareas:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1areas~1{areaId}~1subareas'
+  /location-import/cities/{cityId}/areas:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1cities~1{cityId}~1areas'
+  /location-import/areas/{areaId}/serviceability:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1areas~1{areaId}~1serviceability'
+  /location-import/subareas/{subAreaId}/serviceability:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1subareas~1{subAreaId}~1serviceability'
+  /location-import/areas/bulk-serviceability:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1areas~1bulk-serviceability'
+  /location-import/pincode/{pincode}:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1pincode~1{pincode}'
+  /location-import/search:
+    $ref: './paths/locationImport.yaml#/paths/~1location-import~1search'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -120,3 +157,12 @@ components:
       $ref: './schemas/booking.yaml#/Booking'
     Address:
       $ref: './schemas/address.yaml#/Address'
+
+    City:
+      $ref: './schemas/City.yaml#/City'
+    Area:
+      $ref: './schemas/Area.yaml#/Area'
+    SubArea:
+      $ref: './schemas/SubArea.yaml#/SubArea'
+    Pincode:
+      $ref: './schemas/Pincode.yaml#/Pincode'
