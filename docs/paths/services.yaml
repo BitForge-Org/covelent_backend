@@ -1,164 +1,375 @@
-/services/{serviceId}:
-  get:
-    summary: Get service by ID
-    description: Retrieve a single service by its ObjectId, including populated category details.
-    tags:
-      - Service
-    parameters:
-      - in: path
-        name: serviceId
-        required: true
-        schema:
-          type: string
-        description: The ObjectId of the service to retrieve
-    responses:
-      '200':
-        description: Service retrieved successfully
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                statusCode:
-                  type: integer
-                  example: 200
-                data:
-                  $ref: './../schemas/Service.yaml'
-                message:
-                  type: string
-                  example: Service retrieved successfully
-      '400':
-        description: Invalid service ID
-      '404':
-        description: Service not found
-      '500':
-        description: Server error
-/services:
-  post:
-    summary: Create a new service
-    tags:
-      - Service
-    requestBody:
-      required: true
-      content:
-        multipart/form-data:
+paths:
+  /services/featured-services:
+    get:
+      summary: Get featured services
+      tags:
+        - Service
+      responses:
+        '200':
+          description: Featured services retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: './../schemas/Service.yaml'
+                  message:
+                    type: string
+  /services/{serviceId}/image:
+    get:
+      summary: Get service image by ID
+      tags:
+        - Service
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
           schema:
-            type: object
-            required:
-              - title
-              - description
-              - category
-              - pricingOptions
-            properties:
-              title:
-                type: string
-                description: Service title
-                example: Home Cleaning
-              description:
-                type: string
-                description: Service description
-                example: Professional home cleaning service
-              category:
-                type: string
-                description: Category ObjectId
-                example: 60f7c0b8e1b1c8a1b8e1b1c8
-              pricingOptions:
-                type: string
-                description: >
-                  JSON stringified array of pricing options.  
-                  Example:  
-                  '[{"label":"1 BHK","price":1000,"duration":60},{"label":"2 BHK","price":1500,"duration":90}]'
-              image:
+            type: string
+      responses:
+        '200':
+          description: Service image retrieved successfully
+          content:
+            image/png:
+              schema:
                 type: string
                 format: binary
-                description: Service image file (required, max 1)
-              media:
-                type: array
-                items:
+
+  /services:
+    get:
+      summary: Get all services with optional filters
+      tags:
+        - Service
+      parameters:
+        - in: query
+          name: title
+          schema:
+            type: string
+          description: Search services by title (case-insensitive)
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+          description: The ObjectId of the category
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+          description: Minimum price
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+          description: Maximum price
+        - in: query
+          name: avgRating
+          schema:
+            type: number
+          description: Minimum average rating
+        - in: query
+          name: isFeatured
+          schema:
+            type: boolean
+          description: Filter for featured services
+        - in: query
+          name: cityId
+          schema:
+            type: string
+          description: Filter by city ObjectId
+        - in: query
+          name: areaId
+          schema:
+            type: string
+          description: Filter by area ObjectId
+        - in: query
+          name: pincode
+          schema:
+            type: number
+          description: Filter by pincode
+      responses:
+        '200':
+          description: Services retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  data:
+                    type: array
+                    items:
+                      $ref: './../schemas/Service.yaml'
+                  message:
+                    type: string
+                    example: Services retrieved successfully
+
+    post:
+      summary: Create a new service
+      tags:
+        - Service
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - category
+                - pricingOptions
+              properties:
+                title:
+                  type: string
+                  example: Home Cleaning
+                description:
+                  type: string
+                  example: Professional home cleaning service
+                category:
+                  type: string
+                  example: 60f7c0b8e1b1c8a1b8e1b1c8
+                pricingOptions:
+                  type: string
+                  description: >
+                    JSON stringified array of pricing options.  
+                    Example: '[{"label":"1 BHK","price":1000,"duration":60}]'
+                image:
                   type: string
                   format: binary
-                description: Up to 5 media files (optional)
-              locationAvailable:
-                type: string
-                description: >
-                  JSON stringified array of locations, e.g.  
-                  '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
-  get:
-    summary: Get all services with optional filters
-    tags:
-      - Service
-    parameters:
-      - in: query
-        name: title
-        schema:
-          type: string
-        description: Search services by title (case-insensitive)
-      - in: query
-        name: categoryId
-        schema:
-          type: string
-        description: The ObjectId of the category
-      - in: query
-        name: minPrice
-        schema:
-          type: number
-        description: Minimum price
-      - in: query
-        name: maxPrice
-        schema:
-          type: number
-        description: Maximum price
-      - in: query
-        name: avgRating
-        schema:
-          type: number
-        description: Minimum average rating
-      - in: query
-        name: isFeatured
-        schema:
-          type: boolean
-        description: Filter for featured services
-      - in: query
-        name: city
-        schema:
-          type: string
-        description: Filter by city (locationAvailable)
-      - in: query
-        name: state
-        schema:
-          type: string
-        description: Filter by state (locationAvailable)
-      - in: query
-        name: lan
-        schema:
-          type: number
-        description: Filter by longitude (locationAvailable.coordinates.lan)
-      - in: query
-        name: lat
-        schema:
-          type: number
-        description: Filter by latitude (locationAvailable.coordinates.lat)
-    responses:
-      '200':
-        description: Services retrieved successfully
+                media:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Service created successfully
+
+  /services/check-availability:
+    get:
+      summary: Check service availability by pincode
+      tags:
+        - Service
+      parameters:
+        - in: query
+          name: pincode
+          required: true
+          schema:
+            type: number
+          description: Pincode to check availability
+          example: 411038
+      responses:
+        '200':
+          description: Availability checked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                        example: true
+                      pincode:
+                        type: string
+                        example: '411038'
+                      areas:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            pincodes:
+                              type: array
+                              items:
+                                type: number
+                      services:
+                        type: array
+                        items:
+                          $ref: './../schemas/Service.yaml'
+                      count:
+                        type: number
+                        example: 5
+                  message:
+                    type: string
+
+  /services/by-area/{areaId}:
+    get:
+      summary: Get services available in a specific area
+      tags:
+        - Service
+      parameters:
+        - in: path
+          name: areaId
+          required: true
+          schema:
+            type: string
+          description: Area ObjectId
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+          description: Filter by category
+        - in: query
+          name: featured
+          schema:
+            type: boolean
+          description: Filter featured services
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Services retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: './../schemas/Service.yaml'
+                  message:
+                    type: string
+
+  /services/{serviceId}:
+    get:
+      summary: Get service by ID
+      tags:
+        - Service
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Service retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  data:
+                    $ref: './../schemas/Service.yaml'
+                  message:
+                    type: string
+
+  /services/{serviceId}/areas:
+    post:
+      summary: Assign service to specific areas
+      tags:
+        - Service (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - areaIds
               properties:
-                statusCode:
-                  type: integer
-                  example: 200
-                data:
+                areaIds:
                   type: array
                   items:
-                    $ref: './../schemas/Service.yaml'
-                message:
+                    type: string
+                  example:
+                    ['68e3f964c615c935d6d756bf', '68e3f964c615c935d6d756c0']
+      responses:
+        '200':
+          description: Service assigned to areas successfully
+
+    delete:
+      summary: Remove service from specific areas
+      tags:
+        - Service (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - areaIds
+              properties:
+                areaIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Areas removed from service
+
+  /services/{serviceId}/city:
+    post:
+      summary: Assign service to entire city (all serviceable areas)
+      tags:
+        - Service (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cityId
+              properties:
+                cityId:
                   type: string
-                  example: Services retrieved successfully
-      '404':
-        description: No services found
-      '400':
-        description: Invalid filter
-      '500':
-        description: Server error
+                  example: 68e3f7dbf622c4a8249b844b
+      responses:
+        '200':
+          description: Service assigned to city successfully

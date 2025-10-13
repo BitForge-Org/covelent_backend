@@ -64,19 +64,22 @@ const serviceSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    locationAvailable: {
-      type: [
-        {
-          city: { type: String, required: true },
-          state: { type: String, required: true },
-          coordinates: {
-            lan: { type: Number, required: true },
-            lat: { type: Number, required: true },
-          },
-        },
-      ],
-      default: [],
-    },
+    serviceableAreas: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Area',
+        index: true,
+      },
+    ],
+
+    // ⭐ NEW: For quick city-level filtering
+    serviceableCities: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'City',
+        index: true,
+      },
+    ],
   },
   {
     timestamps: true,

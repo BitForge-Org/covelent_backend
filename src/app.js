@@ -65,7 +65,7 @@ import categoryRouter from './routes/category.routes.js';
 import serviceRoutes from './routes/service.routes.js';
 import authRouter from './routes/auth.routes.js';
 import apiLoggerMiddleware from './middlewares/apiLogger.middleware.js';
-import providerApplicationRouter from './routes/provider-application.routes.js';
+import serviceAreaRouter from './routes/service-area.routes.js';
 import BookingRouter from './routes/booking.routes.js';
 import AddressRouter from './routes/address.routers.js';
 import adminRouter from './routes/admin.routes.js';
@@ -80,7 +80,7 @@ app.use('/api/v1/auth', authLimiter, authRouter); // 👈 apply authLimiter to a
 app.use('/api/v1/healthcheck', healthcheckRouter);
 app.use('/api/v1/categories', categoryRouter);
 app.use('/api/v1/services', serviceRoutes);
-app.use('/api/v1/provider-applications', providerApplicationRouter);
+app.use('/api/v1/service-areas', serviceAreaRouter);
 app.use('/api/v1/bookings', BookingRouter);
 app.use('/api/v1/addresses', AddressRouter);
 app.use('/api/v1/location-import', locationRoutes);

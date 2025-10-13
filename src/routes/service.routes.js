@@ -1,18 +1,38 @@
+// src/routes/service.routes.js
 import { Router } from 'express';
 import {
   createService,
   getFeaturedServices,
   getServices,
   getServiceById,
+  updateServiceImage,
+  // ⭐ NEW imports
+  assignServiceToAreas,
+  removeServiceFromAreas,
+  assignServiceToCity,
+  checkServiceAvailability,
+  getServicesByArea,
 } from '../controllers/service.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import { isAdmin } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-// Create service (image: max 1, media: up to 5)
+// Public routes
+router.get('/', getServices);
+router.get('/featured-services', getFeaturedServices);
+router.get('/:serviceId', getServiceById);
+
+// ⭐ NEW: Check availability by pincode
+router.get('/check-availability', checkServiceAvailability);
+
+// ⭐ NEW: Get services by area
+router.get('/by-area/:areaId', getServicesByArea);
+
+// Admin routes
 router.post(
   '/',
+  isAdmin,
   upload.fields([
     { name: 'image', maxCount: 1 },
     { name: 'media', maxCount: 5 },
@@ -20,19 +40,16 @@ router.post(
   createService
 );
 
-// Update service image (max 1)
-import { updateServiceImage } from '../controllers/service.controller.js';
 router.patch(
   '/:serviceId/image',
+  isAdmin,
   upload.fields([{ name: 'image', maxCount: 1 }]),
   updateServiceImage
 );
 
-router.route('/featured-services').get(getFeaturedServices);
-
-// Get service by ID
-router.get('/:serviceId', getServiceById);
-
-router.route('/').get(getServices);
+// ⭐ NEW: Area assignment routes (Admin only)
+router.post('/:serviceId/areas', assignServiceToAreas);
+router.delete('/:serviceId/areas', removeServiceFromAreas);
+router.post('/:serviceId/city', assignServiceToCity);
 
 export default router;

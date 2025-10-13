@@ -8,7 +8,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { Booking } from '../models/booking.model.js';
 // Get booking by ID
 
-import { ProviderApplication } from '../models/provider-application.model.js';
+import { ServiceArea } from '../models/service-area.model.js';
 import { Service } from '../models/service.model.js';
 import { Address } from '../models/address.model.js';
 // import { Notification } from '../models/notification.model.js';
@@ -184,7 +184,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
     // Find provider applications where provider is the current user and status is approved
-    const approvedProviderApps = await ProviderApplication.find({
+    const approvedProviderApps = await ServiceArea.find({
       provider: userId,
       applicationStatus: 'approved',
     });
@@ -318,7 +318,7 @@ const acceptBooking = asyncHandler(async (req, res) => {
       }
 
       // Check if provider has an approved application for this service and location
-      const providerApp = await ProviderApplication.findOne({
+      const providerApp = await ServiceArea.findOne({
         provider: providerId,
         service: booking.service._id,
         applicationStatus: 'approved',

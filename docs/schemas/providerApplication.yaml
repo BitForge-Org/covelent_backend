@@ -1,47 +1,49 @@
-ProviderApplication:
-  type: object
-  properties:
-    _id:
-      type: string
-      format: objectId
-      description: Unique identifier for the provider application.
-    provider:
-      type: string
-      format: objectId
-      description: Reference to the User who is the provider.
-    service:
-      type: string
-      format: objectId
-      description: Reference to the Service being applied for.
-    availableLocations:
-      type: array
-      items:
-        type: string
-        format: objectId
-        description: ObjectId referencing Service.locationAvailable (subdocument)
-      description: Array of ObjectIds referencing Service.locationAvailable
-      example: ['650000000000000000000001', '650000000000000000000002']
-    applicationStatus:
-      type: string
-      enum:
-        - pending
-        - approved
-        - rejected
-        - suspended
-      default: pending
-      description: Status of the application.
-    adminNotes:
-      type: string
-      description: Notes from the admin regarding the application.
-    createdAt:
-      type: string
-      format: date-time
-      description: Timestamp when the application was created.
-    updatedAt:
-      type: string
-      format: date-time
-      description: Timestamp when the application was last updated.
-  required:
-    - provider
-    - service
-    - applicationStatus
+components:
+  schemas:
+    ServiceArea:
+      type: object
+      properties:
+        _id:
+          type: string
+          format: objectId
+          description: Unique identifier for the service area.
+        provider:
+          type: string
+          format: objectId
+          description: Reference to the User who is the provider.
+        service:
+          type: string
+          format: objectId
+          description: Reference to the Service being applied for.
+        availableLocations:
+          type: array
+          items:
+            type: string
+            format: objectId
+            description: ObjectId referencing Service.locationAvailable (subdocument)
+          description: Array of ObjectIds referencing Service.locationAvailable
+          example: ['650000000000000000000001', '650000000000000000000002']
+        applicationStatus:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+            - suspended
+          default: pending
+          description: Status of the service area.
+        adminNotes:
+          type: string
+          description: Notes from the admin regarding the service area.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the service area was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the service area was last updated.
+      required:
+        - provider
+        - service
+        - applicationStatus

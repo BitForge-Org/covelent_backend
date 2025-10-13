@@ -38,5 +38,3 @@ const serviceArea = new Schema(
 );
 
 export const ServiceArea = mongoose.model('ServiceArea', serviceArea);
-
-// export const Service = mongoose.model('Service', serviceSchema);

@@ -23,16 +23,26 @@ tags:
     description: Provider application management
   - name: LocationImport
     description: Location import management
+  - name: ServiceArea
+    description: Service area management
 
 paths:
   /services:
-    $ref: './paths/services.yaml#/~1services'
+    $ref: './paths/services.yaml#/paths/~1services'
   /services/featured-services:
-    $ref: './paths/featured-services.yaml'
+    $ref: './paths/services.yaml#/paths/~1services~1featured-services'
   /services/{serviceId}:
-    $ref: './paths/services.yaml#/~1services~1{serviceId}'
+    $ref: './paths/services.yaml#/paths/~1services~1{serviceId}'
   /services/{serviceId}/image:
-    $ref: './paths/service-image-diff.yaml#'
+    $ref: './paths/services.yaml#/paths/~1services~1{serviceId}~1image'
+  /services/check-availability:
+    $ref: './paths/services.yaml#/paths/~1services~1check-availability'
+  /services/by-area/{areaId}:
+    $ref: './paths/services.yaml#/paths/~1services~1by-area~1{areaId}'
+  /services/{serviceId}/areas:
+    $ref: './paths/services.yaml#/paths/~1services~1{serviceId}~1areas'
+  /services/{serviceId}/city:
+    $ref: './paths/services.yaml#/paths/~1services~1{serviceId}~1city'
 
   /categories:
     $ref: './paths/categories.yaml#/~1categories'
@@ -42,14 +52,14 @@ paths:
     $ref: './paths/users/update-account.yaml#/~1update-account'
   /users/avatar:
     $ref: './paths/users/avatar.yaml#/~1avatar'
-  /provider-applications:
-    $ref: './paths/provider-application.yaml#/~1provider-applications'
+  /service-areas:
+    $ref: './paths/serviceArea.yaml#/paths/~1service-areas'
 
-  /provider-applications/{id}:
-    $ref: './paths/provider-application.yaml#/~1provider-applications~1{id}'
+  /service-areas/{id}:
+    $ref: './paths/serviceArea.yaml#/paths/~1service-areas~1{id}'
 
-  /provider-applications/{id}/status:
-    $ref: './paths/provider-application.yaml#/~1provider-applications~1{id}~1status'
+  /service-areas/{id}/status:
+    $ref: './paths/serviceArea.yaml#/paths/~1service-areas~1{id}~1status'
 
   /bookings:
     $ref: './paths/booking.yaml#/~1bookings'
@@ -151,8 +161,8 @@ components:
       $ref: './schemas/User.yaml#/User'
     Service:
       $ref: './schemas/Service.yaml#/Service'
-    providerApplication:
-      $ref: './schemas/providerApplication.yaml#/ProviderApplication'
+    ServiceArea:
+      $ref: './schemas/serviceArea.yaml#/ServiceArea'
     Booking:
       $ref: './schemas/booking.yaml#/Booking'
     Address:

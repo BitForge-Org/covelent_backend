@@ -21,54 +21,10 @@ tags:
     description: Provider application management
   - name: LocationImport
     description: Location import management
+  - name: ServiceArea
+    description: Service area management
 paths:
   /services:
-    post:
-      summary: Create a new service
-      tags:
-        - Service
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - title
-                - description
-                - category
-                - pricingOptions
-              properties:
-                title:
-                  type: string
-                  description: Service title
-                  example: Home Cleaning
-                description:
-                  type: string
-                  description: Service description
-                  example: Professional home cleaning service
-                category:
-                  type: string
-                  description: Category ObjectId
-                  example: 60f7c0b8e1b1c8a1b8e1b1c8
-                pricingOptions:
-                  type: string
-                  description: |
-                    JSON stringified array of pricing options.   Example:   '[{"label":"1 BHK","price":1000,"duration":60},{"label":"2 BHK","price":1500,"duration":90}]'
-                image:
-                  type: string
-                  format: binary
-                  description: 'Service image file (required, max 1)'
-                media:
-                  type: array
-                  items:
-                    type: string
-                    format: binary
-                  description: Up to 5 media files (optional)
-                locationAvailable:
-                  type: string
-                  description: |
-                    JSON stringified array of locations, e.g.   '[{"city":"City","state":"State","coordinates":{"lan":77.1,"lat":28.6}}]'
     get:
       summary: Get all services with optional filters
       tags:
@@ -105,25 +61,20 @@ paths:
             type: boolean
           description: Filter for featured services
         - in: query
-          name: city
+          name: cityId
           schema:
             type: string
-          description: Filter by city (locationAvailable)
+          description: Filter by city ObjectId
         - in: query
-          name: state
+          name: areaId
           schema:
             type: string
-          description: Filter by state (locationAvailable)
+          description: Filter by area ObjectId
         - in: query
-          name: lan
+          name: pincode
           schema:
             type: number
-          description: Filter by longitude (locationAvailable.coordinates.lan)
-        - in: query
-          name: lat
-          schema:
-            type: number
-          description: Filter by latitude (locationAvailable.coordinates.lat)
+          description: Filter by pincode
       responses:
         '200':
           description: Services retrieved successfully
@@ -142,12 +93,48 @@ paths:
                   message:
                     type: string
                     example: Services retrieved successfully
-        '400':
-          description: Invalid filter
-        '404':
-          description: No services found
-        '500':
-          description: Server error
+    post:
+      summary: Create a new service
+      tags:
+        - Service
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - category
+                - pricingOptions
+              properties:
+                title:
+                  type: string
+                  example: Home Cleaning
+                description:
+                  type: string
+                  example: Professional home cleaning service
+                category:
+                  type: string
+                  example: 60f7c0b8e1b1c8a1b8e1b1c8
+                pricingOptions:
+                  type: string
+                  description: |
+                    JSON stringified array of pricing options.   Example: '[{"label":"1 BHK","price":1000,"duration":60}]'
+                image:
+                  type: string
+                  format: binary
+                media:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '201':
+          description: Service created successfully
   /services/featured-services:
     get:
       summary: Get featured services
@@ -163,20 +150,15 @@ paths:
                 properties:
                   statusCode:
                     type: integer
-                    example: 200
                   data:
                     type: array
                     items:
                       $ref: '#/paths/~1services~1%7BserviceId%7D/get/responses/200/content/application~1json/schema/properties/data'
                   message:
                     type: string
-                    example: Featured services retrieved successfully
-        '500':
-          description: Server error
   '/services/{serviceId}':
     get:
       summary: Get service by ID
-      description: 'Retrieve a single service by its ObjectId, including populated category details.'
       tags:
         - Service
       parameters:
@@ -185,7 +167,6 @@ paths:
           required: true
           schema:
             type: string
-          description: The ObjectId of the service to retrieve
       responses:
         '200':
           description: Service retrieved successfully
@@ -203,13 +184,17 @@ paths:
                       properties:
                         _id:
                           type: string
+                          example: 507f1f77bcf86cd799439011
                         title:
                           type: string
                           maxLength: 100
+                          example: Home Cleaning Service
                         description:
                           type: string
+                          example: Professional home cleaning with eco-friendly products
                         category:
                           type: string
+                          example: 60f7c0b8e1b1c8a1b8e1b1c8
                         pricingOptions:
                           type: array
                           items:
@@ -219,32 +204,83 @@ paths:
                                 type: string
                               label:
                                 type: string
+                                example: 1 BHK Cleaning
                               price:
                                 type: number
                                 minimum: 0
+                                example: 1000
                               duration:
                                 type: number
                                 minimum: 0
+                                example: 60
                         image:
                           type: string
+                          example: 'https://res.cloudinary.com/example/image.jpg'
                         media:
                           type: array
                           maxItems: 5
                           items:
                             type: string
+                            example: 'https://res.cloudinary.com/example/media1.jpg'
                         avgRating:
                           type: number
                           minimum: 0
                           maximum: 5
+                          example: 4.5
                         ratingsCount:
                           type: number
                           minimum: 0
+                          example: 120
                         isActive:
                           type: boolean
+                          example: true
                         isFeatured:
                           type: boolean
+                          example: false
+                        serviceableAreas:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              _id:
+                                type: string
+                                example: 68e3f964c615c935d6d756bf
+                              name:
+                                type: string
+                                example: Kothrud
+                              pincodes:
+                                type: array
+                                items:
+                                  type: number
+                                example:
+                                  - 411038
+                                  - 411029
+                              metadata:
+                                type: object
+                                properties:
+                                  totalSubAreas:
+                                    type: number
+                                    example: 15
+                                  district:
+                                    type: string
+                                    example: Pune
+                        serviceableCities:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              _id:
+                                type: string
+                                example: 68e3f7dbf622c4a8249b844b
+                              name:
+                                type: string
+                                example: Pune
+                              state:
+                                type: string
+                                example: Maharashtra
                         locationAvailable:
                           type: array
+                          deprecated: true
                           items:
                             type: object
                             properties:
@@ -262,21 +298,16 @@ paths:
                         createdAt:
                           type: string
                           format: date-time
+                          example: '2024-01-15T10:30:00.000Z'
                         updatedAt:
                           type: string
                           format: date-time
+                          example: '2024-01-15T12:45:00.000Z'
                   message:
                     type: string
-                    example: Service retrieved successfully
-        '400':
-          description: Invalid service ID
-        '404':
-          description: Service not found
-        '500':
-          description: Server error
   '/services/{serviceId}/image':
-    patch:
-      summary: Update service image
+    get:
+      summary: Get service image by ID
       tags:
         - Service
       parameters:
@@ -285,27 +316,203 @@ paths:
           required: true
           schema:
             type: string
-          description: The ID of the service to update
+      responses:
+        '200':
+          description: Service image retrieved successfully
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+  /services/check-availability:
+    get:
+      summary: Check service availability by pincode
+      tags:
+        - Service
+      parameters:
+        - in: query
+          name: pincode
+          required: true
+          schema:
+            type: number
+          description: Pincode to check availability
+          example: 411038
+      responses:
+        '200':
+          description: Availability checked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  data:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                        example: true
+                      pincode:
+                        type: string
+                        example: '411038'
+                      areas:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            name:
+                              type: string
+                            pincodes:
+                              type: array
+                              items:
+                                type: number
+                      services:
+                        type: array
+                        items:
+                          $ref: '#/paths/~1services~1%7BserviceId%7D/get/responses/200/content/application~1json/schema/properties/data'
+                      count:
+                        type: number
+                        example: 5
+                  message:
+                    type: string
+  '/services/by-area/{areaId}':
+    get:
+      summary: Get services available in a specific area
+      tags:
+        - Service
+      parameters:
+        - in: path
+          name: areaId
+          required: true
+          schema:
+            type: string
+          description: Area ObjectId
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+          description: Filter by category
+        - in: query
+          name: featured
+          schema:
+            type: boolean
+          description: Filter featured services
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Services retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/paths/~1services~1%7BserviceId%7D/get/responses/200/content/application~1json/schema/properties/data'
+                  message:
+                    type: string
+  '/services/{serviceId}/areas':
+    post:
+      summary: Assign service to specific areas
+      tags:
+        - Service (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
+              required:
+                - areaIds
               properties:
-                image:
-                  type: string
-                  format: binary
-                  description: 'Service image file (required, max 1)'
+                areaIds:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - 68e3f964c615c935d6d756bf
+                    - 68e3f964c615c935d6d756c0
       responses:
         '200':
-          description: Service image updated successfully
-        '400':
-          description: Invalid input
-        '404':
-          description: Service not found
-        '500':
-          description: Server error
+          description: Service assigned to areas successfully
+    delete:
+      summary: Remove service from specific areas
+      tags:
+        - Service (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - areaIds
+              properties:
+                areaIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Areas removed from service
+  '/services/{serviceId}/city':
+    post:
+      summary: Assign service to entire city (all serviceable areas)
+      tags:
+        - Service (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cityId
+              properties:
+                cityId:
+                  type: string
+                  example: 68e3f7dbf622c4a8249b844b
+      responses:
+        '200':
+          description: Service assigned to city successfully
   /categories:
     get:
       summary: Get all categories
@@ -461,11 +668,11 @@ paths:
                     $ref: '#/components/schemas/User'
         '400':
           description: Avatar file is missing
-  /provider-applications:
+  /service-areas:
     post:
-      summary: Create a new provider application
+      summary: Create a new service area
       tags:
-        - ProviderApplication
+        - ServiceArea
       requestBody:
         required: true
         content:
@@ -502,15 +709,19 @@ paths:
                   description: PAN image file
       responses:
         '201':
-          description: Provider application created successfully
+          description: Service area created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceArea'
         '400':
           description: Invalid input
         '500':
           description: Server error
     get:
-      summary: Get all provider applications (admin only)
+      summary: Get all service areas (admin only)
       tags:
-        - ProviderApplication
+        - ServiceArea
       parameters:
         - in: query
           name: status
@@ -534,44 +745,54 @@ paths:
           description: Results per page
       responses:
         '200':
-          description: Applications fetched successfully
+          description: Service areas fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceArea'
         '400':
           description: Invalid filter
         '500':
           description: Server error
-  '/provider-applications/{id}':
+  '/service-areas/{id}':
     get:
-      summary: Get a single provider application by ID
+      summary: Get a single service area by ID
       tags:
-        - ProviderApplication
+        - ServiceArea
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: Provider application ObjectId
+          description: Service area ObjectId
       responses:
         '200':
-          description: Application fetched successfully
+          description: Service area fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceArea'
         '400':
           description: Invalid ID
         '404':
-          description: Provider application not found
+          description: Service area not found
         '500':
           description: Server error
-  '/provider-applications/{id}/status':
+  '/service-areas/{id}/status':
     patch:
-      summary: Update application status (admin only)
+      summary: Update service area status (admin only)
       tags:
-        - ProviderApplication
+        - ServiceArea
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
-          description: Provider application ObjectId
+          description: Service area ObjectId
       requestBody:
         required: true
         content:
@@ -595,11 +816,15 @@ paths:
                   description: Optional admin notes
       responses:
         '200':
-          description: Application status updated successfully
+          description: Service area status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceArea'
         '400':
           description: Invalid status or ID
         '404':
-          description: Provider application not found
+          description: Service area not found
         '500':
           description: Server error
   /bookings:
@@ -2071,13 +2296,13 @@ components:
           type: string
     Service:
       $ref: '#/paths/~1services~1%7BserviceId%7D/get/responses/200/content/application~1json/schema/properties/data/Service'
-    providerApplication:
+    ServiceArea:
       type: object
       properties:
         _id:
           type: string
           format: objectId
-          description: Unique identifier for the provider application.
+          description: Unique identifier for the service area.
         provider:
           type: string
           format: objectId
@@ -2104,18 +2329,18 @@ components:
             - rejected
             - suspended
           default: pending
-          description: Status of the application.
+          description: Status of the service area.
         adminNotes:
           type: string
-          description: Notes from the admin regarding the application.
+          description: Notes from the admin regarding the service area.
         createdAt:
           type: string
           format: date-time
-          description: Timestamp when the application was created.
+          description: Timestamp when the service area was created.
         updatedAt:
           type: string
           format: date-time
-          description: Timestamp when the application was last updated.
+          description: Timestamp when the service area was last updated.
       required:
         - provider
         - service

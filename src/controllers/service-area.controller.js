@@ -2,11 +2,11 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
-import { ProviderApplication as ServiceArea } from '../models/service-area.model.js';
+import { ServiceArea } from '../models/service-area.model.js';
 import { User } from '../models/user.model.js';
 
-// Create a new provider application and upload documents
-const createProviderApplication = asyncHandler(async (req, res, next) => {
+// Create a new service area and upload documents
+const createServiceArea = asyncHandler(async (req, res, next) => {
   const { service, availableLocations } = req.body;
 
   if (!service) {
@@ -109,13 +109,13 @@ const createProviderApplication = asyncHandler(async (req, res, next) => {
         aadhar: user.aadhar,
         pan: user.pan,
       },
-      'Provider application and documents uploaded'
+      'Service area and documents uploaded'
     )
   );
 });
 
 // Update application status (only status & optional notes)
-const updateApplicationStatus = asyncHandler(async (req, res, next) => {
+const updateServiceAreaStatus = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { applicationStatus, adminNotes } = req.body;
 
@@ -136,7 +136,7 @@ const updateApplicationStatus = asyncHandler(async (req, res, next) => {
     .populate('provider');
 
   if (!updatedApplication) {
-    throw new ApiError(404, 'Provider application not found');
+    throw new ApiError(404, 'Service area not found');
   }
 
   // Send Notification to user about status
@@ -147,13 +147,13 @@ const updateApplicationStatus = asyncHandler(async (req, res, next) => {
       new ApiResponse(
         200,
         updatedApplication,
-        'Application status updated successfully'
+        'Service area status updated successfully'
       )
     );
 });
 
-// Get all applications (with filters & pagination)
-const getApplications = asyncHandler(async (req, res, next) => {
+// Get all service areas (with filters & pagination)
+const getServiceAreas = asyncHandler(async (req, res, next) => {
   const { status, page = 1, limit = 10 } = req.query;
 
   const filter = {};
@@ -175,47 +175,47 @@ const getApplications = asyncHandler(async (req, res, next) => {
         limit: parseInt(limit),
         applications,
       },
-      'Applications fetched successfully'
+      'Service areas fetched successfully'
     )
   );
 });
 
-// Get single application
-const getApplicationById = asyncHandler(async (req, res, next) => {
+// Get single service area
+const getServiceAreaById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
   const application = await ServiceArea.findById(id);
 
   if (!application) {
-    throw new ApiError(404, 'Provider application not found');
+    throw new ApiError(404, 'Service area not found');
   }
 
   return res
     .status(200)
     .json(
-      new ApiResponse(200, application, 'Application fetched successfully')
+      new ApiResponse(200, application, 'Service area fetched successfully')
     );
 });
 
-const getApplicationsByProvider = asyncHandler(async (req, res, next) => {
+const getServiceAreasByProvider = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const application = await ServiceArea.findById(id);
 
   if (!application) {
-    throw new ApiError(404, 'Provider application not found');
+    throw new ApiError(404, 'Service area not found');
   }
 
   return res
     .status(200)
     .json(
-      new ApiResponse(200, application, 'Application fetched successfully')
+      new ApiResponse(200, application, 'Service area fetched successfully')
     );
 });
 
 export {
-  createProviderApplication,
-  updateApplicationStatus,
-  getApplications,
-  getApplicationById,
-  getApplicationsByProvider,
+  createServiceArea,
+  updateServiceAreaStatus,
+  getServiceAreas,
+  getServiceAreaById,
+  getServiceAreasByProvider,
 };

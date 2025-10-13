@@ -6,6 +6,7 @@ import Area from '../models/area.model.js';
 import SubArea from '../models/subarea.model.js';
 import Pincode from '../models/pincode.model.js';
 import { DB_NAME } from '../constants.js';
+import logger from '../utils/logger.js';
 
 dotenv.config();
 
@@ -14,13 +15,13 @@ const CITY_NAME = 'Pune'; // replace with your city
 const CONCURRENCY = 5; // Number of workers
 
 await mongoose.connect(MONGO_URI, {});
-console.log('✅ Connected to MongoDB');
+logger.log('✅ Connected to MongoDB');
 
 async function geocodePincodes() {
   const pincodes = await Pincode.find({});
   const pincodeCoordMap = new Map();
 
-  console.log(`⏳ Geocoding ${pincodes.length} pincodes...`);
+  logger.log(`⏳ Geocoding ${pincodes.length} pincodes...`);
 
   for (const pin of pincodes) {
     if (
@@ -38,16 +39,16 @@ async function geocodePincodes() {
       pin.coordinates.coordinates = lngLat;
       await pin.save();
       pincodeCoordMap.set(pin.pincode, lngLat);
-      console.log(`✅ Pincode ${pin.pincode} -> [${coords[0]}, ${coords[1]}]`);
+      logger.log(`✅ Pincode ${pin.pincode} -> [${coords[0]}, ${coords[1]}]`);
     } else {
-      console.log(`⚠️ Could not geocode pincode ${pin.pincode}`);
+      logger.log(`⚠️ Could not geocode pincode ${pin.pincode}`);
     }
   }
   return pincodeCoordMap;
 }
 
 async function geocodeSubAreas(subAreas, pincodeCoordMap) {
-  console.log(
+  logger.log(
     `⏳ Geocoding ${subAreas.length} SubAreas using ${CONCURRENCY} workers...`
   );
 
@@ -70,9 +71,9 @@ async function geocodeSubAreas(subAreas, pincodeCoordMap) {
     if (coords) {
       sub.coordinates.coordinates = [coords[1], coords[0]];
       await sub.save();
-      console.log(`✅ SubArea ${sub.name} -> [${coords[0]}, ${coords[1]}]`);
+      logger.log(`✅ SubArea ${sub.name} -> [${coords[0]}, ${coords[1]}]`);
     } else {
-      console.log(`⚠️ Could not geocode SubArea ${sub.name}`);
+      logger.log(`⚠️ Could not geocode SubArea ${sub.name}`);
     }
     return next(); // call next task
   }
@@ -114,10 +115,10 @@ async function main() {
     const subAreas = await SubArea.find({});
     await geocodeSubAreas(subAreas, pincodeCoordMap);
 
-    console.log('✅ All coordinates updated!');
+    logger.log('✅ All coordinates updated!');
     process.exit(0);
   } catch (err) {
-    console.error('❌ Error:', err);
+    logger.error('❌ Error:', err);
     process.exit(1);
   }
 }

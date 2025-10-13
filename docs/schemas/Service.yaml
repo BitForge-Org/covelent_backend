@@ -1,15 +1,20 @@
+# schemas/Service.yaml
 Service:
   type: object
   properties:
     _id:
       type: string
+      example: 507f1f77bcf86cd799439011
     title:
       type: string
       maxLength: 100
+      example: Home Cleaning Service
     description:
       type: string
+      example: Professional home cleaning with eco-friendly products
     category:
       type: string
+      example: 60f7c0b8e1b1c8a1b8e1b1c8
     pricingOptions:
       type: array
       items:
@@ -19,32 +24,83 @@ Service:
             type: string
           label:
             type: string
+            example: 1 BHK Cleaning
           price:
             type: number
             minimum: 0
+            example: 1000
           duration:
             type: number
             minimum: 0
+            example: 60
     image:
       type: string
+      example: https://res.cloudinary.com/example/image.jpg
     media:
       type: array
       maxItems: 5
       items:
         type: string
+        example: https://res.cloudinary.com/example/media1.jpg
     avgRating:
       type: number
       minimum: 0
       maximum: 5
+      example: 4.5
     ratingsCount:
       type: number
       minimum: 0
+      example: 120
     isActive:
       type: boolean
+      example: true
     isFeatured:
       type: boolean
+      example: false
+    # ⭐ NEW: Area-based availability
+    serviceableAreas:
+      type: array
+      items:
+        type: object
+        properties:
+          _id:
+            type: string
+            example: 68e3f964c615c935d6d756bf
+          name:
+            type: string
+            example: Kothrud
+          pincodes:
+            type: array
+            items:
+              type: number
+            example: [411038, 411029]
+          metadata:
+            type: object
+            properties:
+              totalSubAreas:
+                type: number
+                example: 15
+              district:
+                type: string
+                example: Pune
+    serviceableCities:
+      type: array
+      items:
+        type: object
+        properties:
+          _id:
+            type: string
+            example: 68e3f7dbf622c4a8249b844b
+          name:
+            type: string
+            example: Pune
+          state:
+            type: string
+            example: Maharashtra
+    # Deprecated (kept for backward compatibility)
     locationAvailable:
       type: array
+      deprecated: true
       items:
         type: object
         properties:
@@ -62,6 +118,8 @@ Service:
     createdAt:
       type: string
       format: date-time
+      example: 2024-01-15T10:30:00.000Z
     updatedAt:
       type: string
       format: date-time
+      example: 2024-01-15T12:45:00.000Z
