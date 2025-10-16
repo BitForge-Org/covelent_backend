@@ -668,7 +668,7 @@ paths:
                     $ref: '#/components/schemas/User'
         '400':
           description: Avatar file is missing
-  /service-areas:
+  /applications/complete-application:
     post:
       summary: Create a new service area
       tags:
@@ -756,7 +756,7 @@ paths:
           description: Invalid filter
         '500':
           description: Server error
-  '/service-areas/{id}':
+  '/applications/complete-application/{id}':
     get:
       summary: Get a single service area by ID
       tags:
@@ -781,7 +781,7 @@ paths:
           description: Service area not found
         '500':
           description: Server error
-  '/service-areas/{id}/status':
+  '/applications/complete-application/{id}/status':
     patch:
       summary: Update service area status (admin only)
       tags:
@@ -825,6 +825,33 @@ paths:
           description: Invalid status or ID
         '404':
           description: Service area not found
+        '500':
+          description: Server error
+  '/applications/complete-application/provider/{id}':
+    get:
+      summary: Get all service areas by provider
+      tags:
+        - ServiceArea
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Provider ObjectId
+      responses:
+        '200':
+          description: Service areas for provider fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceArea'
+        '400':
+          description: Invalid provider ID
+        '404':
+          description: Provider not found
         '500':
           description: Server error
   /bookings:

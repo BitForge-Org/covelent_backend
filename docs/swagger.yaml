@@ -52,14 +52,17 @@ paths:
     $ref: './paths/users/update-account.yaml#/~1update-account'
   /users/avatar:
     $ref: './paths/users/avatar.yaml#/~1avatar'
-  /service-areas:
-    $ref: './paths/serviceArea.yaml#/paths/~1service-areas'
+  /applications/complete-application:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application'
 
-  /service-areas/{id}:
-    $ref: './paths/serviceArea.yaml#/paths/~1service-areas~1{id}'
+  /applications/complete-application/{id}:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1{id}'
 
-  /service-areas/{id}/status:
-    $ref: './paths/serviceArea.yaml#/paths/~1service-areas~1{id}~1status'
+  /applications/complete-application/{id}/status:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1{id}~1status'
+
+  /applications/complete-application/provider/{id}:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1provider~1{id}'
 
   /bookings:
     $ref: './paths/booking.yaml#/~1bookings'

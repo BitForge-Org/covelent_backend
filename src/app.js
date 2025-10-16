@@ -80,7 +80,7 @@ app.use('/api/v1/auth', authLimiter, authRouter); // 👈 apply authLimiter to a
 app.use('/api/v1/healthcheck', healthcheckRouter);
 app.use('/api/v1/categories', categoryRouter);
 app.use('/api/v1/services', serviceRoutes);
-app.use('/api/v1/service-areas', serviceAreaRouter);
+app.use('/api/v1/applications', serviceAreaRouter);
 app.use('/api/v1/bookings', BookingRouter);
 app.use('/api/v1/addresses', AddressRouter);
 app.use('/api/v1/location-import', locationRoutes);

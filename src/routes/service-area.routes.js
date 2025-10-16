@@ -38,7 +38,7 @@ const router = express.Router();
  * @access  Private (provider)
  */
 router.post(
-  '/',
+  '/complete-application',
   verifyJWT,
   upload.fields([
     { name: 'aadharFrontImage', maxCount: 1 },
@@ -53,28 +53,36 @@ router.post(
  * @desc    Update service area status (pending/approved/rejected/suspended)
  * @access  Private (admin)
  */
-router.patch('/:id/status', isAdmin, updateServiceAreaStatus);
+router.patch(
+  '/complete-application/:id/status',
+  isAdmin,
+  updateServiceAreaStatus
+);
 
 /**
  * @route   GET /api/service-areas
  * @desc    Get all service areas (filter by status & paginate)
  * @access  Private (admin)
  */
-router.get('/', isAdmin, getServiceAreas);
+router.get('/complete-application/', isAdmin, getServiceAreas);
 
 /**
  * @route   GET /api/service-areas/:id
  * @desc    Get single service area by ID
  * @access  Private (admin or provider who owns it)
  */
-router.get('/:id', verifyJWT, getServiceAreaById);
+router.get('/complete-application/:id', verifyJWT, getServiceAreaById);
 
 /**
  * @route   GET /api/service-areas/provider/:id
  * @desc    Get all service areas by provider
  * @access  Private (provider)
  */
-router.get('/provider/:id', verifyJWT, getServiceAreasByProvider);
+router.get(
+  '/complete-application/provider/:id',
+  verifyJWT,
+  getServiceAreasByProvider
+);
 /**
  * @route   PATCH /api/service-areas/provider/:providerId/verify-documents
  * @desc    Admin verifies provider documents
