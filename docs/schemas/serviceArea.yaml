@@ -18,8 +18,15 @@ ServiceArea:
       items:
         type: string
         format: objectId
-        description: ObjectId referencing Service.locationAvailable (subdocument)
-      description: Array of ObjectIds referencing Service.locationAvailable
+        description: ObjectId referencing Area (not the areas field)
+      description: |
+        Array of ObjectIds referencing Area model. This is distinct from the `areas` field, which may be used for other purposes.
+
+        **Note:** For `availableLocations` (array), you can send either:
+        - Multiple fields: `-F 'availableLocations=ID1' -F 'availableLocations=ID2' ...` (recommended, best for backend)
+        - Single comma-separated field: `-F 'availableLocations=ID1,ID2,ID3'` (what Swagger UI generates)
+
+        Both formats are supported by the backend.
       example: ['650000000000000000000001', '650000000000000000000002']
     applicationStatus:
       type: string

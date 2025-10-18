@@ -31,6 +31,13 @@ const serviceArea = new Schema(
         required: false,
       },
     ],
+    availableLocations: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Area', // Reference to Area model
+        required: false,
+      },
+    ],
   },
   {
     timestamps: true,

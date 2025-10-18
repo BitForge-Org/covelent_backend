@@ -9,6 +9,43 @@ import { User } from '../models/user.model.js';
 const createServiceArea = asyncHandler(async (req, res, next) => {
   const { service, availableLocations } = req.body;
 
+  // Robustly handle availableLocations as array, string, or array of comma-separated strings
+  let locationsArr = [];
+  console.log('Raw availableLocations:', availableLocations);
+  if (Array.isArray(availableLocations)) {
+    locationsArr = availableLocations
+      .flatMap((val) =>
+        typeof val === 'string'
+          ? val
+              .split(',')
+              .map((s) => s.trim())
+              .filter((s) => s.length > 0)
+          : []
+      )
+      .filter((s) => s.length > 0);
+  } else if (
+    typeof availableLocations === 'string' &&
+    availableLocations.trim() !== ''
+  ) {
+    locationsArr = availableLocations
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+  // Remove duplicates and empty strings
+  locationsArr = Array.from(new Set(locationsArr)).filter((s) => s.length > 0);
+  console.log('Parsed locationsArr:', locationsArr);
+  if (!locationsArr.length) {
+    console.error(
+      'availableLocations is empty after parsing:',
+      availableLocations
+    );
+    throw new ApiError(
+      400,
+      'availableLocations is required and cannot be empty'
+    );
+  }
+
   if (!service) {
     throw new ApiError(400, 'Service is required');
   }
@@ -84,9 +121,7 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
   const newApplication = await ServiceArea.create({
     provider: req.user._id,
     service,
-    availableLocations: Array.isArray(availableLocations)
-      ? availableLocations
-      : [],
+    availableLocations: locationsArr,
     applicationStatus: 'pending',
     aadharFrontImage: user.aadhar.frontImage,
     aadharBackImage: user.aadhar.backImage,

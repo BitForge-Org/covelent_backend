@@ -4,6 +4,12 @@ paths:
       summary: Create a new service area
       tags:
         - ServiceArea
+      description: |
+        **Note:** For `availableLocations` (array), you can send either:
+        - Multiple fields: `-F 'availableLocations=ID1' -F 'availableLocations=ID2' ...` (recommended, best for backend)
+        - Single comma-separated field: `-F 'availableLocations=ID1,ID2,ID3'` (what Swagger UI generates)
+
+        Both formats are supported by the backend.
       requestBody:
         required: true
         content:
@@ -12,19 +18,29 @@ paths:
               type: object
               required:
                 - service
+                - availableLocations
               properties:
                 service:
                   type: string
                   description: Service ObjectId
-                  example: 60f7c0b8e1b1c8a1b8e1b1c9
+                  example: 68b0771e177a4c9f3a8ed011
                 availableLocations:
                   type: array
                   items:
                     type: string
-                    description: ObjectId referencing Service.locationAvailable (subdocument)
-                  description: Array of ObjectIds referencing Service.locationAvailable
+                    description: ObjectId referencing Area (not the areas field)
+                  description: |
+                    Array of ObjectIds referencing Area model. This is distinct from the `areas` field, which may be used for other purposes.
+
+                    **Note:** For `availableLocations` (array), you can send either:
+                    - Multiple fields: `-F 'availableLocations=ID1' -F 'availableLocations=ID2' ...` (recommended, best for backend)
+                    - Single comma-separated field: `-F 'availableLocations=ID1,ID2,ID3'` (what Swagger UI generates)
+
+                    Both formats are supported by the backend.
                   example:
-                    ['650000000000000000000001', '650000000000000000000002']
+                    - 68e7ab3e2e3114d1a26abf05
+                    - 68e7ab3e2e3114d1a26abf06
+                    - 68e7ab3e2e3114d1a26abf07
                 aadharFrontImage:
                   type: string
                   format: binary
