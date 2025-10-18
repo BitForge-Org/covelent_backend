@@ -13,17 +13,10 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
     throw new ApiError(400, 'Service is required');
   }
 
-  if (!req.user || req.user.role !== 'provider') {
-    throw new ApiError(
-      403,
-      'Only users with role "Provider" can apply as provider'
-    );
-  }
-
   const user = await User.findById(req.user._id);
 
-  if (!user || user.role !== 'provider' || !user.isVerified) {
-    throw new ApiError(404, 'User not found or not verified' + user);
+  if (!user || user.role !== 'provider' || user.isProfileCompleted) {
+    throw new ApiError(404, 'User not found or not eligible ' + user);
   }
 
   // Handle document uploads (Aadhar/PAN)
