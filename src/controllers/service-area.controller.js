@@ -4,142 +4,165 @@ import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { ServiceArea } from '../models/service-area.model.js';
 import { User } from '../models/user.model.js';
+import logger from '../utils/logger.js';
 
 // Create a new service area and upload documents
 const createServiceArea = asyncHandler(async (req, res, next) => {
   const { service, availableLocations } = req.body;
 
-  // Robustly handle availableLocations as array, string, or array of comma-separated strings
-  let locationsArr = [];
-  console.log('Raw availableLocations:', availableLocations);
-  if (Array.isArray(availableLocations)) {
-    locationsArr = availableLocations
-      .flatMap((val) =>
-        typeof val === 'string'
-          ? val
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0)
-          : []
+  // Start a session for transaction
+  const session = await ServiceArea.startSession();
+  session.startTransaction();
+  try {
+    // Robustly handle availableLocations as array, string, or array of comma-separated strings
+    let locationsArr = [];
+    logger.info(
+      `Raw availableLocations: ${JSON.stringify(availableLocations)}`
+    );
+    if (Array.isArray(availableLocations)) {
+      locationsArr = availableLocations
+        .flatMap((val) =>
+          typeof val === 'string'
+            ? val
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0)
+            : []
+        )
+        .filter((s) => s.length > 0);
+    } else if (
+      typeof availableLocations === 'string' &&
+      availableLocations.trim() !== ''
+    ) {
+      locationsArr = availableLocations
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    }
+    // Remove duplicates and empty strings
+    locationsArr = Array.from(new Set(locationsArr)).filter(
+      (s) => s.length > 0
+    );
+    logger.info(`Parsed locationsArr: ${JSON.stringify(locationsArr)}`);
+    if (!locationsArr.length) {
+      logger.warn(
+        `availableLocations is empty after parsing: ${JSON.stringify(availableLocations)}`
+      );
+      throw new ApiError(
+        400,
+        'availableLocations is required and cannot be empty'
+      );
+    }
+
+    if (!service) {
+      throw new ApiError(400, 'Service is required');
+    }
+
+    const user = await User.findById(req.user._id).session(session);
+
+    if (!user || user.role !== 'provider' || user.isProfileCompleted) {
+      throw new ApiError(404, 'User not found or not eligible ' + user);
+    }
+
+    // Handle document uploads (Aadhar/PAN)
+    let aadharFrontImageLocalPath, aadharBackImageLocalPath, panImageLocalPath;
+    if (
+      req.files &&
+      Array.isArray(req.files.aadharFrontImage) &&
+      req.files.aadharFrontImage.length > 0
+    ) {
+      aadharFrontImageLocalPath = req.files.aadharFrontImage[0].path;
+    }
+    if (
+      req.files &&
+      Array.isArray(req.files.aadharBackImage) &&
+      req.files.aadharBackImage.length > 0
+    ) {
+      aadharBackImageLocalPath = req.files.aadharBackImage[0].path;
+    }
+    if (
+      req.files &&
+      Array.isArray(req.files.panImage) &&
+      req.files.panImage.length > 0
+    ) {
+      panImageLocalPath = req.files.panImage[0].path;
+    }
+
+    let aadharFrontImage, aadharBackImage, panImage;
+    if (aadharFrontImageLocalPath) {
+      aadharFrontImage = await uploadOnCloudinary(
+        aadharFrontImageLocalPath,
+        'aadhar'
+      );
+      user.aadhar.frontImage = aadharFrontImage?.url || '';
+    }
+    if (aadharBackImageLocalPath) {
+      aadharBackImage = await uploadOnCloudinary(
+        aadharBackImageLocalPath,
+        'aadhar'
+      );
+      user.aadhar.backImage = aadharBackImage?.url || '';
+    }
+    if (panImageLocalPath) {
+      panImage = await uploadOnCloudinary(panImageLocalPath, 'pan');
+      user.pan.link = panImage?.url || '';
+    }
+
+    // If both aadhar images and pan are uploaded, set isProfileCompleted true
+    if (user.aadhar.frontImage && user.aadhar.backImage && user.pan.link) {
+      user.isProfileCompleted = true;
+    }
+    const updatedUser = await user.save({ session });
+
+    const existingApplication = await ServiceArea.findOne({
+      provider: req.user._id,
+      service,
+    })
+      .select('_id applicationStatus')
+      .session(session);
+
+    if (existingApplication) {
+      throw new ApiError(
+        400,
+        `Application already exists with status: ${existingApplication.applicationStatus}`
+      );
+    }
+
+    const newApplication = await ServiceArea.create(
+      [
+        {
+          provider: req.user._id,
+          service,
+          availableLocations: locationsArr,
+          applicationStatus: 'pending',
+          aadharFrontImage: user.aadhar.frontImage,
+          aadharBackImage: user.aadhar.backImage,
+          panImage: user.pan.link,
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(201).json(
+      new ApiResponse(
+        201,
+        {
+          application: newApplication[0],
+          isProfileCompleted: updatedUser.isProfileCompleted,
+          aadhar: updatedUser.aadhar,
+          pan: updatedUser.pan,
+        },
+        'Service area and documents uploaded'
       )
-      .filter((s) => s.length > 0);
-  } else if (
-    typeof availableLocations === 'string' &&
-    availableLocations.trim() !== ''
-  ) {
-    locationsArr = availableLocations
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-  }
-  // Remove duplicates and empty strings
-  locationsArr = Array.from(new Set(locationsArr)).filter((s) => s.length > 0);
-  console.log('Parsed locationsArr:', locationsArr);
-  if (!locationsArr.length) {
-    console.error(
-      'availableLocations is empty after parsing:',
-      availableLocations
     );
-    throw new ApiError(
-      400,
-      'availableLocations is required and cannot be empty'
-    );
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    next(err);
   }
-
-  if (!service) {
-    throw new ApiError(400, 'Service is required');
-  }
-
-  const user = await User.findById(req.user._id);
-
-  if (!user || user.role !== 'provider' || user.isProfileCompleted) {
-    throw new ApiError(404, 'User not found or not eligible ' + user);
-  }
-
-  // Handle document uploads (Aadhar/PAN)
-  let aadharFrontImageLocalPath, aadharBackImageLocalPath, panImageLocalPath;
-  if (
-    req.files &&
-    Array.isArray(req.files.aadharFrontImage) &&
-    req.files.aadharFrontImage.length > 0
-  ) {
-    aadharFrontImageLocalPath = req.files.aadharFrontImage[0].path;
-  }
-  if (
-    req.files &&
-    Array.isArray(req.files.aadharBackImage) &&
-    req.files.aadharBackImage.length > 0
-  ) {
-    aadharBackImageLocalPath = req.files.aadharBackImage[0].path;
-  }
-  if (
-    req.files &&
-    Array.isArray(req.files.panImage) &&
-    req.files.panImage.length > 0
-  ) {
-    panImageLocalPath = req.files.panImage[0].path;
-  }
-
-  let aadharFrontImage, aadharBackImage, panImage;
-  if (aadharFrontImageLocalPath) {
-    aadharFrontImage = await uploadOnCloudinary(
-      aadharFrontImageLocalPath,
-      'aadhar'
-    );
-    user.aadhar.frontImage = aadharFrontImage?.url || '';
-  }
-  if (aadharBackImageLocalPath) {
-    aadharBackImage = await uploadOnCloudinary(
-      aadharBackImageLocalPath,
-      'aadhar'
-    );
-    user.aadhar.backImage = aadharBackImage?.url || '';
-  }
-  if (panImageLocalPath) {
-    panImage = await uploadOnCloudinary(panImageLocalPath, 'pan');
-    user.pan.link = panImage?.url || '';
-  }
-
-  // If both aadhar images and pan are uploaded, set isProfileCompleted true
-  if (user.aadhar.frontImage && user.aadhar.backImage && user.pan.link) {
-    user.isProfileCompleted = true;
-  }
-  await user.save();
-
-  const existingApplication = await ServiceArea.findOne({
-    provider: req.user._id,
-    service,
-  }).select('_id applicationStatus');
-
-  if (existingApplication) {
-    throw new ApiError(
-      400,
-      `Application already exists with status: ${existingApplication.applicationStatus}`
-    );
-  }
-
-  const newApplication = await ServiceArea.create({
-    provider: req.user._id,
-    service,
-    availableLocations: locationsArr,
-    applicationStatus: 'pending',
-    aadharFrontImage: user.aadhar.frontImage,
-    aadharBackImage: user.aadhar.backImage,
-    panImage: user.pan.link,
-  });
-
-  return res.status(201).json(
-    new ApiResponse(
-      201,
-      {
-        application: newApplication,
-        isProfileCompleted: user.isProfileCompleted,
-        aadhar: user.aadhar,
-        pan: user.pan,
-      },
-      'Service area and documents uploaded'
-    )
-  );
 });
 
 // Update application status (only status & optional notes)
@@ -155,9 +178,16 @@ const updateServiceAreaStatus = asyncHandler(async (req, res, next) => {
     throw new ApiError(400, 'Invalid application status');
   }
 
+  // If status is approved, set isActive and isVerified to true
+  let updateFields = { applicationStatus, adminNotes };
+  if (applicationStatus === 'approved') {
+    updateFields.isActive = true;
+    updateFields.isVerified = true;
+  }
+
   const updatedApplication = await ServiceArea.findByIdAndUpdate(
     id,
-    { applicationStatus, adminNotes },
+    updateFields,
     { new: true, runValidators: true }
   )
     .populate('service')
