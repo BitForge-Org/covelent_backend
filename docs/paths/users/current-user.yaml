@@ -4,7 +4,7 @@
     tags:
       - Users
     security:
-      - bearerAuth: []
+      - BearerAuth: []
     responses:
       200:
         description: User fetched successfully

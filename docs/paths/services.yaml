@@ -115,7 +115,7 @@ paths:
       tags:
         - Service
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -290,7 +290,7 @@ paths:
       tags:
         - Service (Admin)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - in: path
           name: serviceId
@@ -321,7 +321,7 @@ paths:
       tags:
         - Service (Admin)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - in: path
           name: serviceId
@@ -351,7 +351,7 @@ paths:
       tags:
         - Service (Admin)
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - in: path
           name: serviceId

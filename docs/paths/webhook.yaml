@@ -23,7 +23,7 @@
     tags:
       - Webhook
     security:
-      - bearerAuth: []
+      - BearerAuth: []
     requestBody:
       required: true
       content:
@@ -45,7 +45,7 @@
     tags:
       - Webhook
     security:
-      - bearerAuth: []
+      - BearerAuth: []
     parameters:
       - in: path
         name: bookingId

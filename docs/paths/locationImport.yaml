@@ -19,7 +19,7 @@ paths:
       tags:
         - LocationImport
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -300,7 +300,7 @@ paths:
       tags:
         - LocationImport
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - in: path
           name: importLogId
@@ -365,7 +365,7 @@ paths:
       tags:
         - LocationImport
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - in: path
           name: areaId
@@ -390,7 +390,7 @@ paths:
       tags:
         - LocationImport
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       parameters:
         - in: path
           name: subAreaId
@@ -415,7 +415,7 @@ paths:
       tags:
         - LocationImport
       security:
-        - bearerAuth: []
+        - BearerAuth: []
       requestBody:
         required: true
         content:
