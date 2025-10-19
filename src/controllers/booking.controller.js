@@ -492,12 +492,74 @@ const getBookingById = asyncHandler(async (req, res) => {
   }
 });
 
-export {
-  createBooking,
-  getBookingsHistory,
-  getAvailableBookings,
-  acceptBooking,
-  getAcceptedBookings,
-  rejectBooking,
-  getBookingById,
-};
+export const safeCreateBooking = asyncHandler(async (req, res, next) => {
+  try {
+    await createBooking(req, res, next);
+  } catch (error) {
+    logger.error(`[BOOKING] Error in createBooking: ${error.message}`, error);
+    next(error);
+  }
+});
+
+export const safeGetBookingsHistory = asyncHandler(async (req, res, next) => {
+  try {
+    await getBookingsHistory(req, res, next);
+  } catch (error) {
+    logger.error(
+      `[BOOKING] Error in getBookingsHistory: ${error.message}`,
+      error
+    );
+    next(error);
+  }
+});
+
+export const safeGetAvailableBookings = asyncHandler(async (req, res, next) => {
+  try {
+    await getAvailableBookings(req, res, next);
+  } catch (error) {
+    logger.error(
+      `[BOOKING] Error in getAvailableBookings: ${error.message}`,
+      error
+    );
+    next(error);
+  }
+});
+
+export const safeAcceptBooking = asyncHandler(async (req, res, next) => {
+  try {
+    await acceptBooking(req, res, next);
+  } catch (error) {
+    logger.error(`[BOOKING] Error in acceptBooking: ${error.message}`, error);
+    next(error);
+  }
+});
+
+export const safeGetAcceptedBookings = asyncHandler(async (req, res, next) => {
+  try {
+    await getAcceptedBookings(req, res, next);
+  } catch (error) {
+    logger.error(
+      `[BOOKING] Error in getAcceptedBookings: ${error.message}`,
+      error
+    );
+    next(error);
+  }
+});
+
+export const safeRejectBooking = asyncHandler(async (req, res, next) => {
+  try {
+    await rejectBooking(req, res, next);
+  } catch (error) {
+    logger.error(`[BOOKING] Error in rejectBooking: ${error.message}`, error);
+    next(error);
+  }
+});
+
+export const safeGetBookingById = asyncHandler(async (req, res, next) => {
+  try {
+    await getBookingById(req, res, next);
+  } catch (error) {
+    logger.error(`[BOOKING] Error in getBookingById: ${error.message}`, error);
+    next(error);
+  }
+});
