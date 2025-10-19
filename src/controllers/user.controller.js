@@ -6,12 +6,19 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import logger from '../utils/logger.js';
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).select(
-    '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
-  );
-  return res
-    .status(200)
-    .json(new ApiResponse(200, user, 'User fetched successfully'));
+  try {
+    const user = await User.findById(req.user._id).select(
+      '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
+    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, 'User fetched successfully'));
+  } catch (error) {
+    logger.error(
+      `[USER] Error fetching current user: ${error.message} , ${error}`
+    );
+    throw new ApiError(500, 'Internal Server Error');
+  }
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
