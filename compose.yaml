@@ -4,19 +4,15 @@ services:
   server:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile.prod
     container_name: covelent-server
     env_file:
-      - /home/ec2-user/configs/covelent.env   # external .env file
-    # env_file:
-    #   - .env  # external .env file
+      - /home/ec2-user/configs/covelent.env
     depends_on:
       - redis
     ports:
       - "${APP_PORT}:80"
-    volumes:
-      - .:/usr/src/app
-      - node_modules:/usr/src/app/node_modules
+    restart: unless-stopped
 
   redis:
     image: "redis:alpine"
@@ -27,5 +23,4 @@ services:
       - redis-data:/data
 
 volumes:
-  node_modules:
   redis-data:
