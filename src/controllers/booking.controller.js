@@ -17,6 +17,8 @@ import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
 
 const createBooking = asyncHandler(async (req, res) => {
+  logger.info(`[BOOKING] createBooking called by user: ${req.user?._id}`);
+  logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
   try {
     const {
       serviceId,
@@ -30,22 +32,30 @@ const createBooking = asyncHandler(async (req, res) => {
 
     const service = await Service.findById(serviceId);
     if (!service || !service.isActive) {
+      logger.warn(`[BOOKING] Service not found or inactive: ${serviceId}`);
       throw new ApiError(404, 'Service not found or inactive');
     }
 
     const option = service.pricingOptions.id(selectedPricingOption);
     if (!option) {
+      logger.warn(
+        `[BOOKING] Invalid pricing option selected: ${selectedPricingOption}`
+      );
       throw new ApiError(400, 'Invalid pricing option selected');
     }
 
     const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
     if (scheduledDateTime <= new Date()) {
+      logger.warn(
+        `[BOOKING] Scheduled date/time is not in the future: ${scheduledDate}T${scheduledTime}`
+      );
       throw new ApiError(400, 'Scheduled date and time must be in the future');
     }
 
     // Location logic: Accepts either an address ObjectId or a full address object
     let addressId;
     if (!location) {
+      logger.warn(`[BOOKING] Location is required but missing`);
       throw new ApiError(400, 'Location is required');
     }
     if (
@@ -56,6 +66,7 @@ const createBooking = asyncHandler(async (req, res) => {
       addressId = location._id || location;
       const addressExists = await Address.findById(addressId);
       if (!addressExists) {
+        logger.warn(`[BOOKING] Provided address not found: ${addressId}`);
         throw new ApiError(400, 'Provided address not found');
       }
     } else if (
@@ -71,12 +82,17 @@ const createBooking = asyncHandler(async (req, res) => {
         ...location,
       });
       addressId = newAddress._id;
+      logger.info(`[BOOKING] New address created: ${addressId}`);
     } else {
+      logger.warn(
+        `[BOOKING] Invalid location details: ${JSON.stringify(location)}`
+      );
       throw new ApiError(400, 'Invalid location details');
     }
 
     const session = await mongoose.startSession();
     session.startTransaction();
+    logger.info(`[BOOKING] Transaction started for booking creation`);
 
     let order = null;
     try {
@@ -96,6 +112,7 @@ const createBooking = asyncHandler(async (req, res) => {
         ],
         { session }
       );
+      logger.info(`[BOOKING] Booking created: ${booking[0]?._id}`);
 
       if (paymentMethod !== 'cash') {
         order = await razorpay.orders.create({
@@ -103,13 +120,16 @@ const createBooking = asyncHandler(async (req, res) => {
           currency: 'INR',
           receipt: `receipt_${booking[0]._id}`,
         });
-
+        logger.info(`[BOOKING] Razorpay order created: ${order.id}`);
         booking[0].payment.orderId = order.id;
         await booking[0].save({ session });
       }
 
       await session.commitTransaction();
       session.endSession();
+      logger.info(
+        `[BOOKING] Transaction committed for booking: ${booking[0]?._id}`
+      );
       return res
         .status(201)
         .json(
@@ -122,6 +142,7 @@ const createBooking = asyncHandler(async (req, res) => {
     } catch (err) {
       await session.abortTransaction();
       session.endSession();
+      logger.error(`[BOOKING] Transaction aborted for booking creation`);
       throw new ApiError(
         500,
         'Booking creation failed, please try again: ' + err
@@ -135,6 +156,8 @@ const createBooking = asyncHandler(async (req, res) => {
 
 // Get user's booking history with optional status filter
 const getBookingsHistory = asyncHandler(async (req, res) => {
+  logger.info(`[BOOKING] getBookingsHistory called for user: ${req.user?._id}`);
+  logger.debug(`[BOOKING] Query params: ${JSON.stringify(req.query)}`);
   try {
     const { status } = req.query;
     const filter = { user: req.user._id };
@@ -180,6 +203,9 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
 
 // Get bookings for services where user is an approved provider
 const getAvailableBookings = asyncHandler(async (req, res) => {
+  logger.info(
+    `[BOOKING] getAvailableBookings called for user: ${req.user?._id}`
+  );
   try {
     const userId = req.user._id;
 
@@ -287,6 +313,8 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
 });
 
 const acceptBooking = asyncHandler(async (req, res) => {
+  logger.info(`[BOOKING] acceptBooking called by provider: ${req.user?._id}`);
+  logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
   try {
     const providerId = req.user._id;
     const { bookingId } = req.body;
@@ -353,6 +381,10 @@ const acceptBooking = asyncHandler(async (req, res) => {
 
 // Get accepted bookings or booking history for provider with filter
 const getAcceptedBookings = asyncHandler(async (req, res) => {
+  logger.info(
+    `[BOOKING] getAcceptedBookings called by provider: ${req.user?._id}`
+  );
+  logger.debug(`[BOOKING] Query params: ${JSON.stringify(req.query)}`);
   try {
     const providerId = req.user._id;
     const { status } = req.query;
@@ -402,6 +434,8 @@ const getAcceptedBookings = asyncHandler(async (req, res) => {
 
 // Provider rejects a booking (no booking status change, just record rejection)
 const rejectBooking = asyncHandler(async (req, res) => {
+  logger.info(`[BOOKING] rejectBooking called by provider: ${req.user?._id}`);
+  logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
   try {
     const providerId = req.user._id;
     const { bookingId, reason } = req.body;
@@ -446,6 +480,9 @@ const rejectBooking = asyncHandler(async (req, res) => {
 });
 
 const getBookingById = asyncHandler(async (req, res) => {
+  logger.info(
+    `[BOOKING] getBookingById called for booking: ${req.params?.bookingId}`
+  );
   try {
     const { bookingId } = req.params;
     if (!bookingId) {
@@ -492,74 +529,12 @@ const getBookingById = asyncHandler(async (req, res) => {
   }
 });
 
-export const safeCreateBooking = asyncHandler(async (req, res, next) => {
-  try {
-    await createBooking(req, res, next);
-  } catch (error) {
-    logger.error(`[BOOKING] Error in createBooking: ${error.message}`, error);
-    next(error);
-  }
-});
-
-export const safeGetBookingsHistory = asyncHandler(async (req, res, next) => {
-  try {
-    await getBookingsHistory(req, res, next);
-  } catch (error) {
-    logger.error(
-      `[BOOKING] Error in getBookingsHistory: ${error.message}`,
-      error
-    );
-    next(error);
-  }
-});
-
-export const safeGetAvailableBookings = asyncHandler(async (req, res, next) => {
-  try {
-    await getAvailableBookings(req, res, next);
-  } catch (error) {
-    logger.error(
-      `[BOOKING] Error in getAvailableBookings: ${error.message}`,
-      error
-    );
-    next(error);
-  }
-});
-
-export const safeAcceptBooking = asyncHandler(async (req, res, next) => {
-  try {
-    await acceptBooking(req, res, next);
-  } catch (error) {
-    logger.error(`[BOOKING] Error in acceptBooking: ${error.message}`, error);
-    next(error);
-  }
-});
-
-export const safeGetAcceptedBookings = asyncHandler(async (req, res, next) => {
-  try {
-    await getAcceptedBookings(req, res, next);
-  } catch (error) {
-    logger.error(
-      `[BOOKING] Error in getAcceptedBookings: ${error.message}`,
-      error
-    );
-    next(error);
-  }
-});
-
-export const safeRejectBooking = asyncHandler(async (req, res, next) => {
-  try {
-    await rejectBooking(req, res, next);
-  } catch (error) {
-    logger.error(`[BOOKING] Error in rejectBooking: ${error.message}`, error);
-    next(error);
-  }
-});
-
-export const safeGetBookingById = asyncHandler(async (req, res, next) => {
-  try {
-    await getBookingById(req, res, next);
-  } catch (error) {
-    logger.error(`[BOOKING] Error in getBookingById: ${error.message}`, error);
-    next(error);
-  }
-});
+export {
+  createBooking,
+  getBookingsHistory,
+  getAvailableBookings,
+  acceptBooking,
+  getAcceptedBookings,
+  rejectBooking,
+  getBookingById,
+};

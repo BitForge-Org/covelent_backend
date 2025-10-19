@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import {
-  safeCreateBooking,
-  safeGetBookingsHistory,
-  safeGetAvailableBookings,
-  safeAcceptBooking,
-  safeGetAcceptedBookings,
-  safeRejectBooking,
-  safeGetBookingById,
+  createBooking,
+  getBookingsHistory,
+  getAvailableBookings,
+  acceptBooking,
+  getAcceptedBookings,
+  rejectBooking,
+  getBookingById,
 } from '../controllers/booking.controller.js';
 
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -14,24 +14,24 @@ import { verifyJWT } from '../middlewares/auth.middleware.js';
 const router = Router();
 
 // Create a new booking (user only)
-router.post('/', verifyJWT, safeCreateBooking);
+router.post('/', verifyJWT, createBooking);
 
 // Get booking history for logged-in user
-router.get('/history', verifyJWT, safeGetBookingsHistory);
+router.get('/history', verifyJWT, getBookingsHistory);
 
 // Get available bookings for provider (approved applications)
-router.get('/available', verifyJWT, safeGetAvailableBookings);
+router.get('/available', verifyJWT, getAvailableBookings);
 
 // Get accepted bookings/history for provider
-router.get('/accepted', verifyJWT, safeGetAcceptedBookings);
+router.get('/accepted', verifyJWT, getAcceptedBookings);
 
 // Provider accepts a booking
-router.post('/accept', verifyJWT, safeAcceptBooking);
+router.post('/accept', verifyJWT, acceptBooking);
 
 // Provider rejects a booking
-router.post('/reject', verifyJWT, safeRejectBooking);
+router.post('/reject', verifyJWT, rejectBooking);
 
 // Get booking by ID
-router.get('/:bookingId', verifyJWT, safeGetBookingById);
+router.get('/:bookingId', verifyJWT, getBookingById);
 
 export default router;
