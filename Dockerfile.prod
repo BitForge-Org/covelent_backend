@@ -1,3 +1,21 @@
 ARG NODE_VERSION=22
 
 FROM node:${NODE_VERSION}-alpine
+
+ENV NODE_ENV=production
+
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+
+RUN yarn install --production
+
+RUN chown -R node:node /usr/src/app
+
+USER node
+
+COPY --chown=node:node . .
+
+EXPOSE 80
+
+CMD ["node", "src/index.js"]
