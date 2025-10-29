@@ -66,27 +66,40 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
 
     // Handle document uploads (Aadhar/PAN)
     let aadharFrontImageLocalPath, aadharBackImageLocalPath, panImageLocalPath;
+    // Strictly require all three images
     if (
-      req.files &&
-      Array.isArray(req.files.aadharFrontImage) &&
-      req.files.aadharFrontImage.length > 0
+      !req.files ||
+      !Array.isArray(req.files.aadharFrontImage) ||
+      req.files.aadharFrontImage.length === 0 ||
+      !req.files.aadharFrontImage[0].path
     ) {
-      aadharFrontImageLocalPath = req.files.aadharFrontImage[0].path;
+      throw new ApiError(
+        400,
+        'Aadhar front image is required and must be uploaded'
+      );
     }
     if (
-      req.files &&
-      Array.isArray(req.files.aadharBackImage) &&
-      req.files.aadharBackImage.length > 0
+      !req.files ||
+      !Array.isArray(req.files.aadharBackImage) ||
+      req.files.aadharBackImage.length === 0 ||
+      !req.files.aadharBackImage[0].path
     ) {
-      aadharBackImageLocalPath = req.files.aadharBackImage[0].path;
+      throw new ApiError(
+        400,
+        'Aadhar back image is required and must be uploaded'
+      );
     }
     if (
-      req.files &&
-      Array.isArray(req.files.panImage) &&
-      req.files.panImage.length > 0
+      !req.files ||
+      !Array.isArray(req.files.panImage) ||
+      req.files.panImage.length === 0 ||
+      !req.files.panImage[0].path
     ) {
-      panImageLocalPath = req.files.panImage[0].path;
+      throw new ApiError(400, 'PAN image is required and must be uploaded');
     }
+    aadharFrontImageLocalPath = req.files.aadharFrontImage[0].path;
+    aadharBackImageLocalPath = req.files.aadharBackImage[0].path;
+    panImageLocalPath = req.files.panImage[0].path;
 
     // Check if files exist before uploading
     const fs = await import('fs');
