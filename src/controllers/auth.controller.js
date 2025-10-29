@@ -70,7 +70,7 @@ const registerUser = asyncHandler(async (req, res) => {
     role = 'user';
   }
 
-  let avatarLocalPath, aadharImageLocalPath, panImageLocalPath;
+  let avatarLocalPath, aadhaarImageLocalPath, panImageLocalPath;
   if (
     req.files &&
     Array.isArray(req.files.avatar) &&
@@ -80,10 +80,10 @@ const registerUser = asyncHandler(async (req, res) => {
   }
   if (
     req.files &&
-    Array.isArray(req.files.aadharImage) &&
-    req.files.aadharImage.length > 0
+    Array.isArray(req.files.aadhaarImage) &&
+    req.files.aadhaarImage.length > 0
   ) {
-    aadharImageLocalPath = req.files.aadharImage[0].path;
+    aadhaarImageLocalPath = req.files.aadhaarImage[0].path;
   }
   if (
     req.files &&
@@ -97,13 +97,13 @@ const registerUser = asyncHandler(async (req, res) => {
   if ([fullName, email, password, role].some((field) => field?.trim() === '')) {
     cleanupUploadedFiles([
       avatarLocalPath,
-      aadharImageLocalPath,
+      aadhaarImageLocalPath,
       panImageLocalPath,
     ]);
     throw new ApiError(400, 'All required fields must be provided');
   }
 
-  // For provider, PAN and Aadhar are not required at registration. They will upload later.
+  // For provider, PAN and aadhaar are not required at registration. They will upload later.
   // Set isProfileCompleted: false for provider, true for user
   let isProfileCompleted = true;
   if (role === 'provider') {
@@ -122,7 +122,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     cleanupUploadedFiles([
       avatarLocalPath,
-      aadharImageLocalPath,
+      aadhaarImageLocalPath,
       panImageLocalPath,
     ]);
     throw new ApiError(409, 'User with email or username already exists');
@@ -131,8 +131,8 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatar = avatarLocalPath
     ? await uploadOnCloudinary(avatarLocalPath, 'avatars')
     : null;
-  const aadharImage = aadharImageLocalPath
-    ? await uploadOnCloudinary(aadharImageLocalPath, 'aadhar')
+  const aadhaarImage = aadhaarImageLocalPath
+    ? await uploadOnCloudinary(aadhaarImageLocalPath, 'aadhaar')
     : null;
   const panImage = panImageLocalPath
     ? await uploadOnCloudinary(panImageLocalPath, 'pan')
@@ -145,9 +145,9 @@ const registerUser = asyncHandler(async (req, res) => {
     email,
     password,
     googleId: req.body.googleId,
-    aadhar: {
-      ...(req.body.aadhar || {}),
-      link: aadharImage?.url || req.body.aadhar?.link || '',
+    aadhaar: {
+      ...(req.body.aadhaar || {}),
+      link: aadhaarImage?.url || req.body.aadhaar?.link || '',
     },
     pan: {
       ...(req.body.pan || {}),
@@ -162,7 +162,7 @@ const registerUser = asyncHandler(async (req, res) => {
   // Generate tokens and return with role, isVerified, isActive
   const tokens = await generateAccessAndRefreshTokens(user._id);
   const createdUser = await User.findById(user._id).select(
-    '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
+    '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
   );
 
   if (!createdUser) {
@@ -223,7 +223,7 @@ export const registerProvider = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Provider uploads PAN and Aadhar after registration
+// Provider uploads PAN and aadhaar after registration
 export const uploadProviderDocuments = asyncHandler(async (req, res) => {
   const userId = req.user?._id;
   if (!userId) throw new ApiError(401, 'Unauthorized');
@@ -231,20 +231,20 @@ export const uploadProviderDocuments = asyncHandler(async (req, res) => {
   if (!user || user.role !== 'provider')
     throw new ApiError(403, 'Forbidden, User Role Should be Provider');
 
-  let aadharFrontImageLocalPath, aadharBackImageLocalPath, panImageLocalPath;
+  let aadhaarFrontImageLocalPath, aadhaarBackImageLocalPath, panImageLocalPath;
   if (
     req.files &&
-    Array.isArray(req.files.aadharFrontImage) &&
-    req.files.aadharFrontImage.length > 0
+    Array.isArray(req.files.aadhaarFrontImage) &&
+    req.files.aadhaarFrontImage.length > 0
   ) {
-    aadharFrontImageLocalPath = req.files.aadharFrontImage[0].path;
+    aadhaarFrontImageLocalPath = req.files.aadhaarFrontImage[0].path;
   }
   if (
     req.files &&
-    Array.isArray(req.files.aadharBackImage) &&
-    req.files.aadharBackImage.length > 0
+    Array.isArray(req.files.aadhaarBackImage) &&
+    req.files.aadhaarBackImage.length > 0
   ) {
-    aadharBackImageLocalPath = req.files.aadharBackImage[0].path;
+    aadhaarBackImageLocalPath = req.files.aadhaarBackImage[0].path;
   }
   if (
     req.files &&
@@ -254,28 +254,28 @@ export const uploadProviderDocuments = asyncHandler(async (req, res) => {
     panImageLocalPath = req.files.panImage[0].path;
   }
 
-  let aadharFrontImage, aadharBackImage, panImage;
-  if (aadharFrontImageLocalPath) {
-    aadharFrontImage = await uploadOnCloudinary(
-      aadharFrontImageLocalPath,
-      'aadhar'
+  let aadhaarFrontImage, aadhaarBackImage, panImage;
+  if (aadhaarFrontImageLocalPath) {
+    aadhaarFrontImage = await uploadOnCloudinary(
+      aadhaarFrontImageLocalPath,
+      'aadhaar'
     );
-    user.aadhar.frontImage = aadharFrontImage?.url || '';
+    user.aadhaar.frontImage = aadhaarFrontImage?.url || '';
   }
-  if (aadharBackImageLocalPath) {
-    aadharBackImage = await uploadOnCloudinary(
-      aadharBackImageLocalPath,
-      'aadhar'
+  if (aadhaarBackImageLocalPath) {
+    aadhaarBackImage = await uploadOnCloudinary(
+      aadhaarBackImageLocalPath,
+      'aadhaar'
     );
-    user.aadhar.backImage = aadharBackImage?.url || '';
+    user.aadhaar.backImage = aadhaarBackImage?.url || '';
   }
   if (panImageLocalPath) {
     panImage = await uploadOnCloudinary(panImageLocalPath, 'pan');
     user.pan.link = panImage?.url || '';
   }
 
-  // If both aadhar images and pan are uploaded, set isProfileCompleted true
-  if (user.aadhar.frontImage && user.aadhar.backImage && user.pan.link) {
+  // If both aadhaar images and pan are uploaded, set isProfileCompleted true
+  if (user.aadhaar.frontImage && user.aadhaar.backImage && user.pan.link) {
     user.isProfileCompleted = true;
   }
   await user.save();
@@ -284,7 +284,7 @@ export const uploadProviderDocuments = asyncHandler(async (req, res) => {
       200,
       {
         isProfileCompleted: user.isProfileCompleted,
-        aadhar: user.aadhar,
+        aadhaar: user.aadhaar,
         pan: user.pan,
       },
       'Documents uploaded'
@@ -351,7 +351,7 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 
   const loggedInUser = await User.findById(user._id).select(
-    '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
+    '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
   );
 
   const options = { httpOnly: true, secure: true };
@@ -411,7 +411,7 @@ const loginProvider = asyncHandler(async (req, res) => {
   );
 
   const loggedInUser = await User.findById(user._id).select(
-    '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
+    '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
   );
 
   const options = { httpOnly: true, secure: true };

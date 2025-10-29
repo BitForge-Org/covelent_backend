@@ -26,21 +26,21 @@ const createProviderApplication = asyncHandler(async (req, res, next) => {
     throw new ApiError(404, 'User not found or not verified' + user);
   }
 
-  // Handle document uploads (Aadhar/PAN)
-  let aadharFrontImageLocalPath, aadharBackImageLocalPath, panImageLocalPath;
+  // Handle document uploads (aadhaar/PAN)
+  let aadhaarFrontImageLocalPath, aadhaarBackImageLocalPath, panImageLocalPath;
   if (
     req.files &&
-    Array.isArray(req.files.aadharFrontImage) &&
-    req.files.aadharFrontImage.length > 0
+    Array.isArray(req.files.aadhaarFrontImage) &&
+    req.files.aadhaarFrontImage.length > 0
   ) {
-    aadharFrontImageLocalPath = req.files.aadharFrontImage[0].path;
+    aadhaarFrontImageLocalPath = req.files.aadhaarFrontImage[0].path;
   }
   if (
     req.files &&
-    Array.isArray(req.files.aadharBackImage) &&
-    req.files.aadharBackImage.length > 0
+    Array.isArray(req.files.aadhaarBackImage) &&
+    req.files.aadhaarBackImage.length > 0
   ) {
-    aadharBackImageLocalPath = req.files.aadharBackImage[0].path;
+    aadhaarBackImageLocalPath = req.files.aadhaarBackImage[0].path;
   }
   if (
     req.files &&
@@ -50,28 +50,28 @@ const createProviderApplication = asyncHandler(async (req, res, next) => {
     panImageLocalPath = req.files.panImage[0].path;
   }
 
-  let aadharFrontImage, aadharBackImage, panImage;
-  if (aadharFrontImageLocalPath) {
-    aadharFrontImage = await uploadOnCloudinary(
-      aadharFrontImageLocalPath,
-      'aadhar'
+  let aadhaarFrontImage, aadhaarBackImage, panImage;
+  if (aadhaarFrontImageLocalPath) {
+    aadhaarFrontImage = await uploadOnCloudinary(
+      aadhaarFrontImageLocalPath,
+      'aadhaar'
     );
-    user.aadhar.frontImage = aadharFrontImage?.url || '';
+    user.aadhaar.frontImage = aadhaarFrontImage?.url || '';
   }
-  if (aadharBackImageLocalPath) {
-    aadharBackImage = await uploadOnCloudinary(
-      aadharBackImageLocalPath,
-      'aadhar'
+  if (aadhaarBackImageLocalPath) {
+    aadhaarBackImage = await uploadOnCloudinary(
+      aadhaarBackImageLocalPath,
+      'aadhaar'
     );
-    user.aadhar.backImage = aadharBackImage?.url || '';
+    user.aadhaar.backImage = aadhaarBackImage?.url || '';
   }
   if (panImageLocalPath) {
     panImage = await uploadOnCloudinary(panImageLocalPath, 'pan');
     user.pan.link = panImage?.url || '';
   }
 
-  // If both aadhar images and pan are uploaded, set isProfileCompleted true
-  if (user.aadhar.frontImage && user.aadhar.backImage && user.pan.link) {
+  // If both aadhaar images and pan are uploaded, set isProfileCompleted true
+  if (user.aadhaar.frontImage && user.aadhaar.backImage && user.pan.link) {
     user.isProfileCompleted = true;
   }
   await user.save();
@@ -95,8 +95,8 @@ const createProviderApplication = asyncHandler(async (req, res, next) => {
       ? availableLocations
       : [],
     applicationStatus: 'pending',
-    aadharFrontImage: user.aadhar.frontImage,
-    aadharBackImage: user.aadhar.backImage,
+    aadhaarFrontImage: user.aadhaar.frontImage,
+    aadhaarBackImage: user.aadhaar.backImage,
     panImage: user.pan.link,
   });
 
@@ -106,7 +106,7 @@ const createProviderApplication = asyncHandler(async (req, res, next) => {
       {
         application: newApplication,
         isProfileCompleted: user.isProfileCompleted,
-        aadhar: user.aadhar,
+        aadhaar: user.aadhaar,
         pan: user.pan,
       },
       'Provider application and documents uploaded'

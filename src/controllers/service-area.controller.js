@@ -64,29 +64,31 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
       throw new ApiError(404, 'User not found or not eligible ' + user);
     }
 
-    // Handle document uploads (Aadhar/PAN)
-    let aadharFrontImageLocalPath, aadharBackImageLocalPath, panImageLocalPath;
+    // Handle document uploads (aadhaar/PAN)
+    let aadhaarFrontImageLocalPath,
+      aadhaarBackImageLocalPath,
+      panImageLocalPath;
     // Strictly require all three images
     if (
       !req.files ||
-      !Array.isArray(req.files.aadharFrontImage) ||
-      req.files.aadharFrontImage.length === 0 ||
-      !req.files.aadharFrontImage[0].path
+      !Array.isArray(req.files.aadhaarFrontImage) ||
+      req.files.aadhaarFrontImage.length === 0 ||
+      !req.files.aadhaarFrontImage[0].path
     ) {
       throw new ApiError(
         400,
-        'Aadhar front image is required and must be uploaded'
+        'aadhaar front image is required and must be uploaded'
       );
     }
     if (
       !req.files ||
-      !Array.isArray(req.files.aadharBackImage) ||
-      req.files.aadharBackImage.length === 0 ||
-      !req.files.aadharBackImage[0].path
+      !Array.isArray(req.files.aadhaarBackImage) ||
+      req.files.aadhaarBackImage.length === 0 ||
+      !req.files.aadhaarBackImage[0].path
     ) {
       throw new ApiError(
         400,
-        'Aadhar back image is required and must be uploaded'
+        'aadhaar back image is required and must be uploaded'
       );
     }
     if (
@@ -97,32 +99,32 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
     ) {
       throw new ApiError(400, 'PAN image is required and must be uploaded');
     }
-    aadharFrontImageLocalPath = req.files.aadharFrontImage[0].path;
-    aadharBackImageLocalPath = req.files.aadharBackImage[0].path;
+    aadhaarFrontImageLocalPath = req.files.aadhaarFrontImage[0].path;
+    aadhaarBackImageLocalPath = req.files.aadhaarBackImage[0].path;
     panImageLocalPath = req.files.panImage[0].path;
 
     // Check if files exist before uploading
     const fs = await import('fs');
-    let aadharFrontImage, aadharBackImage, panImage;
-    if (aadharFrontImageLocalPath) {
-      if (!fs.existsSync(aadharFrontImageLocalPath)) {
-        throw new ApiError(400, 'Aadhar front image file does not exist');
+    let aadhaarFrontImage, aadhaarBackImage, panImage;
+    if (aadhaarFrontImageLocalPath) {
+      if (!fs.existsSync(aadhaarFrontImageLocalPath)) {
+        throw new ApiError(400, 'aadhaar front image file does not exist');
       }
-      aadharFrontImage = await uploadOnCloudinary(
-        aadharFrontImageLocalPath,
-        'aadhar'
+      aadhaarFrontImage = await uploadOnCloudinary(
+        aadhaarFrontImageLocalPath,
+        'aadhaar'
       );
-      user.aadhar.frontImage = aadharFrontImage?.url || '';
+      user.aadhaar.frontImage = aadhaarFrontImage?.url || '';
     }
-    if (aadharBackImageLocalPath) {
-      if (!fs.existsSync(aadharBackImageLocalPath)) {
-        throw new ApiError(400, 'Aadhar back image file does not exist');
+    if (aadhaarBackImageLocalPath) {
+      if (!fs.existsSync(aadhaarBackImageLocalPath)) {
+        throw new ApiError(400, 'aadhaar back image file does not exist');
       }
-      aadharBackImage = await uploadOnCloudinary(
-        aadharBackImageLocalPath,
-        'aadhar'
+      aadhaarBackImage = await uploadOnCloudinary(
+        aadhaarBackImageLocalPath,
+        'aadhaar'
       );
-      user.aadhar.backImage = aadharBackImage?.url || '';
+      user.aadhaar.backImage = aadhaarBackImage?.url || '';
     }
     if (panImageLocalPath) {
       if (!fs.existsSync(panImageLocalPath)) {
@@ -132,8 +134,8 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
       user.pan.link = panImage?.url || '';
     }
 
-    // If both aadhar images and pan are uploaded, set isProfileCompleted true
-    if (user.aadhar.frontImage && user.aadhar.backImage && user.pan.link) {
+    // If both aadhaar images and pan are uploaded, set isProfileCompleted true
+    if (user.aadhaar.frontImage && user.aadhaar.backImage && user.pan.link) {
       user.isProfileCompleted = true;
     }
     const updatedUser = await user.save({ session });
@@ -159,8 +161,8 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
           service,
           availableLocations: locationsArr,
           applicationStatus: 'pending',
-          aadharFrontImage: user.aadhar.frontImage,
-          aadharBackImage: user.aadhar.backImage,
+          aadhaarFrontImage: user.aadhaar.frontImage,
+          aadhaarBackImage: user.aadhaar.backImage,
           panImage: user.pan.link,
         },
       ],
@@ -176,7 +178,7 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
         {
           application: newApplication[0],
           isProfileCompleted: updatedUser.isProfileCompleted,
-          aadhar: updatedUser.aadhar,
+          aadhaar: updatedUser.aadhaar,
           pan: updatedUser.pan,
         },
         'Service area and documents uploaded'

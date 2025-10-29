@@ -10,7 +10,7 @@ export const verifyProviderDocuments = asyncHandler(async (req, res) => {
   if (!user || user.role !== 'provider') {
     throw new ApiError(404, 'Provider not found');
   }
-  user.aadhar.isVerified = true;
+  user.aadhaar.isVerified = true;
   user.pan.isVerified = true;
   user.isVerified = true;
   await user.save();

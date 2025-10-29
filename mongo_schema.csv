@@ -31,7 +31,7 @@ custom,covelent,users,fullName,3,string,N,N,N,N,N
 custom,covelent,users,avatar,4,string,N,N,N,N,N
 custom,covelent,users,password,5,string,N,N,N,N,N
 custom,covelent,users,role,6,string,N,N,N,N,N
-custom,covelent,users,aadhar,7,object,N,N,N,N,N
+custom,covelent,users,aadhaar,7,object,N,N,N,N,N
 custom,covelent,users,pan,8,object,N,N,N,N,N
 custom,covelent,users,dateOfBirth,9,datetime,N,N,N,N,N
 custom,covelent,users,isActive,10,boolean,N,N,N,N,N

@@ -9,7 +9,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   logger.info(`[USER] getCurrentUser called for user: ${req.user?._id}`);
   try {
     const user = await User.findById(req.user._id).select(
-      '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
+      '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
     );
     if (!user) {
       logger.warn(`[USER] No user found for id: ${req.user?._id}`);
@@ -37,15 +37,15 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'All fields are required');
   }
 
-  // Prevent aadhar and pan number update
-  if (req.body?.aadhar?.number || req.body?.pan?.number) {
+  // Prevent aadhaar and pan number update
+  if (req.body?.aadhaar?.number || req.body?.pan?.number) {
     logger.warn(
-      `[USER] Attempt to update aadhar or pan number for user: ${req.user?._id}`
+      `[USER] Attempt to update aadhaar or pan number for user: ${req.user?._id}`
     );
     return res
       .status(400)
       .json(
-        new ApiResponse(400, null, 'Aadhar and PAN number cannot be updated')
+        new ApiResponse(400, null, 'aadhaar and PAN number cannot be updated')
       );
   }
 
@@ -82,7 +82,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       runValidators: true,
     }
   ).select(
-    '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
+    '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
   );
 
   logger.info(`[USER] Update account for user: ${req.user._id}`);
@@ -122,7 +122,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     },
     { new: true }
   ).select(
-    '-password -refreshToken -aadhar -pan -resetPasswordExpires -resetPasswordToken'
+    '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
   );
 
   logger.info(`[USER] Update avatar for user: ${req.user._id}`);

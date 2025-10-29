@@ -26,12 +26,12 @@ router.route('/register').post(
 );
 
 import { uploadProviderDocuments } from '../controllers/auth.controller.js';
-// Provider uploads PAN and Aadhar after registration
+// Provider uploads PAN and aadhaar after registration
 router.route('/provider/upload-documents').post(
   verifyJWT,
   upload.fields([
-    { name: 'aadharFrontImage', maxCount: 1 },
-    { name: 'aadharBackImage', maxCount: 1 },
+    { name: 'aadhaarFrontImage', maxCount: 1 },
+    { name: 'aadhaarBackImage', maxCount: 1 },
     { name: 'panImage', maxCount: 1 },
   ]),
   uploadProviderDocuments

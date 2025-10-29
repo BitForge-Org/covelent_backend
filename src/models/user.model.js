@@ -53,7 +53,7 @@ const userSchema = new Schema({
     enum: ['user', 'provider', 'admin'],
     default: 'user',
   },
-  aadhar: {
+  aadhaar: {
     frontImage: { type: String, required: false },
     backImage: { type: String, required: false },
     number: {
@@ -61,7 +61,7 @@ const userSchema = new Schema({
       unique: true,
       sparse: true,
       trim: true,
-      maxlength: [12, 'Aadhar number must be 12 characters long'],
+      maxlength: [12, 'aadhaar number must be 12 characters long'],
     },
     isVerified: { type: Boolean, default: false },
   },
@@ -155,7 +155,7 @@ userSchema.methods.generateRefreshToken = function () {
  *           type: boolean
  *         googleId:
  *           type: string
- *         aadhar:
+ *         aadhaar:
  *           type: object
  *           properties:
  *             link:

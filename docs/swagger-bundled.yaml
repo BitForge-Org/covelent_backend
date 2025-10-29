@@ -712,14 +712,14 @@ paths:
                     - 68e7ab3e2e3114d1a26abf05
                     - 68e7ab3e2e3114d1a26abf06
                     - 68e7ab3e2e3114d1a26abf07
-                aadharFrontImage:
+                aadhaarFrontImage:
                   type: string
                   format: binary
-                  description: Aadhar front image file
-                aadharBackImage:
+                  description: aadhaar front image file
+                aadhaarBackImage:
                   type: string
                   format: binary
-                  description: Aadhar back image file
+                  description: aadhaar back image file
                 panImage:
                   type: string
                   format: binary
@@ -1643,7 +1643,7 @@ paths:
     post:
       summary: Register a new provider (role always 'provider')
       description: |
-        Register a new provider. The role is always set to 'provider' regardless of what is sent in the request. PAN and Aadhar are not required at registration; they can be uploaded later. The profile will have `isProfileCompleted: false` until documents are uploaded.
+        Register a new provider. The role is always set to 'provider' regardless of what is sent in the request. PAN and aadhaar are not required at registration; they can be uploaded later. The profile will have `isProfileCompleted: false` until documents are uploaded.
       tags:
         - Auth
       requestBody:
@@ -1702,9 +1702,9 @@ paths:
                     type: string
   /auth/provider/upload-documents:
     post:
-      summary: Provider uploads PAN and Aadhar documents
+      summary: Provider uploads PAN and aadhaar documents
       description: |
-        Allows a provider to upload PAN and Aadhar images after registration. Sets `isProfileCompleted` to true when both are uploaded.
+        Allows a provider to upload PAN and aadhaar images after registration. Sets `isProfileCompleted` to true when both are uploaded.
       tags:
         - Auth
       security:
@@ -1716,10 +1716,10 @@ paths:
             schema:
               type: object
               properties:
-                aadharFrontImage:
+                aadhaarFrontImage:
                   type: string
                   format: binary
-                aadharBackImage:
+                aadhaarBackImage:
                   type: string
                   format: binary
                 panImage:
@@ -1740,7 +1740,7 @@ paths:
                     properties:
                       isProfileCompleted:
                         type: boolean
-                      aadhar:
+                      aadhaar:
                         type: object
                       pan:
                         type: object
@@ -2314,7 +2314,7 @@ components:
             - user
             - provider
             - admin
-        aadhar:
+        aadhaar:
           type: object
           properties:
             frontImage:

@@ -26,14 +26,14 @@ paths:
                   description: Array of ObjectIds referencing Service.locationAvailable
                   example:
                     ['650000000000000000000001', '650000000000000000000002']
-                aadharFrontImage:
+                aadhaarFrontImage:
                   type: string
                   format: binary
-                  description: Aadhar front image file
-                aadharBackImage:
+                  description: aadhaar front image file
+                aadhaarBackImage:
                   type: string
                   format: binary
-                  description: Aadhar back image file
+                  description: aadhaar back image file
                 panImage:
                   type: string
                   format: binary

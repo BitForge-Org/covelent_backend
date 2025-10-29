@@ -41,8 +41,8 @@ router.post(
   '/',
   verifyJWT,
   upload.fields([
-    { name: 'aadharFrontImage', maxCount: 1 },
-    { name: 'aadharBackImage', maxCount: 1 },
+    { name: 'aadhaarFrontImage', maxCount: 1 },
+    { name: 'aadhaarBackImage', maxCount: 1 },
     { name: 'panImage', maxCount: 1 },
   ]),
   createProviderApplication

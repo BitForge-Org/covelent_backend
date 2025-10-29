@@ -23,7 +23,7 @@ User:
         - user
         - provider
         - admin
-    aadhar:
+    aadhaar:
       type: object
       properties:
         frontImage:
