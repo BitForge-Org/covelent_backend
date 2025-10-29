@@ -88,8 +88,13 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
       panImageLocalPath = req.files.panImage[0].path;
     }
 
+    // Check if files exist before uploading
+    const fs = await import('fs');
     let aadharFrontImage, aadharBackImage, panImage;
     if (aadharFrontImageLocalPath) {
+      if (!fs.existsSync(aadharFrontImageLocalPath)) {
+        throw new ApiError(400, 'Aadhar front image file does not exist');
+      }
       aadharFrontImage = await uploadOnCloudinary(
         aadharFrontImageLocalPath,
         'aadhar'
@@ -97,6 +102,9 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
       user.aadhar.frontImage = aadharFrontImage?.url || '';
     }
     if (aadharBackImageLocalPath) {
+      if (!fs.existsSync(aadharBackImageLocalPath)) {
+        throw new ApiError(400, 'Aadhar back image file does not exist');
+      }
       aadharBackImage = await uploadOnCloudinary(
         aadharBackImageLocalPath,
         'aadhar'
@@ -104,6 +112,9 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
       user.aadhar.backImage = aadharBackImage?.url || '';
     }
     if (panImageLocalPath) {
+      if (!fs.existsSync(panImageLocalPath)) {
+        throw new ApiError(400, 'PAN image file does not exist');
+      }
       panImage = await uploadOnCloudinary(panImageLocalPath, 'pan');
       user.pan.link = panImage?.url || '';
     }
