@@ -162,7 +162,9 @@ const getApplications = asyncHandler(async (req, res, next) => {
   const applications = await ServiceArea.find(filter)
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .populate('service', 'name description ')
+    .populate('provider', 'name email phone');
 
   const total = await ServiceArea.countDocuments(filter);
 
