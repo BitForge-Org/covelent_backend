@@ -454,9 +454,15 @@ const getServices = asyncHandler(async (req, res) => {
 
   const services = await Service.find(filter)
     .populate('category', 'name')
-    .populate('serviceableAreas', 'name pincodes')
+    // Do NOT populate serviceableAreas
     .populate('serviceableCities', 'name state')
-    .sort({ isFeatured: -1, avgRating: -1 });
+    .sort({ isFeatured: -1, avgRating: -1 })
+    .lean();
+
+  // Remove serviceableAreas from each service object
+  services.forEach((service) => {
+    delete service.serviceableAreas;
+  });
 
   if (!services || services.length === 0) {
     return res.status(200).json(new ApiResponse(200, [], 'No services found'));
