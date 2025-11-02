@@ -2,13 +2,13 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { Service } from '../models/service.model.js';
+import { ServiceArea } from '../models/service-area.model.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { redisClient } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
 import Area from '../models/area.model.js';
 import City from '../models/city.model.js';
-import Pincode from '../models/pincode.model.js';
 
 const createService = asyncHandler(async (req, res) => {
   try {
@@ -483,7 +483,7 @@ const getServices = asyncHandler(async (req, res) => {
 const getServicesByArea = asyncHandler(async (req, res) => {
   try {
     const { areaId } = req.params;
-    const { categoryId, minPrice, maxPrice, featured } = req.query;
+    const { categoryId, minPrice, maxPrice, featured, title } = req.query;
 
     if (!areaId) {
       throw new ApiError(400, 'Area ID is required');
@@ -505,18 +505,33 @@ const getServicesByArea = asyncHandler(async (req, res) => {
         );
     }
 
-    const filter = {
-      serviceableAreas: areaId,
-      isActive: true,
+    // Find ServiceArea entries with approved status and areaId in availableLocations
+    const serviceAreaFilter = {
+      applicationStatus: 'approved',
+      availableLocations: areaId,
     };
 
-    if (categoryId) filter.category = categoryId;
-    if (featured) filter.isFeatured = featured === 'true';
+    let serviceAreas = await ServiceArea.find(serviceAreaFilter).populate({
+      path: 'service',
+      populate: { path: 'category', select: 'name' },
+    });
 
-    let services = await Service.find(filter)
-      .populate('category', 'name')
-      .populate('serviceableAreas', 'name pincodes')
-      .sort({ isFeatured: -1, avgRating: -1 });
+    // Extract services from serviceAreas
+    let services = serviceAreas.map((sa) => sa.service).filter(Boolean);
+
+    // Apply additional filters
+    if (categoryId) {
+      services = services.filter(
+        (s) => s.category && s.category._id.toString() === categoryId
+      );
+    }
+    if (featured) {
+      services = services.filter((s) => s.isFeatured === (featured === 'true'));
+    }
+    if (title) {
+      const regex = new RegExp(title, 'i');
+      services = services.filter((s) => regex.test(s.title));
+    }
 
     // Filter by price if provided
     if (minPrice || maxPrice) {
@@ -533,6 +548,12 @@ const getServicesByArea = asyncHandler(async (req, res) => {
 
     // Cache for 30 minutes
     await redisClient.set(cacheKey, JSON.stringify(services), { EX: 1800 });
+
+    if (!services || services.length === 0) {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, [], 'No services available for this area'));
+    }
 
     return res
       .status(200)

@@ -163,8 +163,8 @@ const getApplications = asyncHandler(async (req, res, next) => {
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
     .sort({ createdAt: -1 })
-    .populate('service', 'name description ')
-    .populate('provider', 'name email phone');
+    .populate('service')
+    .populate({ path: 'provider', select: 'fullName email phoneNumber' });
 
   const total = await ServiceArea.countDocuments(filter);
 
@@ -186,7 +186,9 @@ const getApplications = asyncHandler(async (req, res, next) => {
 const getApplicationById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const application = await ServiceArea.findById(id);
+  const application = await ServiceArea.findById(id)
+    .populate({ path: 'service', select: 'title description' })
+    .populate({ path: 'provider', select: 'fullName email phoneNumber' });
 
   if (!application) {
     throw new ApiError(404, 'Provider application not found');

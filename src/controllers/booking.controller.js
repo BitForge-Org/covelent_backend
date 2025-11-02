@@ -19,138 +19,130 @@ import logger from '../utils/logger.js';
 const createBooking = asyncHandler(async (req, res) => {
   logger.info(`[BOOKING] createBooking called by user: ${req.user?._id}`);
   logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
+
+  const {
+    serviceId,
+    selectedPricingOption,
+    scheduledTime,
+    specialInstructions,
+    scheduledDate,
+    location,
+    paymentMethod,
+  } = req.body;
+
+  const service = await Service.findById(serviceId);
+  if (!service || !service.isActive) {
+    logger.warn(`[BOOKING] Service not found or inactive: ${serviceId}`);
+    throw new ApiError(404, 'Service not found or inactive');
+  }
+
+  const option = service.pricingOptions.id(selectedPricingOption);
+  if (!option) {
+    logger.warn(
+      `[BOOKING] Invalid pricing option selected: ${selectedPricingOption}`
+    );
+    throw new ApiError(400, 'Invalid pricing option selected');
+  }
+
+  const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+  if (scheduledDateTime <= new Date()) {
+    logger.warn(
+      `[BOOKING] Scheduled date/time is not in the future: ${scheduledDate}T${scheduledTime}`
+    );
+    throw new ApiError(400, 'Scheduled date and time must be in the future');
+  }
+
+  // Location logic: Accepts either an address ObjectId or a full address object
+  let addressId;
+  if (!location) {
+    logger.warn(`[BOOKING] Location is required but missing`);
+    throw new ApiError(400, 'Location is required');
+  }
+  if (
+    typeof location === 'string' ||
+    (location._id && typeof location._id === 'string')
+  ) {
+    // If location is an address ID or object with _id
+    addressId = location._id || location;
+    const addressExists = await Address.findById(addressId);
+    if (!addressExists) {
+      logger.warn(`[BOOKING] Provided address not found: ${addressId}`);
+      throw new ApiError(400, 'Provided address not found');
+    }
+  } else if (
+    location.address &&
+    location.city &&
+    location.state &&
+    location.pincode &&
+    location.coordinates
+  ) {
+    // If location is a full address object, create new Address
+    const newAddress = await Address.create({
+      user: req.user._id,
+      ...location,
+    });
+    addressId = newAddress._id;
+    logger.info(`[BOOKING] New address created: ${addressId}`);
+  } else {
+    logger.warn(
+      `[BOOKING] Invalid location details: ${JSON.stringify(location)}`
+    );
+    throw new ApiError(400, 'Invalid location details');
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  logger.info(`[BOOKING] Transaction started for booking creation`);
+
+  let order = null;
   try {
-    const {
-      serviceId,
-      selectedPricingOption,
-      scheduledTime,
-      specialInstructions,
-      scheduledDate,
-      location,
-      paymentMethod,
-    } = req.body;
+    const booking = await Booking.create(
+      [
+        {
+          user: req.user._id,
+          service: serviceId,
+          scheduledDate,
+          scheduledTime,
+          specialInstructions: specialInstructions || '',
+          selectedPricingOption: option._id,
+          finalPrice: option.price,
+          location: addressId,
+          payment: { paymentMethod },
+        },
+      ],
+      { session }
+    );
+    logger.info(`[BOOKING] Booking created: ${booking[0]?._id}`);
 
-    const service = await Service.findById(serviceId);
-    if (!service || !service.isActive) {
-      logger.warn(`[BOOKING] Service not found or inactive: ${serviceId}`);
-      throw new ApiError(404, 'Service not found or inactive');
-    }
-
-    const option = service.pricingOptions.id(selectedPricingOption);
-    if (!option) {
-      logger.warn(
-        `[BOOKING] Invalid pricing option selected: ${selectedPricingOption}`
-      );
-      throw new ApiError(400, 'Invalid pricing option selected');
-    }
-
-    const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-    if (scheduledDateTime <= new Date()) {
-      logger.warn(
-        `[BOOKING] Scheduled date/time is not in the future: ${scheduledDate}T${scheduledTime}`
-      );
-      throw new ApiError(400, 'Scheduled date and time must be in the future');
-    }
-
-    // Location logic: Accepts either an address ObjectId or a full address object
-    let addressId;
-    if (!location) {
-      logger.warn(`[BOOKING] Location is required but missing`);
-      throw new ApiError(400, 'Location is required');
-    }
-    if (
-      typeof location === 'string' ||
-      (location._id && typeof location._id === 'string')
-    ) {
-      // If location is an address ID or object with _id
-      addressId = location._id || location;
-      const addressExists = await Address.findById(addressId);
-      if (!addressExists) {
-        logger.warn(`[BOOKING] Provided address not found: ${addressId}`);
-        throw new ApiError(400, 'Provided address not found');
-      }
-    } else if (
-      location.address &&
-      location.city &&
-      location.state &&
-      location.pincode &&
-      location.coordinates
-    ) {
-      // If location is a full address object, create new Address
-      const newAddress = await Address.create({
-        user: req.user._id,
-        ...location,
+    if (paymentMethod !== 'cash') {
+      order = await razorpay.orders.create({
+        amount: option.price * 100,
+        currency: 'INR',
+        receipt: `receipt_${booking[0]._id}`,
       });
-      addressId = newAddress._id;
-      logger.info(`[BOOKING] New address created: ${addressId}`);
-    } else {
-      logger.warn(
-        `[BOOKING] Invalid location details: ${JSON.stringify(location)}`
-      );
-      throw new ApiError(400, 'Invalid location details');
+      logger.info(`[BOOKING] Razorpay order created: ${order.id}`);
+      booking[0].payment.orderId = order.id;
+      await booking[0].save({ session });
     }
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-    logger.info(`[BOOKING] Transaction started for booking creation`);
-
-    let order = null;
-    try {
-      const booking = await Booking.create(
-        [
-          {
-            user: req.user._id,
-            service: serviceId,
-            scheduledDate,
-            scheduledTime,
-            specialInstructions: specialInstructions || '',
-            selectedPricingOption: option._id,
-            finalPrice: option.price,
-            location: addressId,
-            payment: { paymentMethod },
-          },
-        ],
-        { session }
+    await session.commitTransaction();
+    session.endSession();
+    logger.info(
+      `[BOOKING] Transaction committed for booking: ${booking[0]?._id}`
+    );
+    return res
+      .status(201)
+      .json(
+        new ApiResponse(201, { booking: booking[0], order }, 'Booking created')
       );
-      logger.info(`[BOOKING] Booking created: ${booking[0]?._id}`);
-
-      if (paymentMethod !== 'cash') {
-        order = await razorpay.orders.create({
-          amount: option.price * 100,
-          currency: 'INR',
-          receipt: `receipt_${booking[0]._id}`,
-        });
-        logger.info(`[BOOKING] Razorpay order created: ${order.id}`);
-        booking[0].payment.orderId = order.id;
-        await booking[0].save({ session });
-      }
-
-      await session.commitTransaction();
-      session.endSession();
-      logger.info(
-        `[BOOKING] Transaction committed for booking: ${booking[0]?._id}`
-      );
-      return res
-        .status(201)
-        .json(
-          new ApiResponse(
-            201,
-            { booking: booking[0], order },
-            'Booking created'
-          )
-        );
-    } catch (err) {
-      await session.abortTransaction();
-      session.endSession();
-      logger.error(`[BOOKING] Transaction aborted for booking creation`);
-      throw new ApiError(
-        500,
-        'Booking creation failed, please try again: ' + err
-      );
-    }
-  } catch (error) {
-    logger.error('Error in createBooking:', error);
-    throw new ApiError(500, 'Failed to create booking');
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    logger.error(`[BOOKING] Transaction aborted: ${err.message}`);
+    throw new ApiError(
+      500,
+      'Booking creation failed during transaction: ' + err.message
+    );
   }
 });
 
@@ -219,11 +211,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
       return res
         .status(200)
         .json(
-          new ApiResponse(
-            200,
-            bookings,
-            'No approved provider applications found'
-          )
+          new ApiResponse(200, [], 'No approved provider applications found')
         );
     }
 

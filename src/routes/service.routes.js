@@ -1,3 +1,5 @@
+// Only import getServicesByArea once, and ensure no duplicate declaration
+// GET /services/by-area
 // src/routes/service.routes.js
 import { Router } from 'express';
 import {
@@ -19,6 +21,7 @@ import { isAdmin } from '../middlewares/auth.middleware.js';
 const router = Router();
 
 // Public routes
+router.get('/by-area', getServicesByArea);
 router.get('/', getServices);
 router.get('/featured-services', getFeaturedServices);
 router.get('/:serviceId', getServiceById);

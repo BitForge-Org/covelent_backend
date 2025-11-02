@@ -25,6 +25,8 @@ tags:
     description: Location import management
   - name: ServiceArea
     description: Service area management
+  - name: Location
+    description: Location and geocoding endpoints
 paths:
   /services:
     get:
@@ -51,7 +53,11 @@ paths:
           name: maxPrice
           schema:
             type: number
-          description: Maximum price
+        - in: query
+          name: title
+          schema:
+            type: string
+          description: Search services by title (case-insensitive)
         - in: query
           name: avgRating
           schema:
@@ -1806,6 +1812,167 @@ paths:
           description: Invalid booking ID
         '401':
           description: Unauthorized
+  /location/get-pincode:
+    post:
+      tags:
+        - Location
+      summary: Get pincode and address details from coordinates
+      description: |
+        Returns the pincode and address information for the given latitude and longitude using geocoding providers (Google, OpenCage, Nominatim, BigDataCloud).
+
+        **Rate Limit:** 100 requests per 15 minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - latitude
+                - longitude
+              properties:
+                latitude:
+                  type: number
+                  format: float
+                  example: 21.1458
+                  description: Latitude (-90 to 90)
+                longitude:
+                  type: number
+                  format: float
+                  example: 79.0882
+                  description: Longitude (-180 to 180)
+      responses:
+        '200':
+          description: Pincode and address found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Pincode retrieved successfully
+                  data:
+                    type: object
+                    properties:
+                      pincode:
+                        type: string
+                        example: '440001'
+                      area:
+                        type: string
+                        example: Civil Lines
+                      city:
+                        type: string
+                        example: Nagpur
+                      district:
+                        type: string
+                        example: Nagpur
+                      state:
+                        type: string
+                        example: Maharashtra
+                      stateCode:
+                        type: string
+                        example: MH
+                      country:
+                        type: string
+                        example: India
+                      countryCode:
+                        type: string
+                        example: IN
+                      fullAddress:
+                        type: string
+                        example: 'Civil Lines, Nagpur, Maharashtra 440001, India'
+                      placeId:
+                        type: string
+                        example: ChIJ...
+                      coordinates:
+                        type: object
+                        properties:
+                          latitude:
+                            type: number
+                            example: 21.1458
+                          longitude:
+                            type: number
+                            example: 79.0882
+                      accuracy:
+                        type: string
+                        example: ROOFTOP
+                      fromCache:
+                        type: boolean
+                        example: false
+        '400':
+          description: Invalid coordinates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Validation failed
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                          example: latitude
+                        message:
+                          type: string
+                          example: Latitude must be between -90 and 90
+        '404':
+          description: Pincode not available for this location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Pincode not available for this location
+                  statusCode:
+                    type: integer
+                    example: 404
+        '500':
+          description: Geocoding service error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Geocoding service error
+                  statusCode:
+                    type: integer
+                    example: 500
+      x-rateLimit:
+        limit: 100
+        window: 15m
+      x-codeSamples:
+        - lang: JavaScript
+          label: Fetch Example
+          source: |
+            fetch('http://localhost:3000/api/v1/location/get-pincode', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ latitude: 21.1458, longitude: 79.0882 })
+            })
+              .then(res => res.json())
+              .then(data => console.log(data));
   /location-import/cities:
     get:
       summary: List all cities

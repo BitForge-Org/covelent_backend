@@ -246,8 +246,12 @@ const getServiceAreas = asyncHandler(async (req, res, next) => {
   const applications = await ServiceArea.find(filter)
     .skip((page - 1) * limit)
     .limit(parseInt(limit))
-    .sort({ createdAt: -1 });
-
+    .sort({ createdAt: -1 })
+    .populate({ path: 'service', select: 'title description' })
+    .populate({
+      path: 'provider',
+      select: 'fullName email phoneNumber locationAvailable',
+    });
   const total = await ServiceArea.countDocuments(filter);
 
   return res.status(200).json(

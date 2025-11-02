@@ -29,6 +29,9 @@ tags:
   - name: ServiceArea
     description: Service area management
 
+  - name: Location
+    description: Location and geocoding endpoints
+
 paths:
   /services:
     $ref: './paths/services.yaml#/paths/~1services'
@@ -120,6 +123,9 @@ paths:
     $ref: './paths/webhook.yaml#/~1webhook~1verify-payment'
   /webhook/payment-status/{bookingId}:
     $ref: './paths/webhook.yaml#/~1webhook~1payment-status~1{bookingId}'
+
+  /location/get-pincode:
+    $ref: './paths/location.yaml#/paths/~1location~1get-pincode'
 
   /location-import/cities:
     $ref: './paths/locationImport.yaml#/paths/~1location-import~1cities'

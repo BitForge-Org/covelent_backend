@@ -33,9 +33,10 @@ app.use(express.static(path.resolve('public')));
 
 app.use(generalLimiter); // 👈 use rate limiter middleware
 
+// Allow all origins for development/testing. Change to specific origin in production.
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: true,
     credentials: true,
   })
 );
@@ -72,6 +73,7 @@ import adminRouter from './routes/admin.routes.js';
 import locationRoutes from './routes/locationImport.routes.js';
 
 import webhookRouter from './routes/webhook.routes.js';
+import location from './routes/location.router.js';
 
 app.use('/api/v1/admin', authLimiter, adminRouter); // 👈 apply authLimiter to admin routes
 
@@ -84,6 +86,7 @@ app.use('/api/v1/applications', serviceAreaRouter);
 app.use('/api/v1/bookings', BookingRouter);
 app.use('/api/v1/addresses', AddressRouter);
 app.use('/api/v1/location-import', locationRoutes);
+app.use('/api/v1/location', location);
 
 // Webhook routes
 // Razorpay webhook: capture raw body for signature verification

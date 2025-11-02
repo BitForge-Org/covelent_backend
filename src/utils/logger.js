@@ -21,14 +21,19 @@ const customLevels = {
 
 winston.addColors(customLevels.colors);
 
-const logFormat = printf(({ level, message, timestamp, stack }) => {
-  return `${timestamp} [${level}]: ${stack || message}`;
+const logFormat = printf(({ level, message, timestamp, stack, ...meta }) => {
+  let msg =
+    typeof message === 'object' ? JSON.stringify(message, null, 2) : message;
+  let metaString = Object.keys(meta).length
+    ? JSON.stringify(meta, null, 2)
+    : '';
+  return `${timestamp} [${level}]: ${stack || msg}${metaString ? '\n' + metaString : ''}`;
 });
 
 const logger = winston.createLogger({
   levels: customLevels.levels,
 
-  level: 'http',
+  level: 'debug',
   format: combine(
     colorize(), // colors in console
     timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -44,7 +49,7 @@ const logger = winston.createLogger({
 
 // If in production, don’t use console transport
 if (process.env.NODE_ENV === 'production') {
-  logger.remove(new winston.transports.Console());
+  // logger.remove(new winston.transports.Console());
 }
 
 export default logger;
