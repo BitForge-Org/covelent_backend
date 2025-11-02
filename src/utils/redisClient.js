@@ -1,6 +1,9 @@
 import { createClient } from 'redis';
 import logger from './logger.js';
 
+// Debug: Print REDIS_URL value at startup
+logger.log('REDIS_URL:', process.env.REDIS_URL);
+
 export const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://redis:6379',
   socket: {
