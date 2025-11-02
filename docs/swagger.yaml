@@ -33,6 +33,24 @@ tags:
     description: Location and geocoding endpoints
 
 paths:
+  /categories:
+    $ref: './paths/categories.yaml#/~1categories'
+  /users/current-user:
+    $ref: './paths/users/current-user.yaml#/~1current-user'
+  /users/update-account:
+    $ref: './paths/users/update-account.yaml#/~1update-account'
+  /users/avatar:
+    $ref: './paths/users/avatar.yaml#/~1avatar'
+  /applications/complete-application:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application'
+  /applications/complete-application/{id}:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1{id}'
+  /applications/complete-application/{id}/status:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1{id}~1status'
+  /applications/complete-application/provider/{id}:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1provider~1{id}'
+  /applications/add-service:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1add-service'
   /services:
     $ref: './paths/services.yaml#/paths/~1services'
   /services/featured-services:
@@ -50,25 +68,7 @@ paths:
   /services/{serviceId}/city:
     $ref: './paths/services.yaml#/paths/~1services~1{serviceId}~1city'
 
-  /categories:
-    $ref: './paths/categories.yaml#/~1categories'
-  /users/current-user:
-    $ref: './paths/users/current-user.yaml#/~1current-user'
-  /users/update-account:
-    $ref: './paths/users/update-account.yaml#/~1update-account'
-  /users/avatar:
-    $ref: './paths/users/avatar.yaml#/~1avatar'
-  /applications/complete-application:
-    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application'
-
-  /applications/complete-application/{id}:
-    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1{id}'
-
-  /applications/complete-application/{id}/status:
-    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1{id}~1status'
-
-  /applications/complete-application/provider/{id}:
-    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1provider~1{id}'
+  # (Removed duplicate /categories and related paths)
 
   /bookings:
     $ref: './paths/booking.yaml#/~1bookings'

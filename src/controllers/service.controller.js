@@ -1,4 +1,3 @@
-// src/controllers/service.controller.js
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { Service } from '../models/service.model.js';

@@ -23,7 +23,7 @@ const createProviderApplication = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user._id);
 
   if (!user || user.role !== 'provider' || !user.isVerified) {
-    throw new ApiError(404, 'User not found or not verified' + user);
+    throw new ApiError(404, 'User not found or not verified');
   }
 
   // Handle document uploads (aadhaar/PAN)

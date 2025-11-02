@@ -14,7 +14,6 @@ const createServiceArea = asyncHandler(async (req, res, next) => {
   const session = await ServiceArea.startSession();
   session.startTransaction();
   try {
-    // Robustly handle availableLocations as array, string, or array of comma-separated strings
     let locationsArr = [];
     logger.info(
       `Raw availableLocations: ${JSON.stringify(availableLocations)}`
@@ -300,10 +299,122 @@ const getServiceAreasByProvider = asyncHandler(async (req, res, next) => {
     );
 });
 
+// Add service for completed profile
+const addServiceForCompletedProfile = asyncHandler(async (req, res, next) => {
+  const { service, availableLocations } = req.body;
+
+  // Start a session for transaction
+  const session = await ServiceArea.startSession();
+  session.startTransaction();
+  try {
+    let locationsArr = [];
+    logger.info(
+      `Raw availableLocations: ${JSON.stringify(availableLocations)}`
+    );
+    if (Array.isArray(availableLocations)) {
+      locationsArr = availableLocations
+        .flatMap((val) =>
+          typeof val === 'string'
+            ? val
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0)
+            : []
+        )
+        .filter((s) => s.length > 0);
+    } else if (
+      typeof availableLocations === 'string' &&
+      availableLocations.trim() !== ''
+    ) {
+      locationsArr = availableLocations
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    }
+    // Remove duplicates and empty strings
+    locationsArr = Array.from(new Set(locationsArr)).filter(
+      (s) => s.length > 0
+    );
+    logger.info(`Parsed locationsArr: ${JSON.stringify(locationsArr)}`);
+    if (!locationsArr.length) {
+      logger.warn(
+        `availableLocations is empty after parsing: ${JSON.stringify(availableLocations)}`
+      );
+      throw new ApiError(
+        400,
+        'availableLocations is required and cannot be empty'
+      );
+    }
+
+    if (!service) {
+      throw new ApiError(400, 'Service is required');
+    }
+
+    const user = await User.findById(req.user._id).session(session);
+
+    if (!user || user.role !== 'provider') {
+      throw new ApiError(404, 'User not found or not eligible ' + user);
+    }
+
+    // Check if user profile is completed
+    if (!user.isProfileCompleted) {
+      throw new ApiError(
+        400,
+        'Profile must be completed before adding a service'
+      );
+    }
+
+    // Check for duplicate application for same service
+    const existingApplication = await ServiceArea.findOne({
+      provider: req.user._id,
+      service,
+    })
+      .select('_id applicationStatus')
+      .session(session);
+
+    if (existingApplication) {
+      throw new ApiError(
+        400,
+        `You have already applied for this service. Status: ${existingApplication.applicationStatus}`
+      );
+    }
+
+    const newApplication = await ServiceArea.create(
+      [
+        {
+          provider: req.user._id,
+          service,
+          availableLocations: locationsArr,
+          applicationStatus: 'pending',
+        },
+      ],
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(201).json(
+      new ApiResponse(
+        201,
+        {
+          application: newApplication[0],
+        },
+        'Service area added successfully'
+      )
+    );
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    next(err);
+  }
+});
+
 export {
   createServiceArea,
   updateServiceAreaStatus,
   getServiceAreas,
   getServiceAreaById,
   getServiceAreasByProvider,
+  addServiceForCompletedProfile,
 };

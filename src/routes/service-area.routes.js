@@ -25,7 +25,13 @@ import {
   getServiceAreas,
   getServiceAreasByProvider,
   updateServiceAreaStatus,
+  addServiceForCompletedProfile,
 } from '../controllers/service-area.controller.js';
+/**
+ * @route   POST /api/service-areas/add-service
+ * @desc    Add service for completed profile
+ * @access  Private (provider)
+ */
 
 import { isAdmin, verifyJWT } from '../middlewares/auth.middleware.js';
 import { upload } from '../middlewares/multer.middleware.js';
@@ -47,6 +53,8 @@ router.post(
   ]),
   createServiceArea
 );
+
+router.post('/add-service', verifyJWT, addServiceForCompletedProfile);
 
 /**
  * @route   PATCH /api/service-areas/:id/status

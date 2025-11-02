@@ -1,4 +1,46 @@
 paths:
+  /applications/add-service:
+    post:
+      summary: Add service for completed profile
+      tags:
+        - ServiceArea
+      description: |
+        Allows a provider with a completed profile to add a new service and availableLocations. No document uploads required. Prevents duplicate applications for the same service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - service
+                - availableLocations
+              properties:
+                service:
+                  type: string
+                  description: Service ObjectId
+                  example: 68b0771e177a4c9f3a8ed011
+                availableLocations:
+                  type: array
+                  items:
+                    type: string
+                    description: ObjectId referencing Area
+                  description: Array of ObjectIds referencing Area model.
+                  example:
+                    - 68e7ab3e2e3114d1a26abf05
+                    - 68e7ab3e2e3114d1a26abf06
+                    - 68e7ab3e2e3114d1a26abf07
+      responses:
+        '201':
+          description: Service area added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/serviceArea.yaml#/ServiceArea'
+        '400':
+          description: Invalid input or duplicate application
+        '500':
+          description: Server error
   /applications/complete-application:
     post:
       summary: Create a new service area

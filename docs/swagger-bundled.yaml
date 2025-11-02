@@ -28,6 +28,404 @@ tags:
   - name: Location
     description: Location and geocoding endpoints
 paths:
+  /categories:
+    get:
+      summary: Get all categories
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/paths/~1categories/post/responses/201/content/application~1json/schema/properties/data'
+                  message:
+                    type: string
+    post:
+      summary: Create a new category
+      tags:
+        - Categories
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                icon:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    required:
+                      - name
+                      - description
+                      - icon
+                    properties:
+                      _id:
+                        type: string
+                        description: Category ID
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      icon:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+                  message:
+                    type: string
+  /users/current-user:
+    get:
+      summary: Get current authenticated user's details
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+  /users/update-account:
+    patch:
+      summary: Update account details for the current user
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                dateOfBirth:
+                  type: string
+                  format: date
+                phoneNumber:
+                  type: string
+      responses:
+        '200':
+          description: Account details updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: '$ref:''./../../schemas/User.yaml#/User'''
+        '400':
+          description: Bad request
+  /users/avatar:
+    patch:
+      summary: Update the user's avatar
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Avatar image updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Avatar file is missing
+  /applications/complete-application:
+    post:
+      summary: Create a new service area
+      tags:
+        - ServiceArea
+      description: |
+        **Note:** For `availableLocations` (array), you can send either:
+        - Multiple fields: `-F 'availableLocations=ID1' -F 'availableLocations=ID2' ...` (recommended, best for backend)
+        - Single comma-separated field: `-F 'availableLocations=ID1,ID2,ID3'` (what Swagger UI generates)
+
+        Both formats are supported by the backend.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - service
+                - availableLocations
+              properties:
+                service:
+                  type: string
+                  description: Service ObjectId
+                  example: 68b0771e177a4c9f3a8ed011
+                availableLocations:
+                  type: array
+                  items:
+                    type: string
+                    description: ObjectId referencing Area (not the areas field)
+                  description: |
+                    Array of ObjectIds referencing Area model. This is distinct from the `areas` field, which may be used for other purposes.
+
+                    **Note:** For `availableLocations` (array), you can send either:
+                    - Multiple fields: `-F 'availableLocations=ID1' -F 'availableLocations=ID2' ...` (recommended, best for backend)
+                    - Single comma-separated field: `-F 'availableLocations=ID1,ID2,ID3'` (what Swagger UI generates)
+
+                    Both formats are supported by the backend.
+                  example:
+                    - 68e7ab3e2e3114d1a26abf05
+                    - 68e7ab3e2e3114d1a26abf06
+                    - 68e7ab3e2e3114d1a26abf07
+                aadhaarFrontImage:
+                  type: string
+                  format: binary
+                  description: aadhaar front image file
+                aadhaarBackImage:
+                  type: string
+                  format: binary
+                  description: aadhaar back image file
+                panImage:
+                  type: string
+                  format: binary
+                  description: PAN image file
+      responses:
+        '201':
+          description: Service area created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceArea'
+        '400':
+          description: Invalid input
+        '500':
+          description: Server error
+    get:
+      summary: Get all service areas (admin only)
+      tags:
+        - ServiceArea
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - rejected
+              - suspended
+          description: Filter by application status
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Results per page
+      responses:
+        '200':
+          description: Service areas fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceArea'
+        '400':
+          description: Invalid filter
+        '500':
+          description: Server error
+  '/applications/complete-application/{id}':
+    get:
+      summary: Get a single service area by ID
+      tags:
+        - ServiceArea
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Service area ObjectId
+      responses:
+        '200':
+          description: Service area fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceArea'
+        '400':
+          description: Invalid ID
+        '404':
+          description: Service area not found
+        '500':
+          description: Server error
+  '/applications/complete-application/{id}/status':
+    patch:
+      summary: Update service area status (admin only)
+      tags:
+        - ServiceArea
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Service area ObjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - applicationStatus
+              properties:
+                applicationStatus:
+                  type: string
+                  enum:
+                    - pending
+                    - approved
+                    - rejected
+                    - suspended
+                  description: New status
+                  example: approved
+                adminNotes:
+                  type: string
+                  description: Optional admin notes
+      responses:
+        '200':
+          description: Service area status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceArea'
+        '400':
+          description: Invalid status or ID
+        '404':
+          description: Service area not found
+        '500':
+          description: Server error
+  '/applications/complete-application/provider/{id}':
+    get:
+      summary: Get all service areas by provider
+      tags:
+        - ServiceArea
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Provider ObjectId
+      responses:
+        '200':
+          description: Service areas for provider fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceArea'
+        '400':
+          description: Invalid provider ID
+        '404':
+          description: Provider not found
+        '500':
+          description: Server error
+  /applications/add-service:
+    post:
+      summary: Add service for completed profile
+      tags:
+        - ServiceArea
+      description: |
+        Allows a provider with a completed profile to add a new service and availableLocations. No document uploads required. Prevents duplicate applications for the same service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - service
+                - availableLocations
+              properties:
+                service:
+                  type: string
+                  description: Service ObjectId
+                  example: 68b0771e177a4c9f3a8ed011
+                availableLocations:
+                  type: array
+                  items:
+                    type: string
+                    description: ObjectId referencing Area
+                  description: Array of ObjectIds referencing Area model.
+                  example:
+                    - 68e7ab3e2e3114d1a26abf05
+                    - 68e7ab3e2e3114d1a26abf06
+                    - 68e7ab3e2e3114d1a26abf07
+      responses:
+        '201':
+          description: Service area added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceArea'
+        '400':
+          description: Invalid input or duplicate application
+        '500':
+          description: Server error
   /services:
     get:
       summary: Get all services with optional filters
@@ -521,362 +919,6 @@ paths:
       responses:
         '200':
           description: Service assigned to city successfully
-  /categories:
-    get:
-      summary: Get all categories
-      tags:
-        - Categories
-      responses:
-        '200':
-          description: List of categories
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/paths/~1categories/post/responses/201/content/application~1json/schema/properties/data'
-                  message:
-                    type: string
-    post:
-      summary: Create a new category
-      tags:
-        - Categories
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                description:
-                  type: string
-                icon:
-                  type: string
-                  format: binary
-      responses:
-        '201':
-          description: Category created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    required:
-                      - name
-                      - description
-                      - icon
-                    properties:
-                      _id:
-                        type: string
-                        description: Category ID
-                      name:
-                        type: string
-                      description:
-                        type: string
-                      icon:
-                        type: string
-                      createdAt:
-                        type: string
-                        format: date-time
-                      updatedAt:
-                        type: string
-                        format: date-time
-                  message:
-                    type: string
-  /users/current-user:
-    get:
-      summary: Get current authenticated user's details
-      tags:
-        - Users
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: User fetched successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-  /users/update-account:
-    patch:
-      summary: Update account details for the current user
-      tags:
-        - Users
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                fullName:
-                  type: string
-                email:
-                  type: string
-                dateOfBirth:
-                  type: string
-                  format: date
-                phoneNumber:
-                  type: string
-      responses:
-        '200':
-          description: Account details updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user: '$ref:''./../../schemas/User.yaml#/User'''
-        '400':
-          description: Bad request
-  /users/avatar:
-    patch:
-      summary: Update the user's avatar
-      tags:
-        - Users
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                avatar:
-                  type: string
-                  format: binary
-      responses:
-        '200':
-          description: Avatar image updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-        '400':
-          description: Avatar file is missing
-  /applications/complete-application:
-    post:
-      summary: Create a new service area
-      tags:
-        - ServiceArea
-      description: |
-        **Note:** For `availableLocations` (array), you can send either:
-        - Multiple fields: `-F 'availableLocations=ID1' -F 'availableLocations=ID2' ...` (recommended, best for backend)
-        - Single comma-separated field: `-F 'availableLocations=ID1,ID2,ID3'` (what Swagger UI generates)
-
-        Both formats are supported by the backend.
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - service
-                - availableLocations
-              properties:
-                service:
-                  type: string
-                  description: Service ObjectId
-                  example: 68b0771e177a4c9f3a8ed011
-                availableLocations:
-                  type: array
-                  items:
-                    type: string
-                    description: ObjectId referencing Area (not the areas field)
-                  description: |
-                    Array of ObjectIds referencing Area model. This is distinct from the `areas` field, which may be used for other purposes.
-
-                    **Note:** For `availableLocations` (array), you can send either:
-                    - Multiple fields: `-F 'availableLocations=ID1' -F 'availableLocations=ID2' ...` (recommended, best for backend)
-                    - Single comma-separated field: `-F 'availableLocations=ID1,ID2,ID3'` (what Swagger UI generates)
-
-                    Both formats are supported by the backend.
-                  example:
-                    - 68e7ab3e2e3114d1a26abf05
-                    - 68e7ab3e2e3114d1a26abf06
-                    - 68e7ab3e2e3114d1a26abf07
-                aadhaarFrontImage:
-                  type: string
-                  format: binary
-                  description: aadhaar front image file
-                aadhaarBackImage:
-                  type: string
-                  format: binary
-                  description: aadhaar back image file
-                panImage:
-                  type: string
-                  format: binary
-                  description: PAN image file
-      responses:
-        '201':
-          description: Service area created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceArea'
-        '400':
-          description: Invalid input
-        '500':
-          description: Server error
-    get:
-      summary: Get all service areas (admin only)
-      tags:
-        - ServiceArea
-      parameters:
-        - in: query
-          name: status
-          schema:
-            type: string
-            enum:
-              - pending
-              - approved
-              - rejected
-              - suspended
-          description: Filter by application status
-        - in: query
-          name: page
-          schema:
-            type: integer
-          description: Page number
-        - in: query
-          name: limit
-          schema:
-            type: integer
-          description: Results per page
-      responses:
-        '200':
-          description: Service areas fetched successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ServiceArea'
-        '400':
-          description: Invalid filter
-        '500':
-          description: Server error
-  '/applications/complete-application/{id}':
-    get:
-      summary: Get a single service area by ID
-      tags:
-        - ServiceArea
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: Service area ObjectId
-      responses:
-        '200':
-          description: Service area fetched successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceArea'
-        '400':
-          description: Invalid ID
-        '404':
-          description: Service area not found
-        '500':
-          description: Server error
-  '/applications/complete-application/{id}/status':
-    patch:
-      summary: Update service area status (admin only)
-      tags:
-        - ServiceArea
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: Service area ObjectId
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - applicationStatus
-              properties:
-                applicationStatus:
-                  type: string
-                  enum:
-                    - pending
-                    - approved
-                    - rejected
-                    - suspended
-                  description: New status
-                  example: approved
-                adminNotes:
-                  type: string
-                  description: Optional admin notes
-      responses:
-        '200':
-          description: Service area status updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceArea'
-        '400':
-          description: Invalid status or ID
-        '404':
-          description: Service area not found
-        '500':
-          description: Server error
-  '/applications/complete-application/provider/{id}':
-    get:
-      summary: Get all service areas by provider
-      tags:
-        - ServiceArea
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: Provider ObjectId
-      responses:
-        '200':
-          description: Service areas for provider fetched successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ServiceArea'
-        '400':
-          description: Invalid provider ID
-        '404':
-          description: Provider not found
-        '500':
-          description: Server error
   /bookings:
     post:
       summary: Create a new booking
