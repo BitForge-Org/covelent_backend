@@ -200,7 +200,7 @@ const extractFreeProviderComponents = (data) => {
   return {};
 };
 
-const checkServiceability = async (addressData) => {
+export const checkServiceability = async (addressData) => {
   const { pincode, area } = addressData;
 
   logger.info('=== SERVICEABILITY CHECK START ===', { pincode, area });

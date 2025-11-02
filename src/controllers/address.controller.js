@@ -6,82 +6,82 @@ import mongoose from 'mongoose';
 import logger from '../utils/logger.js';
 
 //Location
-const getPincodeFromCoordinates = asyncHandler(async (req, res) => {
-  const { latitude, longitude } = req.body;
+// const getPincodeFromCoordinates = asyncHandler(async (req, res) => {
+//   const { latitude, longitude } = req.body;
 
-  if (!latitude || !longitude) {
-    throw new ApiError(400, 'Latitude and longitude are required');
-  }
+//   if (!latitude || !longitude) {
+//     throw new ApiError(400, 'Latitude and longitude are required');
+//   }
 
-  if (!GOOGLE_API_KEY) {
-    throw new ApiError(500, 'Google API key not configured');
-  }
+//   if (!GOOGLE_API_KEY) {
+//     throw new ApiError(500, 'Google API key not configured');
+//   }
 
-  try {
-    const response = await axios.get(
-      'https://maps.googleapis.com/maps/api/geocode/json',
-      {
-        params: {
-          latlng: `${latitude},${longitude}`,
-          key: GOOGLE_API_KEY,
-        },
-      }
-    );
+//   try {
+//     const response = await axios.get(
+//       'https://maps.googleapis.com/maps/api/geocode/json',
+//       {
+//         params: {
+//           latlng: `${latitude},${longitude}`,
+//           key: GOOGLE_API_KEY,
+//         },
+//       }
+//     );
 
-    if (response.data.status !== 'OK') {
-      throw new ApiError(400, `Geocoding failed: ${response.data.status}`);
-    }
+//     if (response.data.status !== 'OK') {
+//       throw new ApiError(400, `Geocoding failed: ${response.data.status}`);
+//     }
 
-    const result = response.data.results[0];
+//     const result = response.data.results[0];
 
-    if (!result) {
-      throw new ApiError(404, 'No address found for these coordinates');
-    }
+//     if (!result) {
+//       throw new ApiError(404, 'No address found for these coordinates');
+//     }
 
-    // Extract pincode/postal_code
-    const postalCodeComponent = result.address_components.find((component) =>
-      component.types.includes('postal_code')
-    );
+//     // Extract pincode/postal_code
+//     const postalCodeComponent = result.address_components.find((component) =>
+//       component.types.includes('postal_code')
+//     );
 
-    if (!postalCodeComponent) {
-      throw new ApiError(404, 'Pincode not found for this location');
-    }
+//     if (!postalCodeComponent) {
+//       throw new ApiError(404, 'Pincode not found for this location');
+//     }
 
-    // Extract other useful address components
-    const city = result.address_components.find((c) =>
-      c.types.includes('locality')
-    )?.long_name;
+//     // Extract other useful address components
+//     const city = result.address_components.find((c) =>
+//       c.types.includes('locality')
+//     )?.long_name;
 
-    const state = result.address_components.find((c) =>
-      c.types.includes('administrative_area_level_1')
-    )?.long_name;
+//     const state = result.address_components.find((c) =>
+//       c.types.includes('administrative_area_level_1')
+//     )?.long_name;
 
-    const area = result.address_components.find(
-      (c) =>
-        c.types.includes('sublocality') ||
-        c.types.includes('sublocality_level_1')
-    )?.long_name;
+//     const area = result.address_components.find(
+//       (c) =>
+//         c.types.includes('sublocality') ||
+//         c.types.includes('sublocality_level_1')
+//     )?.long_name;
 
-    res.status(200).json(
-      new ApiResponse(200, 'Pincode retrieved successfully', {
-        pincode: postalCodeComponent.long_name,
-        fullAddress: result.formatted_address,
-        city: city || '',
-        state: state || '',
-        area: area || '',
-        coordinates: {
-          latitude,
-          longitude,
-        },
-      })
-    );
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    throw new ApiError(500, 'Failed to get pincode', error);
-  }
-});
+//     res.status(200).json(
+//       new ApiResponse(200, 'Pincode retrieved successfully', {
+//         pincode: postalCodeComponent.long_name,
+//         fullAddress: result.formatted_address,
+//         city: city || '',
+//         state: state || '',
+//         area: area || '',
+//         coordinates: {
+//           latitude,
+//           longitude,
+//         },
+//       })
+//     );
+//   } catch (error) {
+//     if (error instanceof ApiError) {
+//       throw error;
+//     }
+//     throw new ApiError(500, 'Failed to get pincode', error);
+//   }
+// });
 
 const addAddress = asyncHandler(async (req, res) => {
   const {
@@ -108,6 +108,41 @@ const addAddress = asyncHandler(async (req, res) => {
     !addressType
   ) {
     throw new ApiError(400, 'All address fields are required');
+  }
+
+  // Validate service area for coordinates & pincode using location.controller.js logic
+  let serviceability;
+  try {
+    const locationController = await import('./location.controller.js');
+    if (typeof locationController.checkServiceability === 'function') {
+      let addressData = { pincode, area: coordinates?.area };
+      serviceability =
+        await locationController.checkServiceability(addressData);
+      if (!serviceability.isServiceable) {
+        // Return 400 with clear message and details
+        return res.status(400).json(
+          new ApiResponse(
+            400,
+            'Address location is not within a service area',
+            {
+              serviceability,
+            }
+          )
+        );
+      }
+    } else {
+      logger.error('Serviceability check function not found');
+      return res
+        .status(500)
+        .json(new ApiResponse(500, 'Serviceability check function not found'));
+    }
+  } catch (err) {
+    logger.error('Serviceability check error:', err);
+    return res.status(500).json(
+      new ApiResponse(500, 'Failed to check service area', {
+        error: err?.message || err,
+      })
+    );
   }
 
   const session = await mongoose.startSession();
