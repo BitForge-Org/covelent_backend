@@ -8,9 +8,9 @@ security:
   - BearerAuth: []
 
 servers:
-  - url: http://localhost:8080/api/v1
+  - url: http://localhost:80/api/v1
     description: Local development server
-  - url: http://65.0.253.148:8080/api/v1
+  - url: http://65.0.253.148:80/api/v1
     description: Production server
 
 tags:
