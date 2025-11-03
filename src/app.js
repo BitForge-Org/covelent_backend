@@ -29,7 +29,6 @@ app.use(apiLoggerMiddleware);
 app.use(express.static(path.resolve('public')));
 
 // Serve the logs directory as static (for log file access)
-// app.use("/logs", express.static(path.resolve("public/logs")));
 
 app.use(generalLimiter); // 👈 use rate limiter middleware
 
