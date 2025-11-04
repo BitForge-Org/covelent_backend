@@ -1,4 +1,56 @@
 paths:
+  /services/by-coordinates:
+    get:
+      summary: Get services available by coordinates
+      tags:
+        - Service
+      parameters:
+        - in: query
+          name: latitude
+          required: true
+          schema:
+            type: number
+          description: Latitude of the location
+        - in: query
+          name: longitude
+          required: true
+          schema:
+            type: number
+          description: Longitude of the location
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+          description: Filter by category
+        - in: query
+          name: featured
+          schema:
+            type: boolean
+          description: Filter featured services
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Services retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: './../schemas/Service.yaml'
+                  message:
+                    type: string
   /services/featured-services:
     get:
       summary: Get featured services

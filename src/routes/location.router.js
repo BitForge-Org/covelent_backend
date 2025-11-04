@@ -1,5 +1,10 @@
 import { Router } from 'express';
-import { getPincodeFromCoordinates } from '../controllers/location.controller.js';
+import {
+  getPincodeFromCoordinates,
+  getAddressFromCoordinates,
+} from '../controllers/location.controller.js';
+// GET /get-address route
+
 import { body, validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 
@@ -55,6 +60,7 @@ router.post(
   validate,
   getPincodeFromCoordinates
 );
+router.get('/get-address', geocodeLimiter, getAddressFromCoordinates);
 
 export default router;
 

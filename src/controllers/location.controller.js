@@ -1,3 +1,5 @@
+// GET endpoint for address from lat/lng
+
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
@@ -14,13 +16,13 @@ const OPEN_CAGE_KEY = process.env.OPEN_CAGE_API_KEY;
 const CACHE_ENABLED = process.env.GEOCODE_CACHE_ENABLED !== 'false';
 const REQUEST_TIMEOUT = 10000;
 
-const getCacheKey = (latitude, longitude) => {
+export const getCacheKey = (latitude, longitude) => {
   const lat = parseFloat(latitude).toFixed(6);
   const lng = parseFloat(longitude).toFixed(6);
   return `geocode:${GEOCODE_PROVIDER}:${lat}:${lng}`;
 };
 
-const validateCoordinates = (latitude, longitude) => {
+export const validateCoordinates = (latitude, longitude) => {
   const lat = parseFloat(latitude);
   const lng = parseFloat(longitude);
 
@@ -37,7 +39,11 @@ const validateCoordinates = (latitude, longitude) => {
   return { lat, lng };
 };
 
-const callGoogleGeocodingAPI = async (latitude, longitude, retries = 2) => {
+export const callGoogleGeocodingAPI = async (
+  latitude,
+  longitude,
+  retries = 2
+) => {
   try {
     const response = await axios.get(
       'https://maps.googleapis.com/maps/api/geocode/json',
@@ -61,7 +67,7 @@ const callGoogleGeocodingAPI = async (latitude, longitude, retries = 2) => {
   }
 };
 
-const callOpenCageAPI = async (latitude, longitude) => {
+export const callOpenCageAPI = async (latitude, longitude) => {
   const response = await axios.get(
     'https://api.opencagedata.com/geocode/v1/json',
     {
@@ -76,7 +82,7 @@ const callOpenCageAPI = async (latitude, longitude) => {
   return response.data;
 };
 
-const callNominatimAPI = async (latitude, longitude) => {
+export const callNominatimAPI = async (latitude, longitude) => {
   const response = await axios.get(
     'https://nominatim.openstreetmap.org/reverse',
     {
@@ -96,7 +102,7 @@ const callNominatimAPI = async (latitude, longitude) => {
   return response.data;
 };
 
-const callBigDataCloudAPI = async (latitude, longitude) => {
+export const callBigDataCloudAPI = async (latitude, longitude) => {
   const response = await axios.get(
     'https://api.bigdatacloud.net/data/reverse-geocode-client',
     {
@@ -111,7 +117,7 @@ const callBigDataCloudAPI = async (latitude, longitude) => {
   return response.data;
 };
 
-const callGeocodingAPI = async (latitude, longitude) => {
+export const callGeocodingAPI = async (latitude, longitude) => {
   switch (GEOCODE_PROVIDER) {
     case 'google':
       if (!GOOGLE_API_KEY)
@@ -133,7 +139,7 @@ const callGeocodingAPI = async (latitude, longitude) => {
   }
 };
 
-const extractGoogleComponents = (result) => {
+export const extractGoogleComponents = (result) => {
   const components = result.address_components;
   const get = (types) =>
     components.find((c) => types.some((t) => c.types.includes(t)))?.long_name ||
@@ -156,7 +162,7 @@ const extractGoogleComponents = (result) => {
   };
 };
 
-const extractFreeProviderComponents = (data) => {
+export const extractFreeProviderComponents = (data) => {
   if (GEOCODE_PROVIDER === 'opencage') {
     const comp = data.results[0]?.components || {};
     return {
@@ -454,5 +460,131 @@ export const getPincodeFromCoordinates = asyncHandler(async (req, res) => {
       stack: error.stack,
     });
     throw new ApiError(500, 'Failed to retrieve pincode information');
+  }
+});
+
+export const getAddressFromCoordinates = asyncHandler(async (req, res) => {
+  const { latitude, longitude } = req.query;
+  // Validate coordinates using existing function
+  const { lat, lng } = validateCoordinates(latitude, longitude);
+  const cacheKey = getCacheKey(lat, lng);
+
+  logger.info('=== GET ADDRESS REQUEST ===', {
+    lat,
+    lng,
+    provider: GEOCODE_PROVIDER,
+  });
+
+  // Check cache
+  if (CACHE_ENABLED) {
+    try {
+      const cached = await redisClient.get(cacheKey);
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        logger.info('✓ Served from cache', {
+          address: cachedData.fullAddress,
+        });
+        return res.status(200).json(
+          new ApiResponse(200, 'Address retrieved from cache', {
+            ...cachedData,
+            fromCache: true,
+          })
+        );
+      }
+      logger.info('Cache miss');
+    } catch (err) {
+      logger.warn('Redis error', { error: err.message });
+    }
+  }
+
+  try {
+    // Get address from geocoding
+    logger.info('Calling geocoding API');
+    const data = await callGeocodingAPI(lat, lng);
+    let addressData;
+
+    if (GEOCODE_PROVIDER === 'google') {
+      if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+        throw new ApiError(404, 'No address found');
+      }
+      addressData = extractGoogleComponents(data.results[0]);
+    } else {
+      addressData = extractFreeProviderComponents(data);
+    }
+
+    logger.info('✓ Address extracted', {
+      fullAddress: addressData.fullAddress,
+      city: addressData.city,
+      area: addressData.area,
+      pincode: addressData.pincode,
+    });
+
+    // Google fallback for pincode
+    if (
+      !addressData.pincode &&
+      GOOGLE_API_KEY &&
+      GEOCODE_PROVIDER !== 'google'
+    ) {
+      logger.info('Trying Google fallback for pincode');
+      try {
+        const googleData = await callGoogleGeocodingAPI(lat, lng);
+        if (
+          googleData.status === 'OK' &&
+          googleData.results &&
+          googleData.results.length > 0
+        ) {
+          const googleAddress = extractGoogleComponents(googleData.results[0]);
+          if (googleAddress.pincode) {
+            addressData.pincode = googleAddress.pincode;
+            logger.info('✓ Google fallback successful', {
+              pincode: googleAddress.pincode,
+            });
+          }
+        }
+      } catch (err) {
+        logger.warn('Google fallback failed', { error: err.message });
+      }
+    }
+
+    const responseData = {
+      ...addressData,
+      coordinates: { latitude: lat, longitude: lng },
+      provider: GEOCODE_PROVIDER,
+      fromCache: false,
+    };
+
+    // Cache result
+    if (CACHE_ENABLED) {
+      try {
+        await redisClient.set(cacheKey, JSON.stringify(responseData), {
+          EX: GEOCODE_CACHE_TTL,
+        });
+        logger.info('✓ Result cached');
+      } catch (err) {
+        logger.warn('Redis write error', { error: err.message });
+      }
+    }
+
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, 'Address retrieved successfully', responseData)
+      );
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        throw new ApiError(504, 'Geocoding service timeout');
+      }
+      if (error.code === 'ENOTFOUND') {
+        throw new ApiError(503, 'Unable to reach geocoding service');
+      }
+      throw new ApiError(500, 'Geocoding service error');
+    }
+    if (error instanceof ApiError) throw error;
+    logger.error('Unexpected error', {
+      error: error.message,
+      stack: error.stack,
+    });
+    throw new ApiError(500, 'Failed to retrieve address information');
   }
 });

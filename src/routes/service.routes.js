@@ -13,7 +13,7 @@ import {
   removeServiceFromAreas,
   assignServiceToCity,
   checkServiceAvailability,
-  getServicesByArea,
+  getServicesByCoordinates,
 } from '../controllers/service.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import { isAdmin } from '../middlewares/auth.middleware.js';
@@ -21,7 +21,7 @@ import { isAdmin } from '../middlewares/auth.middleware.js';
 const router = Router();
 
 // Public routes
-router.get('/by-area', getServicesByArea);
+router.get('/by-coordinates', getServicesByCoordinates);
 router.get('/', getServices);
 router.get('/featured-services', getFeaturedServices);
 router.get('/:serviceId', getServiceById);
@@ -30,7 +30,7 @@ router.get('/:serviceId', getServiceById);
 router.get('/check-availability', checkServiceAvailability);
 
 // ⭐ NEW: Get services by area
-router.get('/by-area/:areaId', getServicesByArea);
+// (Removed /by-area/:areaId route, only coordinates-based route is available)
 
 // Admin routes
 router.post(

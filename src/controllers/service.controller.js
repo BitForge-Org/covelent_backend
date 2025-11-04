@@ -1,4 +1,10 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
+import {
+  validateCoordinates,
+  callGeocodingAPI,
+  extractGoogleComponents,
+  extractFreeProviderComponents,
+} from './location.controller.js';
 import { ApiError } from '../utils/ApiError.js';
 import { Service } from '../models/service.model.js';
 import { ServiceArea } from '../models/service-area.model.js';
@@ -478,17 +484,57 @@ const getServices = asyncHandler(async (req, res) => {
     );
 });
 
-// ⭐ NEW: Get services by area
-const getServicesByArea = asyncHandler(async (req, res) => {
+// ⭐ ENHANCED: Get services by coordinates only
+const getServicesByCoordinates = asyncHandler(async (req, res) => {
   try {
-    const { areaId } = req.params;
-    const { categoryId, minPrice, maxPrice, featured, title } = req.query;
-
-    if (!areaId) {
-      throw new ApiError(400, 'Area ID is required');
+    const {
+      categoryId,
+      minPrice,
+      maxPrice,
+      featured,
+      title,
+      latitude,
+      longitude,
+    } = req.query;
+    if (!latitude || !longitude) {
+      throw new ApiError(400, 'Latitude and longitude are required');
     }
-
-    const cacheKey = `services:area:${areaId}:${JSON.stringify(req.query)}`;
+    // Validate coordinates
+    const { lat, lng } = validateCoordinates(latitude, longitude);
+    // Get address from geocoding
+    const data = await callGeocodingAPI(lat, lng);
+    let addressData;
+    const GEOCODE_PROVIDER = process.env.GEOCODE_PROVIDER || 'google';
+    if (GEOCODE_PROVIDER === 'google') {
+      if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+        throw new ApiError(404, 'No address found');
+      }
+      addressData = extractGoogleComponents(data.results[0]);
+    } else {
+      addressData = extractFreeProviderComponents(data);
+    }
+    // Find areas by pincode
+    const pincode = addressData.pincode;
+    if (!pincode) {
+      throw new ApiError(404, 'No pincode found for coordinates');
+    }
+    const areas = await Area.find({
+      pincodes: parseInt(pincode),
+      isServiceable: true,
+    });
+    if (!areas.length) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { services: [], pincode },
+            'No serviceable areas found for these coordinates'
+          )
+        );
+    }
+    const areaIds = areas.map((a) => a._id.toString());
+    const cacheKey = `services:area:${areaIds.join(',')}:${JSON.stringify(req.query)}`;
 
     // Try cache
     const cached = await redisClient.get(cacheKey);
@@ -498,16 +544,17 @@ const getServicesByArea = asyncHandler(async (req, res) => {
         .json(
           new ApiResponse(
             200,
-            JSON.parse(cached),
+            { services: JSON.parse(cached), pincode },
             'Services retrieved from cache'
           )
         );
     }
 
-    // Find ServiceArea entries with approved status and areaId in availableLocations
+    // Find ServiceArea entries with approved status and areaId(s) in availableLocations
     const serviceAreaFilter = {
       applicationStatus: 'approved',
-      availableLocations: areaId,
+      isServiceAvailable: true,
+      availableLocations: { $in: areaIds },
     };
 
     let serviceAreas = await ServiceArea.find(serviceAreaFilter).populate({
@@ -515,8 +562,17 @@ const getServicesByArea = asyncHandler(async (req, res) => {
       populate: { path: 'category', select: 'name' },
     });
 
+    logger.info('DEBUG: serviceAreas found:', {
+      count: serviceAreas.length,
+      serviceAreas,
+    });
+
     // Extract services from serviceAreas
     let services = serviceAreas.map((sa) => sa.service).filter(Boolean);
+    logger.info('DEBUG: services extracted:', {
+      count: services.length,
+      services,
+    });
 
     // Apply additional filters
     if (categoryId) {
@@ -551,7 +607,13 @@ const getServicesByArea = asyncHandler(async (req, res) => {
     if (!services || services.length === 0) {
       return res
         .status(200)
-        .json(new ApiResponse(200, [], 'No services available for this area'));
+        .json(
+          new ApiResponse(
+            200,
+            { services: [], pincode },
+            'No services available for these coordinates'
+          )
+        );
     }
 
     return res
@@ -559,8 +621,8 @@ const getServicesByArea = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(
           200,
-          services,
-          `${services.length} services found for this area`
+          { services, pincode },
+          `${services.length} services found for these coordinates`
         )
       );
   } catch (error) {
@@ -706,5 +768,5 @@ export {
   removeServiceFromAreas,
   assignServiceToCity,
   checkServiceAvailability,
-  getServicesByArea,
+  getServicesByCoordinates,
 };
