@@ -1,3 +1,21 @@
+// ⭐ ADMIN: Bulk update all areas to isServiceable: true
+const makeAllAreasServiceable = asyncHandler(async (req, res) => {
+  try {
+    const result = await Area.updateMany({}, { $set: { isServiceable: true } });
+    logger.info('Bulk update result:', result);
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, result, 'All areas updated to isServiceable: true')
+      );
+  } catch (error) {
+    logger.error('Error in makeAllAreasServiceable:', error);
+    throw new ApiError(
+      error.statusCode || 500,
+      error.message || 'Failed to update areas'
+    );
+  }
+});
 import { asyncHandler } from '../utils/asyncHandler.js';
 import {
   validateCoordinates,
@@ -14,6 +32,7 @@ import { redisClient } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
 import Area from '../models/area.model.js';
 import City from '../models/city.model.js';
+import { log } from 'console';
 
 const createService = asyncHandler(async (req, res) => {
   try {
@@ -44,7 +63,6 @@ const createService = asyncHandler(async (req, res) => {
     if (isServiceExists) {
       throw new ApiError(400, 'Service with this title already exists');
     }
-
     // Handle media upload (up to 5 files)
     let media = [];
     if (req.files && req.files.media) {
@@ -486,6 +504,7 @@ const getServices = asyncHandler(async (req, res) => {
 
 // ⭐ ENHANCED: Get services by coordinates only
 const getServicesByCoordinates = asyncHandler(async (req, res) => {
+  // ...existing code...
   try {
     const {
       categoryId,
@@ -504,6 +523,7 @@ const getServicesByCoordinates = asyncHandler(async (req, res) => {
     // Get address from geocoding
     const data = await callGeocodingAPI(lat, lng);
     let addressData;
+    logger.info('GEOCODING DATA:', { data });
     const GEOCODE_PROVIDER = process.env.GEOCODE_PROVIDER || 'google';
     if (GEOCODE_PROVIDER === 'google') {
       if (data.status !== 'OK' || !data.results || data.results.length === 0) {
@@ -518,10 +538,11 @@ const getServicesByCoordinates = asyncHandler(async (req, res) => {
     if (!pincode) {
       throw new ApiError(404, 'No pincode found for coordinates');
     }
+    // Log all areas
     const areas = await Area.find({
       pincodes: parseInt(pincode),
-      isServiceable: true,
     });
+    logger.info('DEBUG: Areas found for pincode:', { areas });
     if (!areas.length) {
       return res
         .status(200)
@@ -567,12 +588,23 @@ const getServicesByCoordinates = asyncHandler(async (req, res) => {
       serviceAreas,
     });
 
+    // Error logging after serviceAreas and services are defined
+    if (!serviceAreas || serviceAreas.length === 0) {
+      logger.error('DEBUG: No serviceAreas found for areaIds', { areaIds });
+    }
+
     // Extract services from serviceAreas
     let services = serviceAreas.map((sa) => sa.service).filter(Boolean);
     logger.info('DEBUG: services extracted:', {
       count: services.length,
       services,
     });
+
+    if (!services || services.length === 0) {
+      logger.error('DEBUG: No services extracted from serviceAreas', {
+        serviceAreas,
+      });
+    }
 
     // Apply additional filters
     if (categoryId) {
@@ -769,4 +801,5 @@ export {
   assignServiceToCity,
   checkServiceAvailability,
   getServicesByCoordinates,
+  makeAllAreasServiceable,
 };

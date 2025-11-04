@@ -14,7 +14,9 @@ import {
   assignServiceToCity,
   checkServiceAvailability,
   getServicesByCoordinates,
+  makeAllAreasServiceable,
 } from '../controllers/service.controller.js';
+
 import { upload } from '../middlewares/multer.middleware.js';
 import { isAdmin } from '../middlewares/auth.middleware.js';
 
@@ -25,7 +27,8 @@ router.get('/by-coordinates', getServicesByCoordinates);
 router.get('/', getServices);
 router.get('/featured-services', getFeaturedServices);
 router.get('/:serviceId', getServiceById);
-
+// ⭐ ADMIN: Bulk update all areas to isServiceable: true
+router.post('/admin/areas/serviceable', isAdmin, makeAllAreasServiceable);
 // ⭐ NEW: Check availability by pincode
 router.get('/check-availability', checkServiceAvailability);
 
