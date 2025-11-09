@@ -1216,11 +1216,28 @@ paths:
                     type: string
   /bookings/available:
     get:
-      summary: Get available bookings for provider (approved applications)
+      summary: Get available bookings for provider (location-based)
+      description: |
+        Returns bookings for services and locations where the provider is approved and matches the user's current location (latitude/longitude). The API uses coordinates (as query parameters) to determine pincode and matches with provider's approved service areas.
       tags:
         - Bookings
       security:
         - BearerAuth: []
+      parameters:
+        - in: query
+          name: latitude
+          required: true
+          schema:
+            type: number
+            format: float
+          description: Latitude of provider's current location
+        - in: query
+          name: longitude
+          required: true
+          schema:
+            type: number
+            format: float
+          description: Longitude of provider's current location
       responses:
         '200':
           description: List of available bookings
@@ -1240,6 +1257,14 @@ paths:
                           $ref: '#/components/schemas/Booking'
                   message:
                     type: string
+        '204':
+          description: No services available for your location
+        '400':
+          description: Missing or invalid coordinates
+        '404':
+          description: No pincode found for provided coordinates
+        '500':
+          description: Server error
   /bookings/history:
     get:
       summary: Get booking history for logged-in user

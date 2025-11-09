@@ -1,6 +1,3 @@
-// ============================================================================
-// GET ALL AREAS
-// ============================================================================
 export const getAllAreas = asyncHandler(async (req, res) => {
   const { page = 1, limit = 50 } = req.query;
   const areas = await Area.find({})
@@ -9,31 +6,23 @@ export const getAllAreas = asyncHandler(async (req, res) => {
     .limit(limit * 1)
     .skip((page - 1) * limit);
   const total = await Area.countDocuments({});
-  return res
-    .status(200)
-    .json({
-      areas,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / limit),
-      },
-    });
+  return res.status(200).json({
+    areas,
+    pagination: {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil(total / limit),
+    },
+  });
 });
 
-// ============================================================================
-// GET AREA BY ID
-// ============================================================================
 export const getAreaById = asyncHandler(async (req, res) => {
   const area = await Area.findById(req.params.areaId);
   if (!area) return res.status(404).json({ error: 'Area not found' });
   return res.status(200).json(area);
 });
 
-// ============================================================================
-// GET ALL SUBAREAS
-// ============================================================================
 export const getAllSubAreas = asyncHandler(async (req, res) => {
   const { page = 1, limit = 100 } = req.query;
   const subAreas = await SubArea.find({})
@@ -42,31 +31,23 @@ export const getAllSubAreas = asyncHandler(async (req, res) => {
     .limit(limit * 1)
     .skip((page - 1) * limit);
   const total = await SubArea.countDocuments({});
-  return res
-    .status(200)
-    .json({
-      subAreas,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / limit),
-      },
-    });
+  return res.status(200).json({
+    subAreas,
+    pagination: {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil(total / limit),
+    },
+  });
 });
 
-// ============================================================================
-// GET SUBAREA BY ID
-// ============================================================================
 export const getSubAreaById = asyncHandler(async (req, res) => {
   const subArea = await SubArea.findById(req.params.subAreaId);
   if (!subArea) return res.status(404).json({ error: 'SubArea not found' });
   return res.status(200).json(subArea);
 });
 
-// ============================================================================
-// GET ALL PINCODES
-// ============================================================================
 export const getAllPincodes = asyncHandler(async (req, res) => {
   const { page = 1, limit = 100 } = req.query;
   const pincodes = await Pincode.find({})
@@ -75,22 +56,17 @@ export const getAllPincodes = asyncHandler(async (req, res) => {
     .limit(limit * 1)
     .skip((page - 1) * limit);
   const total = await Pincode.countDocuments({});
-  return res
-    .status(200)
-    .json({
-      pincodes,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / limit),
-      },
-    });
+  return res.status(200).json({
+    pincodes,
+    pagination: {
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil(total / limit),
+    },
+  });
 });
 
-// ============================================================================
-// GET PINCODE BY ID
-// ============================================================================
 export const getPincodeById = asyncHandler(async (req, res) => {
   const pincode = await Pincode.findById(req.params.pincodeId);
   if (!pincode) return res.status(404).json({ error: 'Pincode not found' });
@@ -106,9 +82,6 @@ import Area from '../models/area.model.js';
 import SubArea from '../models/subarea.model.js';
 import Pincode from '../models/pincode.model.js';
 
-// ============================================================================
-// IMPORT CITY DATA
-// ============================================================================
 export const importCity = asyncHandler(async (req, res) => {
   const { cityName, pincodeRanges, centerCoords } = req.body;
   const adminId = req.admin?._id;
@@ -140,9 +113,6 @@ export const importCity = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, result, 'City data imported successfully'));
 });
 
-// ============================================================================
-// GET IMPORT STATUS
-// ============================================================================
 export const getImportStatus = asyncHandler(async (req, res) => {
   const { importLogId } = req.params;
 
@@ -155,9 +125,6 @@ export const getImportStatus = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, status));
 });
 
-// ============================================================================
-// GET ALL CITIES
-// ============================================================================
 export const getCities = asyncHandler(async (req, res) => {
   const { isActive, page = 1, limit = 20 } = req.query;
 

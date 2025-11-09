@@ -1,0 +1,46 @@
+<!-- <!doctype html> -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto Fill Location</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 40px;
+      }
+      input {
+        padding: 8px;
+        width: 250px;
+        margin-right: 10px;
+      }
+      button {
+        padding: 8px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Auto Fill Location Example</h2>
+    <input type="text" id="locationInput" placeholder="Your location" />
+    <button onclick="autoFillLocation()">Auto Fill Location</button>
+
+    <script>
+      function autoFillLocation() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              const lat = position.coords.latitude;
+              const lon = position.coords.longitude;
+              document.getElementById('locationInput').value = `${lat}, ${lon}`;
+            },
+            function (error) {
+              alert('Unable to retrieve location.');
+            }
+          );
+        } else {
+          alert('Geolocation is not supported by your browser.');
+        }
+      }
+    </script>
+  </body>
+</html>

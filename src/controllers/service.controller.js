@@ -1,21 +1,3 @@
-// ⭐ ADMIN: Bulk update all areas to isServiceable: true
-const makeAllAreasServiceable = asyncHandler(async (req, res) => {
-  try {
-    const result = await Area.updateMany({}, { $set: { isServiceable: true } });
-    logger.info('Bulk update result:', result);
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(200, result, 'All areas updated to isServiceable: true')
-      );
-  } catch (error) {
-    logger.error('Error in makeAllAreasServiceable:', error);
-    throw new ApiError(
-      error.statusCode || 500,
-      error.message || 'Failed to update areas'
-    );
-  }
-});
 import { asyncHandler } from '../utils/asyncHandler.js';
 import {
   validateCoordinates,
@@ -785,6 +767,25 @@ const getServiceById = asyncHandler(async (req, res) => {
     throw new ApiError(
       error.statusCode || 500,
       error.message || 'Failed to retrieve service'
+    );
+  }
+});
+
+// ⭐ ADMIN: Bulk update all areas to isServiceable: true
+const makeAllAreasServiceable = asyncHandler(async (req, res) => {
+  try {
+    const result = await Area.updateMany({}, { $set: { isServiceable: true } });
+    logger.info('Bulk update result:', result);
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, result, 'All areas updated to isServiceable: true')
+      );
+  } catch (error) {
+    logger.error('Error in makeAllAreasServiceable:', error);
+    throw new ApiError(
+      error.statusCode || 500,
+      error.message || 'Failed to update areas'
     );
   }
 });

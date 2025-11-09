@@ -200,12 +200,93 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
   );
   try {
     const userId = req.user._id;
+    const { latitude, longitude } = req.query;
+
+    // Validate coordinates
+    if (!latitude || !longitude) {
+      logger.warn('[BOOKING] Missing latitude or longitude in query params');
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            null,
+            'Latitude and longitude are required as query parameters'
+          )
+        );
+    }
+
+    // Get pincode from coordinates using location controller logic
+    let pincode;
+    try {
+      // Import location controller dynamically to avoid circular deps
+      const locationController = await import('./location.controller.js');
+      if (typeof locationController.getPincodeFromCoordinates === 'function') {
+        // Simulate req/res for internal call
+        const fakeReq = { body: { latitude, longitude } };
+        let pincodeResult;
+        // Use the function directly, but catch errors
+        try {
+          pincodeResult = await locationController.getPincodeFromCoordinates(
+            fakeReq,
+            {
+              status: () => ({ json: (data) => data }),
+            }
+          );
+        } catch (err) {
+          logger.error(
+            '[BOOKING] Error getting pincode from coordinates:',
+            err
+          );
+          return res
+            .status(500)
+            .json(
+              new ApiResponse(
+                500,
+                null,
+                'Failed to get pincode from coordinates'
+              )
+            );
+        }
+        pincode = pincodeResult?.data?.pincode || pincodeResult?.pincode;
+        if (!pincode) {
+          logger.warn('[BOOKING] No pincode found for coordinates');
+          return res
+            .status(404)
+            .json(
+              new ApiResponse(
+                404,
+                null,
+                'No pincode found for provided coordinates'
+              )
+            );
+        }
+      } else {
+        logger.error(
+          '[BOOKING] getPincodeFromCoordinates not found in location controller'
+        );
+        return res
+          .status(500)
+          .json(
+            new ApiResponse(
+              500,
+              null,
+              'Location controller does not support pincode lookup'
+            )
+          );
+      }
+    } catch (err) {
+      logger.error('[BOOKING] Error importing location controller:', err);
+      return res
+        .status(500)
+        .json(new ApiResponse(500, null, 'Internal error in location lookup'));
+    }
 
     // Find provider applications where provider is the current user and status is approved
     const approvedProviderApps = await ServiceArea.find({
       provider: userId,
       applicationStatus: 'approved',
-    });
+    }).populate('availableLocations'); // Populate Area for pincodes
 
     if (!approvedProviderApps.length) {
       return res
@@ -215,16 +296,34 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
         );
     }
 
-    // Get all service IDs and availableLocations from these provider applications
-    const serviceIdToLocations = {};
+    // Build a map: serviceId -> Set of pincodes from availableLocations
+    const serviceIdToPincodes = {};
     approvedProviderApps.forEach((app) => {
       const sid = app.service.toString();
-      if (!serviceIdToLocations[sid]) serviceIdToLocations[sid] = new Set();
-      (app.availableLocations || []).forEach((locId) =>
-        serviceIdToLocations[sid].add(locId.toString())
-      );
+      if (!serviceIdToPincodes[sid]) serviceIdToPincodes[sid] = new Set();
+      (app.availableLocations || []).forEach((area) => {
+        if (Array.isArray(area.pincodes)) {
+          area.pincodes.forEach((pin) =>
+            serviceIdToPincodes[sid].add(String(pin))
+          );
+        } else if (area.pincode) {
+          serviceIdToPincodes[sid].add(String(area.pincode));
+        }
+      });
     });
-    let serviceIds = Object.keys(serviceIdToLocations);
+    let serviceIds = Object.keys(serviceIdToPincodes);
+
+    // Find all services where user's pincode matches provider's availableLocations
+    const matchedServiceIds = serviceIds.filter((sid) =>
+      serviceIdToPincodes[sid].has(String(pincode))
+    );
+    if (!matchedServiceIds.length) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(204, [], 'No services available for your location')
+        );
+    }
 
     // Exclude bookings that this provider has rejected
     const rejectedBookings = await ProviderRejection.find({ provider: userId });
@@ -232,11 +331,25 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
       rejectedBookings.map((r) => r.booking.toString())
     );
 
-    // Find bookings where the service matches and status is 'booking-requested', and not expired
+    // Find bookings for matched services, user's pincode, and status 'booking-requested', not expired
     const now = new Date();
+    // Find addresses with this pincode
+    const Address = (await import('../models/address.model.js')).Address;
+    const addresses = await Address.find({ pincode: String(pincode) }).select(
+      '_id'
+    );
+    const addressIds = addresses.map((a) => a._id);
+    if (!addressIds.length) {
+      return res
+        .status(200)
+        .json(new ApiResponse(204, [], 'No bookings found for your pincode'));
+    }
+
     const bookings = await Booking.find({
-      service: { $in: serviceIds },
+      service: { $in: matchedServiceIds },
+      location: { $in: addressIds },
       bookingStatus: 'booking-requested',
+      _id: { $nin: Array.from(rejectedBookingIds) },
       $expr: {
         $gt: [
           {
@@ -258,29 +371,16 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
           now,
         ],
       },
-      _id: { $nin: Array.from(rejectedBookingIds) },
-    }).populate('service');
+    }).populate('service location');
 
-    // Filter bookings to only those where the booking location matches provider's approved locations
-    const filteredBookings = bookings.filter((booking) => {
-      const sid = booking.service._id.toString();
-      const bookingLocId = booking.locationAvailable
-        ? booking.locationAvailable.toString()
-        : null;
-      if (!bookingLocId) return false;
-      return (
-        serviceIdToLocations[sid] && serviceIdToLocations[sid].has(bookingLocId)
-      );
-    });
-
-    if (!filteredBookings.length) {
+    if (!bookings.length) {
       return res
         .status(200)
         .json(
           new ApiResponse(
             204,
-            bookings,
-            'No booking-requested bookings found for your approved services and locations'
+            [],
+            'No booking-requested bookings found for your services and location'
           )
         );
     }
@@ -290,13 +390,17 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
       .json(
         new ApiResponse(
           200,
-          filteredBookings,
-          'Booking-requested bookings for your approved services and locations retrieved'
+          bookings,
+          'Booking-requested bookings for your services and location retrieved'
         )
       );
   } catch (error) {
     logger.error('Error in getAvailableBookings:', error);
-    throw new ApiError(500, 'Failed to retrieve available bookings');
+    return res
+      .status(500)
+      .json(
+        new ApiResponse(500, null, 'Failed to retrieve available bookings')
+      );
   }
 });
 

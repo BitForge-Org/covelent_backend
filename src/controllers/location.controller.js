@@ -56,6 +56,13 @@ export const callGoogleGeocodingAPI = async (
         timeout: REQUEST_TIMEOUT,
       }
     );
+    logger.info('Google Geocoding API response received', {
+      latitude,
+      longitude,
+      provider: GEOCODE_PROVIDER,
+      status: response.data,
+    });
+
     return response.data;
   } catch (error) {
     if (retries > 0 && error.code !== 'ENOTFOUND') {
@@ -64,6 +71,13 @@ export const callGoogleGeocodingAPI = async (
       return callGoogleGeocodingAPI(latitude, longitude, retries - 1);
     }
     throw error;
+  } finally {
+    logger.info('Google Geocoding API call completed', {
+      latitude,
+      longitude,
+      provider: GEOCODE_PROVIDER,
+      // response: response.data,
+    });
   }
 };
 
@@ -79,6 +93,12 @@ export const callOpenCageAPI = async (latitude, longitude) => {
       timeout: REQUEST_TIMEOUT,
     }
   );
+  logger.info('OpenCage API response received', {
+    latitude,
+    longitude,
+    provider: GEOCODE_PROVIDER,
+    status: response.data,
+  });
   return response.data;
 };
 
@@ -118,24 +138,35 @@ export const callBigDataCloudAPI = async (latitude, longitude) => {
 };
 
 export const callGeocodingAPI = async (latitude, longitude) => {
-  switch (GEOCODE_PROVIDER) {
-    case 'google':
-      if (!GOOGLE_API_KEY)
-        throw new ApiError(500, 'Google API key not configured');
-      return callGoogleGeocodingAPI(latitude, longitude);
-    case 'opencage':
-      if (!OPEN_CAGE_KEY)
-        throw new ApiError(500, 'OpenCage API key not configured');
-      return callOpenCageAPI(latitude, longitude);
-    case 'nominatim':
-      return callNominatimAPI(latitude, longitude);
-    case 'bigdatacloud':
-      return callBigDataCloudAPI(latitude, longitude);
-    default:
-      throw new ApiError(
-        500,
-        `Unsupported geocode provider: ${GEOCODE_PROVIDER}`
-      );
+  try {
+    switch (GEOCODE_PROVIDER) {
+      case 'google':
+        if (!GOOGLE_API_KEY)
+          throw new ApiError(500, 'Google API key not configured');
+        return await callGoogleGeocodingAPI(latitude, longitude);
+      case 'opencage':
+        if (!OPEN_CAGE_KEY)
+          throw new ApiError(500, 'OpenCage API key not configured');
+        return await callOpenCageAPI(latitude, longitude);
+      case 'nominatim':
+        return await callNominatimAPI(latitude, longitude);
+      case 'bigdatacloud':
+        return await callBigDataCloudAPI(latitude, longitude);
+      default:
+        throw new ApiError(
+          500,
+          `Unsupported geocode provider: ${GEOCODE_PROVIDER}`
+        );
+    }
+  } catch (error) {
+    logger.error('Error in callGeocodingAPI', {
+      latitude,
+      longitude,
+      provider: GEOCODE_PROVIDER,
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error;
   }
 };
 
@@ -166,13 +197,21 @@ export const extractFreeProviderComponents = (data) => {
   if (GEOCODE_PROVIDER === 'opencage') {
     const comp = data.results[0]?.components || {};
     return {
-      pincode: comp.postcode,
-      area: comp.suburb || comp.neighbourhood,
-      city: comp.city || comp.town,
-      district: comp.county,
-      state: comp.state,
-      country: comp.country,
-      fullAddress: data.results[0]?.formatted,
+      pincode: comp.postcode || '',
+      area: comp.area || comp._normalized_city || '',
+      city: comp.county || comp.town || '',
+      district: comp.state_district || comp.county || '',
+      state: comp.state || '',
+      country: comp.country || '',
+      fullAddress: data.results[0]?.formatted || '',
+      coordinates: {
+        latitude: data.results[0]?.geometry?.lat || null,
+        longitude: data.results[0]?.geometry?.lng || null,
+      },
+      provider: 'opencage',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: true,
     };
   }
 
