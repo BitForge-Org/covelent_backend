@@ -1,3 +1,52 @@
+// Utility function to get pincode from coordinates (returns value, not Express response)
+export const getPincodeFromLatLng = async (latitude, longitude) => {
+  try {
+    const { lat, lng } = validateCoordinates(latitude, longitude);
+    const geoData = await callGeocodingAPI(lat, lng);
+    let addressData;
+    if (GEOCODE_PROVIDER === 'google') {
+      if (
+        geoData.status !== 'OK' ||
+        !geoData.results ||
+        geoData.results.length === 0
+      ) {
+        throw new ApiError(404, 'No address found');
+      }
+      addressData = extractGoogleComponents(geoData.results[0]);
+    } else {
+      addressData = extractFreeProviderComponents(geoData);
+    }
+    // Google fallback for pincode
+    if (
+      !addressData.pincode &&
+      GOOGLE_API_KEY &&
+      GEOCODE_PROVIDER !== 'google'
+    ) {
+      try {
+        const googleData = await callGoogleGeocodingAPI(lat, lng);
+        if (
+          googleData.status === 'OK' &&
+          googleData.results &&
+          googleData.results.length > 0
+        ) {
+          const googleAddress = extractGoogleComponents(googleData.results[0]);
+          if (googleAddress.pincode) {
+            addressData.pincode = googleAddress.pincode;
+          }
+        }
+      } catch (err) {
+        // Ignore fallback error
+      }
+    }
+    if (!addressData.pincode) {
+      throw new ApiError(404, 'No pincode found for provided coordinates');
+    }
+    return addressData.pincode;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, 'Failed to get pincode from coordinates', error);
+  }
+};
 // GET endpoint for address from lat/lng
 
 import { asyncHandler } from '../utils/asyncHandler.js';

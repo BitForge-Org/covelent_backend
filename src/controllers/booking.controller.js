@@ -203,6 +203,9 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
     const { latitude, longitude } = req.query;
 
     // Validate coordinates
+    logger.info(
+      `[BOOKING] Query params received: latitude=${latitude}, longitude=${longitude}`
+    );
     if (!latitude || !longitude) {
       logger.warn('[BOOKING] Missing latitude or longitude in query params');
       return res
@@ -216,54 +219,25 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
         );
     }
 
-    // Get pincode from coordinates using location controller logic
+    // Get pincode from coordinates using utility function
     let pincode;
     try {
-      // Import location controller dynamically to avoid circular deps
+      logger.info(
+        `[BOOKING] Importing location.controller.js for pincode lookup`
+      );
       const locationController = await import('./location.controller.js');
-      if (typeof locationController.getPincodeFromCoordinates === 'function') {
-        // Simulate req/res for internal call
-        const fakeReq = { body: { latitude, longitude } };
-        let pincodeResult;
-        // Use the function directly, but catch errors
-        try {
-          pincodeResult = await locationController.getPincodeFromCoordinates(
-            fakeReq,
-            {
-              status: () => ({ json: (data) => data }),
-            }
-          );
-        } catch (err) {
-          logger.error(
-            '[BOOKING] Error getting pincode from coordinates:',
-            err
-          );
-          return res
-            .status(500)
-            .json(
-              new ApiResponse(
-                500,
-                null,
-                'Failed to get pincode from coordinates'
-              )
-            );
-        }
-        pincode = pincodeResult?.data?.pincode || pincodeResult?.pincode;
-        if (!pincode) {
-          logger.warn('[BOOKING] No pincode found for coordinates');
-          return res
-            .status(404)
-            .json(
-              new ApiResponse(
-                404,
-                null,
-                'No pincode found for provided coordinates'
-              )
-            );
-        }
+      if (typeof locationController.getPincodeFromLatLng === 'function') {
+        logger.info(
+          `[BOOKING] Calling getPincodeFromLatLng with lat=${latitude}, lng=${longitude}`
+        );
+        pincode = await locationController.getPincodeFromLatLng(
+          latitude,
+          longitude
+        );
+        logger.info(`[BOOKING] Extracted pincode: ${pincode}`);
       } else {
         logger.error(
-          '[BOOKING] getPincodeFromCoordinates not found in location controller'
+          '[BOOKING] getPincodeFromLatLng not found in location controller'
         );
         return res
           .status(500)
@@ -276,10 +250,27 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
           );
       }
     } catch (err) {
-      logger.error('[BOOKING] Error importing location controller:', err);
+      logger.error('[BOOKING] Error getting pincode from coordinates:', err);
+      if (err instanceof Error && err.message) {
+        return res.status(404).json(new ApiResponse(404, null, err.message));
+      }
       return res
         .status(500)
-        .json(new ApiResponse(500, null, 'Internal error in location lookup'));
+        .json(
+          new ApiResponse(500, null, 'Failed to get pincode from coordinates')
+        );
+    }
+    if (!pincode) {
+      logger.warn(`[BOOKING] No pincode found for coordinates.`);
+      return res
+        .status(404)
+        .json(
+          new ApiResponse(
+            404,
+            null,
+            'No pincode found for provided coordinates'
+          )
+        );
     }
 
     // Find provider applications where provider is the current user and status is approved
