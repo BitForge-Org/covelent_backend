@@ -11,8 +11,7 @@ import { Booking } from '../models/booking.model.js';
 import { ServiceArea } from '../models/service-area.model.js';
 import { Service } from '../models/service.model.js';
 import { Address } from '../models/address.model.js';
-// import { Notification } from '../models/notification.model.js';
-import mongoose from 'mongoose';
+
 import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
 
@@ -194,6 +193,12 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
 });
 
 // Get bookings for services where user is an approved provider
+// Utility to check for valid ObjectId
+import mongoose from 'mongoose';
+function isValidObjectId(id) {
+  return mongoose.Types.ObjectId.isValid(id);
+}
+
 const getAvailableBookings = asyncHandler(async (req, res) => {
   logger.info(
     `[BOOKING] getAvailableBookings called for user: ${req.user?._id}`
@@ -329,8 +334,9 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
     const addresses = await Address.find({ pincode: String(pincode) }).select(
       '_id'
     );
-    const addressIds = addresses.map((a) => a._id);
-    if (!addressIds.length) {
+    // Filter addressIds to only valid ObjectIds
+    const validAddressIds = addresses.map((a) => a._id).filter(isValidObjectId);
+    if (!validAddressIds.length) {
       return res
         .status(200)
         .json(new ApiResponse(204, [], 'No bookings found for your pincode'));
@@ -338,7 +344,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
 
     const bookings = await Booking.find({
       service: { $in: matchedServiceIds },
-      location: { $in: addressIds },
+      location: { $in: validAddressIds },
       bookingStatus: 'booking-requested',
       _id: { $nin: Array.from(rejectedBookingIds) },
       $expr: {
@@ -612,6 +618,71 @@ const getBookingById = asyncHandler(async (req, res) => {
   }
 });
 
+// Get all bookings for all users (admin/testing)
+const getAllBookings = asyncHandler(async (req, res) => {
+  logger.info(`[BOOKING] getAllBookings called`);
+  logger.debug(`[BOOKING] Query params: ${JSON.stringify(req.query)}`);
+  try {
+    const { status } = req.query;
+    const filter = {};
+    // Only apply status filter if it is a non-empty string and not "string"
+    if (status && typeof status === 'string' && status !== 'string') {
+      filter.bookingStatus = { $eq: status };
+    }
+    let bookings = await Booking.find(filter).lean();
+
+    // Filter out bookings with invalid location ObjectId
+    bookings = bookings.filter(
+      (booking) => !booking.location || isValidObjectId(booking.location)
+    );
+
+    // Populate service, user, provider, location for valid bookings
+    bookings = await Promise.all(
+      bookings.map(async (booking) => {
+        const populated = await Booking.findById(booking._id)
+          .populate({
+            path: 'service',
+            select: 'title description category image pricingOptions',
+            populate: { path: 'category', select: 'name' },
+          })
+          .populate({ path: 'user', select: 'name email phone' })
+          .populate({ path: 'provider', select: 'name email phone' })
+          .populate({
+            path: 'location',
+            select: 'address city state pincode coordinates',
+          })
+          .lean();
+        // Attach selected pricing option details
+        if (
+          populated &&
+          populated.service &&
+          Array.isArray(populated.service.pricingOptions) &&
+          populated.selectedPricingOption !== null
+        ) {
+          const option = populated.service.pricingOptions.find(
+            (opt) =>
+              opt &&
+              opt._id &&
+              populated.selectedPricingOption &&
+              opt._id.toString() === populated.selectedPricingOption.toString()
+          );
+          populated.selectedPricingOption = option || null;
+        } else if (populated) {
+          populated.selectedPricingOption = null;
+        }
+        return populated;
+      })
+    );
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, bookings, 'All bookings retrieved'));
+  } catch (error) {
+    logger.error('Error in getAllBookings:', error);
+    throw new ApiError(500, 'Failed to retrieve all bookings');
+  }
+});
+
 export {
   createBooking,
   getBookingsHistory,
@@ -620,4 +691,5 @@ export {
   getAcceptedBookings,
   rejectBooking,
   getBookingById,
+  getAllBookings,
 };

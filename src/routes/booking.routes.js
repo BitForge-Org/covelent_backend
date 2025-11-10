@@ -7,6 +7,7 @@ import {
   getAcceptedBookings,
   rejectBooking,
   getBookingById,
+  getAllBookings,
 } from '../controllers/booking.controller.js';
 
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -18,6 +19,9 @@ router.post('/', verifyJWT, createBooking);
 
 // Get booking history for logged-in user
 router.get('/history', verifyJWT, getBookingsHistory);
+
+// Get all bookings for all users (admin/testing)
+router.get('/all', getAllBookings);
 
 // Get available bookings for provider (approved applications)
 router.get('/available', verifyJWT, getAvailableBookings);

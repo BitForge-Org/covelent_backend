@@ -91,6 +91,9 @@ paths:
   /bookings/{bookingId}:
     $ref: './paths/booking.yaml#/~1bookings~1{bookingId}'
 
+  /bookings/all:
+    $ref: './paths/booking.yaml#/~1bookings~1all'
+
   /addresses:
     $ref: './paths/address.yaml#/~1addresses'
   /addresses/{id}:
