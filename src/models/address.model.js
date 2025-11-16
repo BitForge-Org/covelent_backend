@@ -45,8 +45,8 @@ const addressSchema = new Schema(
       match: [/^\d{6}$/, 'Please fill a valid 6-digit pincode'],
     },
     coordinates: {
-      lat: { type: Number },
-      lng: { type: Number },
+      latitude: { type: Number },
+      longitude: { type: Number },
     },
     isDefault: {
       type: Boolean,

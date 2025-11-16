@@ -14,20 +14,29 @@ import { Address } from '../models/address.model.js';
 
 import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
+import mongoose from 'mongoose';
+
+function isValidObjectId(id) {
+  return mongoose.Types.ObjectId.isValid(id);
+}
 
 const createBooking = asyncHandler(async (req, res) => {
+  // If scheduledTime is a full ISO string, extract only the time part
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(scheduledTime)) {
+    scheduledTime = scheduledTime.split('T')[1];
+  }
   logger.info(`[BOOKING] createBooking called by user: ${req.user?._id}`);
   logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
 
   const {
     serviceId,
     selectedPricingOption,
-    scheduledTime,
     specialInstructions,
     scheduledDate,
     location,
     paymentMethod,
   } = req.body;
+  let scheduledTime = req.body.scheduledTime;
 
   const service = await Service.findById(serviceId);
   if (!service || !service.isActive) {
@@ -43,7 +52,28 @@ const createBooking = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Invalid pricing option selected');
   }
 
-  const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+  // Validate scheduledDate format (YYYY-MM-DD)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
+    logger.warn(
+      `[BOOKING] scheduledDate is not in YYYY-MM-DD format: ${scheduledDate}`
+    );
+    throw new ApiError(400, 'scheduledDate must be in YYYY-MM-DD format');
+  }
+
+  // Validate scheduledTime format (HH:mm or HH:mm:ss or HH:mm:ss.sss)
+  if (!/^\d{2}:\d{2}(:\d{2}(\.\d{3})?)?$/.test(scheduledTime)) {
+    logger.warn(
+      `[BOOKING] scheduledTime is not in valid format: ${scheduledTime}`
+    );
+    throw new ApiError(
+      400,
+      'scheduledTime must be in HH:mm or HH:mm:ss or HH:mm:ss.sss format'
+    );
+  }
+
+  // Construct ISO string for scheduledDateTime
+  const scheduledDateTimeString = `${scheduledDate}T${scheduledTime.length === 5 ? scheduledTime + ':00' : scheduledTime}`;
+  const scheduledDateTime = new Date(scheduledDateTimeString);
   if (scheduledDateTime <= new Date()) {
     logger.warn(
       `[BOOKING] Scheduled date/time is not in the future: ${scheduledDate}T${scheduledTime}`
@@ -194,10 +224,6 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
 
 // Get bookings for services where user is an approved provider
 // Utility to check for valid ObjectId
-import mongoose from 'mongoose';
-function isValidObjectId(id) {
-  return mongoose.Types.ObjectId.isValid(id);
-}
 
 const getAvailableBookings = asyncHandler(async (req, res) => {
   logger.info(

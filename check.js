@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import logger from './logger.js';
 
 const MONGODB_URI =
   'mongodb+srv://sonawaneteju4:bgx1KVAmM81rOgu3@cluster0.pqpzbne.mongodb.net/';
@@ -10,13 +11,13 @@ const Area = mongoose.model('Area', areaSchema);
 async function checkAreas() {
   try {
     await mongoose.connect(`${MONGODB_URI}${DB_NAME}`);
-    console.log('Connected to MongoDB');
+    logger.log('Connected to MongoDB');
     const areas = await Area.find({});
-    console.log(`Found ${areas.length} areas:`);
-    console.log(areas);
+    logger.log(`Found ${areas.length} areas:`);
+    logger.log(areas);
     await mongoose.disconnect();
   } catch (err) {
-    console.error('Error connecting to MongoDB:', err);
+    logger.error('Error connecting to MongoDB:', err);
   }
 }
 
