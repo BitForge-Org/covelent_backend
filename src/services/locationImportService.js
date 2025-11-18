@@ -6,6 +6,7 @@ import Area from '../models/area.model.js';
 import SubArea from '../models/subarea.model.js';
 import Pincode from '../models/pincode.model.js';
 import ImportLog from '../models/importlog.model.js';
+import logger from '../utils/logger.js';
 
 class LocationImportService {
   constructor() {
@@ -195,16 +196,16 @@ class LocationImportService {
         status: 'processing',
       });
 
-      console.log('\n' + '='.repeat(80));
-      console.log(`  MULTI-API AREA MAPPER - ${cityName.toUpperCase()}`);
-      console.log('='.repeat(80));
-      console.log(`Total pincodes: ${pincodes.length}\n`);
+      logger.log('\n' + '='.repeat(80));
+      logger.log(`  MULTI-API AREA MAPPER - ${cityName.toUpperCase()}`);
+      logger.log('='.repeat(80));
+      logger.log(`Total pincodes: ${pincodes.length}\n`);
 
       const processedData = [];
       const total = pincodes.length;
       const startTime = Date.now();
 
-      console.log(`Fetching ${total} pincodes with geocoding...`);
+      logger.log(`Fetching ${total} pincodes with geocoding...`);
 
       for (let i = 0; i < total; i += this.config.batchSize) {
         const batch = pincodes.slice(i, i + this.config.batchSize);
@@ -238,7 +239,7 @@ class LocationImportService {
       }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(
+      logger.log(
         `\nCompleted in ${duration}s - ${processedData.length}/${total} valid\n`
       );
 
@@ -265,12 +266,12 @@ class LocationImportService {
         'progress.percentage': 100,
       });
 
-      console.log('='.repeat(80));
-      console.log('  GENERATION COMPLETE');
-      console.log('='.repeat(80));
-      console.log(`Areas: ${results.areasCreated}`);
-      console.log(`Sub-areas: ${results.subAreasCreated}`);
-      console.log(`Pincodes: ${results.pincodesCreated}\n`);
+      logger.log('='.repeat(80));
+      logger.log('  GENERATION COMPLETE');
+      logger.log('='.repeat(80));
+      logger.log(`Areas: ${results.areasCreated}`);
+      logger.log(`Sub-areas: ${results.subAreasCreated}`);
+      logger.log(`Pincodes: ${results.pincodesCreated}\n`);
 
       return {
         success: true,
@@ -298,12 +299,12 @@ class LocationImportService {
     const results = { areasCreated: 0, subAreasCreated: 0, pincodesCreated: 0 };
 
     if (!processedData || processedData.length === 0) {
-      console.log('❌ No valid data to process');
+      logger.log('❌ No valid data to process');
       return results;
     }
 
-    console.log(`📊 Processing ${processedData.length} valid pincodes`);
-    console.log('🗑️  Clearing existing data...');
+    logger.log(`📊 Processing ${processedData.length} valid pincodes`);
+    logger.log('🗑️  Clearing existing data...');
 
     await Area.deleteMany({ cityId });
     await SubArea.deleteMany({ cityId });
@@ -351,11 +352,11 @@ class LocationImportService {
       });
     });
 
-    console.log(
+    logger.log(
       `\n📍 Organized into ${pincodeAreasMap.size} pincode-based areas:`
     );
     pincodeAreasMap.forEach((data, pincode) => {
-      console.log(`   ${pincode}: ${data.subAreas.length} sub-areas`);
+      logger.log(`   ${pincode}: ${data.subAreas.length} sub-areas`);
     });
 
     // Create Area documents (one per pincode)
@@ -397,10 +398,10 @@ class LocationImportService {
       });
     }
 
-    console.log(`\n💾 Inserting ${areaDocuments.length} areas...`);
+    logger.log(`\n💾 Inserting ${areaDocuments.length} areas...`);
     const insertedAreas = await Area.insertMany(areaDocuments);
     results.areasCreated = insertedAreas.length;
-    console.log(`✅ Created ${insertedAreas.length} areas`);
+    logger.log(`✅ Created ${insertedAreas.length} areas`);
 
     // Map pincode to area ID
     const pincodeToAreaIdMap = new Map();
@@ -445,10 +446,10 @@ class LocationImportService {
       });
     }
 
-    console.log(`💾 Inserting ${subAreaDocuments.length} sub-areas...`);
+    logger.log(`💾 Inserting ${subAreaDocuments.length} sub-areas...`);
     const insertedSubAreas = await SubArea.insertMany(subAreaDocuments);
     results.subAreasCreated = insertedSubAreas.length;
-    console.log(`✅ Created ${insertedSubAreas.length} sub-areas`);
+    logger.log(`✅ Created ${insertedSubAreas.length} sub-areas`);
 
     // Create Pincode documents
     const pincodeDocuments = [];
@@ -476,10 +477,10 @@ class LocationImportService {
       }
     }
 
-    console.log(`💾 Inserting ${pincodeDocuments.length} pincodes...`);
+    logger.log(`💾 Inserting ${pincodeDocuments.length} pincodes...`);
     const insertedPincodes = await Pincode.insertMany(pincodeDocuments);
     results.pincodesCreated = insertedPincodes.length;
-    console.log(`✅ Created ${insertedPincodes.length} pincodes\n`);
+    logger.log(`✅ Created ${insertedPincodes.length} pincodes\n`);
 
     return results;
   }

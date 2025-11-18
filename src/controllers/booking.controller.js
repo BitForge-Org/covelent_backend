@@ -22,11 +22,6 @@ function isValidObjectId(id) {
 
 const createBooking = asyncHandler(async (req, res) => {
   // If scheduledTime is a full ISO string, extract only the time part
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(scheduledTime)) {
-    scheduledTime = scheduledTime.split('T')[1];
-  }
-  logger.info(`[BOOKING] createBooking called by user: ${req.user?._id}`);
-  logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
 
   const {
     serviceId,
@@ -37,6 +32,11 @@ const createBooking = asyncHandler(async (req, res) => {
     paymentMethod,
   } = req.body;
   let scheduledTime = req.body.scheduledTime;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(scheduledTime)) {
+    scheduledTime = scheduledTime.split('T')[1];
+  }
+  logger.info(`[BOOKING] createBooking called by user: ${req.user?._id}`);
+  logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
 
   const service = await Service.findById(serviceId);
   if (!service || !service.isActive) {

@@ -3,6 +3,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import logger from './src/utils/logger';
 
 dotenv.config();
 
@@ -76,9 +77,9 @@ async function generateSchema() {
   }
 
   fs.writeFileSync(OUTPUT_FILE, rows.join('\n'), 'utf-8');
-  console.log(`Schema exported to ${OUTPUT_FILE}`);
+  logger.log(`Schema exported to ${OUTPUT_FILE}`);
 
   await client.close();
 }
 
-generateSchema().catch(console.error);
+generateSchema().catch(logger.error);

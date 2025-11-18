@@ -6,7 +6,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import lusca from 'lusca';
-const { csrf } = lusca;
+// const { csrf } = lusca;
 
 import { generalLimiter, authLimiter } from './utils/rateLimiter.js';
 import { setupSwagger } from './swagger.js';

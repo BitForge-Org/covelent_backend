@@ -2,7 +2,7 @@ import os from 'os';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { getServerMeta } from '../utils/serverMeta.js';
-import { storeHealthLog } from '../utils/healthLogger.js';
+// import { storeHealthLog } from '../utils/healthLogger.js';
 
 const formatBytes = (bytes) => (bytes / 1024 / 1024).toFixed(2) + ' MB';
 const formatUptime = (seconds) => {
