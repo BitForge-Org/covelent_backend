@@ -26,6 +26,8 @@ import {
   getServiceAreasByProvider,
   updateServiceAreaStatus,
   addServiceForCompletedProfile,
+  getAppliedServiceAreas,
+  updateServiceArea,
 } from '../controllers/service-area.controller.js';
 /**
  * @route   POST /api/service-areas/add-service
@@ -79,6 +81,8 @@ router.get('/complete-application/', isAdmin, getServiceAreas);
  * @desc    Get single service area by ID
  * @access  Private (admin or provider who owns it)
  */
+// Ensure /applied route is matched before /:id
+router.get('/complete-application/applied', verifyJWT, getAppliedServiceAreas);
 router.get('/complete-application/:id', verifyJWT, getServiceAreaById);
 
 /**
@@ -96,5 +100,25 @@ router.get(
  * @desc    Admin verifies provider documents
  * @access  Private (admin)
  */
+/**
+ * @route   GET /api/service-areas/applied
+ * @desc    Get list of applied service areas for logged-in user
+ * @access  Private (provider)
+ */
+router.get('/complete-application/applied', verifyJWT, getAppliedServiceAreas);
+
+/**
+ * @route   GET /api/service-areas/:id
+ * @desc    Get single service area by ID
+ * @access  Private (admin or provider who owns it)
+ */
+router.get('/complete-application/:id', verifyJWT, getServiceAreaById);
+
+/**
+ * @route   PATCH /api/service-areas/:id
+ * @desc    Update availableLocations for a service area (provider only)
+ * @access  Private (provider)
+ */
+router.patch('/complete-application/:id', verifyJWT, updateServiceArea);
 
 export default router;

@@ -333,18 +333,32 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
         }
       });
     });
-    let serviceIds = Object.keys(serviceIdToPincodes);
+    const serviceIds = Object.keys(serviceIdToPincodes);
 
-    // Find all services where user's pincode matches provider's availableLocations
-    const matchedServiceIds = serviceIds.filter((sid) =>
-      serviceIdToPincodes[sid].has(String(pincode))
-    );
-    if (!matchedServiceIds.length) {
+    // Collect all pincodes from all availableLocations
+    const allPincodesSet = new Set();
+    Object.values(serviceIdToPincodes).forEach((pinSet) => {
+      pinSet.forEach((pin) => allPincodesSet.add(pin));
+    });
+    const allPincodes = Array.from(allPincodesSet);
+    if (!allPincodes.length) {
       return res
         .status(200)
         .json(
-          new ApiResponse(204, [], 'No services available for your location')
+          new ApiResponse(204, [], 'No pincodes found for your service areas')
         );
+    }
+
+    // Find addresses with any of these pincodes
+    const Address = (await import('../models/address.model.js')).Address;
+    const addresses = await Address.find({
+      pincode: { $in: allPincodes },
+    }).select('_id');
+    const validAddressIds = addresses.map((a) => a._id).filter(isValidObjectId);
+    if (!validAddressIds.length) {
+      return res
+        .status(200)
+        .json(new ApiResponse(204, [], 'No addresses found for your pincodes'));
     }
 
     // Exclude bookings that this provider has rejected
@@ -353,23 +367,10 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
       rejectedBookings.map((r) => r.booking.toString())
     );
 
-    // Find bookings for matched services, user's pincode, and status 'booking-requested', not expired
+    // Find bookings for all services and all valid addresses, status 'booking-requested', not expired
     const now = new Date();
-    // Find addresses with this pincode
-    const Address = (await import('../models/address.model.js')).Address;
-    const addresses = await Address.find({ pincode: String(pincode) }).select(
-      '_id'
-    );
-    // Filter addressIds to only valid ObjectIds
-    const validAddressIds = addresses.map((a) => a._id).filter(isValidObjectId);
-    if (!validAddressIds.length) {
-      return res
-        .status(200)
-        .json(new ApiResponse(204, [], 'No bookings found for your pincode'));
-    }
-
     const bookings = await Booking.find({
-      service: { $in: matchedServiceIds },
+      service: { $in: serviceIds },
       location: { $in: validAddressIds },
       bookingStatus: 'booking-requested',
       _id: { $nin: Array.from(rejectedBookingIds) },
@@ -403,7 +404,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
           new ApiResponse(
             204,
             [],
-            'No booking-requested bookings found for your services and location'
+            'No booking-requested bookings found for your services and pincodes'
           )
         );
     }
@@ -414,7 +415,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
         new ApiResponse(
           200,
           bookings,
-          'Booking-requested bookings for your services and location retrieved'
+          'Booking-requested bookings for your services and pincodes retrieved'
         )
       );
   } catch (error) {
@@ -426,7 +427,6 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
       );
   }
 });
-
 const acceptBooking = asyncHandler(async (req, res) => {
   logger.info(`[BOOKING] acceptBooking called by provider: ${req.user?._id}`);
   logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
@@ -491,6 +491,78 @@ const acceptBooking = asyncHandler(async (req, res) => {
   } catch (error) {
     logger.error('Error in acceptBooking:', error);
     throw new ApiError(500, 'Failed to accept booking');
+  }
+});
+
+const bookingInProgress = asyncHandler(async (req, res) => {
+  logger.info(
+    `[BOOKING] bookingInProgress called by provider: ${req.user?._id}`
+  );
+  logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
+  try {
+    const providerId = req.user._id;
+    const { bookingId, latitude, longitude } = req.body;
+
+    if (!bookingId) {
+      throw new ApiError(400, 'Booking ID is required');
+    }
+    if (!latitude || !longitude) {
+      throw new ApiError(400, 'Latitude and longitude are required');
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      provider: providerId,
+    }).populate({ path: 'location', select: 'pincode' });
+    if (!booking) {
+      throw new ApiError(404, 'Booking not found for this provider');
+    }
+
+    // Only allow status change if current status is 'booking-confirmed'
+    if (booking.bookingStatus !== 'booking-confirmed') {
+      throw new ApiError(
+        400,
+        'Booking status can only be changed to in-progress from confirmed status'
+      );
+    }
+
+    // Get pincode from lat/lng
+    let pincode;
+    try {
+      const locationController = await import('./location.controller.js');
+      if (typeof locationController.getPincodeFromLatLng === 'function') {
+        pincode = await locationController.getPincodeFromLatLng(
+          latitude,
+          longitude
+        );
+      } else {
+        throw new Error('Location controller does not support pincode lookup');
+      }
+    } catch (err) {
+      logger.error('[BOOKING] Error getting pincode from coordinates:', err);
+      throw new ApiError(500, 'Failed to get pincode from coordinates');
+    }
+    if (!pincode) {
+      throw new ApiError(404, 'No pincode found for provided coordinates');
+    }
+
+    // Compare pincodes
+    if (String(booking.location?.pincode) !== String(pincode)) {
+      throw new ApiError(
+        400,
+        'Provider location pincode does not match booking address pincode'
+      );
+    }
+
+    booking.bookingStatus = 'booking-in-progress';
+    await booking.save();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { booking }, 'Booking marked in-progress'));
+  } catch (error) {
+    logger.error('Error in bookingInProgress:', error);
+    throw new ApiError(500, 'Failed to mark booking as in-progress');
   }
 });
 
@@ -709,6 +781,154 @@ const getAllBookings = asyncHandler(async (req, res) => {
   }
 });
 
+// Mark booking as completed by provider, with pincode check
+const bookingComplete = asyncHandler(async (req, res) => {
+  logger.info(`[BOOKING] bookingComplete called by provider: ${req.user?._id}`);
+  logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
+  try {
+    const providerId = req.user._id;
+    const { bookingId, latitude, longitude } = req.body;
+
+    if (!bookingId) {
+      throw new ApiError(400, 'Booking ID is required');
+    }
+    if (!latitude || !longitude) {
+      throw new ApiError(400, 'Latitude and longitude are required');
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      provider: providerId,
+    }).populate({ path: 'location', select: 'pincode' });
+    if (!booking) {
+      throw new ApiError(404, 'Booking not found for this provider');
+    }
+
+    // Only allow status change if current status is 'booking-in-progress'
+    if (booking.bookingStatus !== 'booking-in-progress') {
+      throw new ApiError(
+        400,
+        'Booking status can only be changed to completed from in-progress status'
+      );
+    }
+
+    // Get pincode from lat/lng
+    let pincode;
+    try {
+      const locationController = await import('./location.controller.js');
+      if (typeof locationController.getPincodeFromLatLng === 'function') {
+        pincode = await locationController.getPincodeFromLatLng(
+          latitude,
+          longitude
+        );
+      } else {
+        throw new Error('Location controller does not support pincode lookup');
+      }
+    } catch (err) {
+      logger.error('[BOOKING] Error getting pincode from coordinates:', err);
+      throw new ApiError(500, 'Failed to get pincode from coordinates');
+    }
+    if (!pincode) {
+      throw new ApiError(404, 'No pincode found for provided coordinates');
+    }
+
+    // Compare pincodes
+    if (String(booking.location?.pincode) !== String(pincode)) {
+      throw new ApiError(
+        400,
+        'Provider location pincode does not match booking address pincode'
+      );
+    }
+
+    booking.bookingStatus = 'booking-completed';
+    booking.completedAt = new Date();
+    await booking.save();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { booking }, 'Booking marked as completed'));
+  } catch (error) {
+    logger.error('Error in bookingComplete:', error);
+    throw new ApiError(500, 'Failed to mark booking as completed');
+  }
+});
+
+// Mark booking as cancelled by provider, with pincode check
+const bookingCancel = asyncHandler(async (req, res) => {
+  logger.info(`[BOOKING] bookingCancel called by provider: ${req.user?._id}`);
+  logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
+  try {
+    const providerId = req.user._id;
+    const { bookingId, latitude, longitude, cancellationReason } = req.body;
+
+    if (!bookingId) {
+      throw new ApiError(400, 'Booking ID is required');
+    }
+    if (!latitude || !longitude) {
+      throw new ApiError(400, 'Latitude and longitude are required');
+    }
+
+    const booking = await Booking.findOne({
+      _id: bookingId,
+      provider: providerId,
+    }).populate({ path: 'location', select: 'pincode' });
+    if (!booking) {
+      throw new ApiError(404, 'Booking not found for this provider');
+    }
+
+    // Only allow status change if current status is 'booking-confirmed' or 'booking-in-progress'
+    if (
+      booking.bookingStatus !== 'booking-confirmed' &&
+      booking.bookingStatus !== 'booking-in-progress'
+    ) {
+      throw new ApiError(
+        400,
+        'Booking can only be cancelled from confirmed or in-progress status'
+      );
+    }
+
+    // Get pincode from lat/lng
+    let pincode;
+    try {
+      const locationController = await import('./location.controller.js');
+      if (typeof locationController.getPincodeFromLatLng === 'function') {
+        pincode = await locationController.getPincodeFromLatLng(
+          latitude,
+          longitude
+        );
+      } else {
+        throw new Error('Location controller does not support pincode lookup');
+      }
+    } catch (err) {
+      logger.error('[BOOKING] Error getting pincode from coordinates:', err);
+      throw new ApiError(500, 'Failed to get pincode from coordinates');
+    }
+    if (!pincode) {
+      throw new ApiError(404, 'No pincode found for provided coordinates');
+    }
+
+    // Compare pincodes
+    if (String(booking.location?.pincode) !== String(pincode)) {
+      throw new ApiError(
+        400,
+        'Provider location pincode does not match booking address pincode'
+      );
+    }
+
+    booking.bookingStatus = 'booking-cancelled';
+    booking.cancelledAt = new Date();
+    if (cancellationReason) booking.cancellationReason = cancellationReason;
+    await booking.save();
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { booking }, 'Booking marked as cancelled'));
+  } catch (error) {
+    logger.error('Error in bookingCancel:', error);
+    throw new ApiError(500, 'Failed to mark booking as cancelled');
+  }
+});
+
 export {
   createBooking,
   getBookingsHistory,
@@ -718,4 +938,7 @@ export {
   rejectBooking,
   getBookingById,
   getAllBookings,
+  bookingInProgress,
+  bookingComplete,
+  bookingCancel,
 };

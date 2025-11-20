@@ -489,6 +489,27 @@ paths:
           description: Invalid filter
         '500':
           description: Server error
+  /applications/complete-application/applied:
+    get:
+      summary: Get list of applied service areas for logged-in user
+      tags:
+        - ServiceArea
+      description: Returns all service area applications submitted by the logged-in provider.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of applied service areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceArea'
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
   '/applications/complete-application/{id}':
     get:
       summary: Get a single service area by ID
@@ -514,11 +535,11 @@ paths:
           description: Service area not found
         '500':
           description: Server error
-  '/applications/complete-application/{id}/status':
     patch:
-      summary: Update service area status (admin only)
+      summary: Update availableLocations for a service area (provider only)
       tags:
         - ServiceArea
+      description: Allows a provider to update the availableLocations for their own service area application.
       parameters:
         - in: path
           name: id
@@ -526,6 +547,8 @@ paths:
           schema:
             type: string
           description: Service area ObjectId
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -533,58 +556,26 @@ paths:
             schema:
               type: object
               required:
-                - applicationStatus
+                - availableLocations
               properties:
-                applicationStatus:
-                  type: string
-                  enum:
-                    - pending
-                    - approved
-                    - rejected
-                    - suspended
-                  description: New status
-                  example: approved
-                adminNotes:
-                  type: string
-                  description: Optional admin notes
+                availableLocations:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of ObjectIds referencing Area model.
       responses:
         '200':
-          description: Service area status updated successfully
+          description: Service area updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ServiceArea'
         '400':
-          description: Invalid status or ID
+          description: Invalid input
+        '401':
+          description: Unauthorized
         '404':
-          description: Service area not found
-        '500':
-          description: Server error
-  '/applications/complete-application/provider/{id}':
-    get:
-      summary: Get all service areas by provider
-      tags:
-        - ServiceArea
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: Provider ObjectId
-      responses:
-        '200':
-          description: Service areas for provider fetched successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ServiceArea'
-        '400':
-          description: Invalid provider ID
-        '404':
-          description: Provider not found
+          description: Service area not found or not owned by user
         '500':
           description: Server error
   /applications/add-service:
@@ -1488,6 +1479,171 @@ paths:
                           $ref: '#/components/schemas/Booking'
                   message:
                     type: string
+        '500':
+          description: Server error
+  /bookings/in-progress:
+    post:
+      summary: Provider marks booking as in-progress
+      description: |
+        Provider marks a booking as in-progress. Requires bookingId, latitude, and longitude in the request body. The API checks if the provider's current location pincode matches the booking address pincode.
+      tags:
+        - Bookings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - latitude
+                - longitude
+              properties:
+                bookingId:
+                  type: string
+                  description: The ObjectId of the booking
+                latitude:
+                  type: number
+                  format: float
+                  description: Provider's current latitude
+                longitude:
+                  type: number
+                  format: float
+                  description: Provider's current longitude
+      responses:
+        '200':
+          description: Booking marked in-progress
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      booking:
+                        $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+        '400':
+          description: Invalid request or pincode mismatch
+        '404':
+          description: Booking not found or no pincode found
+        '500':
+          description: Server error
+  /bookings/complete:
+    post:
+      summary: Provider marks booking as completed
+      description: |
+        Provider marks a booking as completed. Requires bookingId, latitude, and longitude in the request body. The API checks if the provider's current location pincode matches the booking address pincode.
+      tags:
+        - Bookings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - latitude
+                - longitude
+              properties:
+                bookingId:
+                  type: string
+                  description: The ObjectId of the booking
+                latitude:
+                  type: number
+                  format: float
+                  description: Provider's current latitude
+                longitude:
+                  type: number
+                  format: float
+                  description: Provider's current longitude
+      responses:
+        '200':
+          description: Booking marked as completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      booking:
+                        $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+        '400':
+          description: Invalid request or pincode mismatch
+        '404':
+          description: Booking not found or no pincode found
+        '500':
+          description: Server error
+  /bookings/cancel:
+    post:
+      summary: Provider cancels a booking
+      description: |
+        Provider cancels a booking. Requires bookingId, latitude, longitude, and optional cancellationReason in the request body. The API checks if the provider's current location pincode matches the booking address pincode.
+      tags:
+        - Bookings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - latitude
+                - longitude
+              properties:
+                bookingId:
+                  type: string
+                  description: The ObjectId of the booking
+                latitude:
+                  type: number
+                  format: float
+                  description: Provider's current latitude
+                longitude:
+                  type: number
+                  format: float
+                  description: Provider's current longitude
+                cancellationReason:
+                  type: string
+                  description: Optional reason for cancellation
+      responses:
+        '200':
+          description: Booking marked as cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      booking:
+                        $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+        '400':
+          description: Invalid request or pincode mismatch
+        '404':
+          description: Booking not found or no pincode found
         '500':
           description: Server error
   /addresses:

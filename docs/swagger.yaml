@@ -47,12 +47,10 @@ paths:
     $ref: './paths/users/avatar.yaml#/~1avatar'
   /applications/complete-application:
     $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application'
+  /applications/complete-application/applied:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1applied'
   /applications/complete-application/{id}:
     $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1{id}'
-  /applications/complete-application/{id}/status:
-    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1{id}~1status'
-  /applications/complete-application/provider/{id}:
-    $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1provider~1{id}'
   /applications/add-service:
     $ref: './paths/serviceArea.yaml#/paths/~1applications~1add-service'
   /services:
@@ -93,6 +91,15 @@ paths:
 
   /bookings/all:
     $ref: './paths/booking.yaml#/~1bookings~1all'
+
+  /bookings/in-progress:
+    $ref: './paths/booking.yaml#/~1bookings~1in-progress'
+
+  /bookings/complete:
+    $ref: './paths/booking.yaml#/~1bookings~1complete'
+
+  /bookings/cancel:
+    $ref: './paths/booking.yaml#/~1bookings~1cancel'
 
   /addresses:
     $ref: './paths/address.yaml#/~1addresses'

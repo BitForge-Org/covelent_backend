@@ -8,6 +8,9 @@ import {
   rejectBooking,
   getBookingById,
   getAllBookings,
+  bookingInProgress,
+  bookingComplete,
+  bookingCancel,
 } from '../controllers/booking.controller.js';
 
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -34,6 +37,15 @@ router.post('/accept', verifyJWT, acceptBooking);
 
 // Provider rejects a booking
 router.post('/reject', verifyJWT, rejectBooking);
+
+// Provider marks booking as in-progress
+router.post('/in-progress', verifyJWT, bookingInProgress);
+
+// Provider marks booking as completed
+router.post('/complete', verifyJWT, bookingComplete);
+
+// Provider cancels a booking
+router.post('/cancel', verifyJWT, bookingCancel);
 
 // Get booking by ID
 router.get('/:bookingId', verifyJWT, getBookingById);

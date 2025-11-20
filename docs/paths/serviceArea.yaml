@@ -165,11 +165,11 @@ paths:
           description: Invalid ID
         '500':
           description: Server error
-  /applications/complete-application/{id}/status:
     patch:
-      summary: Update service area status (admin only)
+      summary: Update availableLocations for a service area (provider only)
       tags:
         - ServiceArea
+      description: Allows a provider to update the availableLocations for their own service area application.
       parameters:
         - in: path
           name: id
@@ -177,6 +177,8 @@ paths:
           schema:
             type: string
           description: Service area ObjectId
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -184,53 +186,46 @@ paths:
             schema:
               type: object
               required:
-                - applicationStatus
+                - availableLocations
               properties:
-                applicationStatus:
-                  type: string
-                  enum: [pending, approved, rejected, suspended]
-                  description: New status
-                  example: approved
-                adminNotes:
-                  type: string
-                  description: Optional admin notes
+                availableLocations:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of ObjectIds referencing Area model.
       responses:
         '200':
-          description: Service area status updated successfully
+          description: Service area updated successfully
           content:
             application/json:
               schema:
                 $ref: '../schemas/serviceArea.yaml#/ServiceArea'
-        '404':
-          description: Service area not found
         '400':
-          description: Invalid status or ID
+          description: Invalid input
+        '404':
+          description: Service area not found or not owned by user
+        '401':
+          description: Unauthorized
         '500':
           description: Server error
-  /applications/complete-application/provider/{id}:
+  /applications/complete-application/applied:
     get:
-      summary: Get all service areas by provider
+      summary: Get list of applied service areas for logged-in user
       tags:
         - ServiceArea
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          description: Provider ObjectId
+      description: Returns all service area applications submitted by the logged-in provider.
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: Service areas for provider fetched successfully
+          description: List of applied service areas
           content:
             application/json:
               schema:
                 type: array
                 items:
                   $ref: '../schemas/serviceArea.yaml#/ServiceArea'
-        '404':
-          description: Provider not found
-        '400':
-          description: Invalid provider ID
+        '401':
+          description: Unauthorized
         '500':
           description: Server error

@@ -334,3 +334,168 @@
         description: No services available for your location
       '500':
         description: Server error
+/bookings/in-progress:
+  post:
+    summary: Provider marks booking as in-progress
+    description: >
+      Provider marks a booking as in-progress. Requires bookingId, latitude, and longitude in the request body. The API checks if the provider's current location pincode matches the booking address pincode.
+    tags:
+      - Bookings
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - bookingId
+              - latitude
+              - longitude
+            properties:
+              bookingId:
+                type: string
+                description: The ObjectId of the booking
+              latitude:
+                type: number
+                format: float
+                description: Provider's current latitude
+              longitude:
+                type: number
+                format: float
+                description: Provider's current longitude
+    responses:
+      '200':
+        description: Booking marked in-progress
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    booking:
+                      $ref: './../schemas/booking.yaml#/Booking'
+                message:
+                  type: string
+      '400':
+        description: Invalid request or pincode mismatch
+      '404':
+        description: Booking not found or no pincode found
+      '500':
+        description: Server error
+/bookings/complete:
+  post:
+    summary: Provider marks booking as completed
+    description: >
+      Provider marks a booking as completed. Requires bookingId, latitude, and longitude in the request body. The API checks if the provider's current location pincode matches the booking address pincode.
+    tags:
+      - Bookings
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - bookingId
+              - latitude
+              - longitude
+            properties:
+              bookingId:
+                type: string
+                description: The ObjectId of the booking
+              latitude:
+                type: number
+                format: float
+                description: Provider's current latitude
+              longitude:
+                type: number
+                format: float
+                description: Provider's current longitude
+    responses:
+      '200':
+        description: Booking marked as completed
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    booking:
+                      $ref: './../schemas/booking.yaml#/Booking'
+                message:
+                  type: string
+      '400':
+        description: Invalid request or pincode mismatch
+      '404':
+        description: Booking not found or no pincode found
+      '500':
+        description: Server error
+/bookings/cancel:
+  post:
+    summary: Provider cancels a booking
+    description: >
+      Provider cancels a booking. Requires bookingId, latitude, longitude, and optional cancellationReason in the request body. The API checks if the provider's current location pincode matches the booking address pincode.
+    tags:
+      - Bookings
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - bookingId
+              - latitude
+              - longitude
+            properties:
+              bookingId:
+                type: string
+                description: The ObjectId of the booking
+              latitude:
+                type: number
+                format: float
+                description: Provider's current latitude
+              longitude:
+                type: number
+                format: float
+                description: Provider's current longitude
+              cancellationReason:
+                type: string
+                description: Optional reason for cancellation
+    responses:
+      '200':
+        description: Booking marked as cancelled
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    booking:
+                      $ref: './../schemas/booking.yaml#/Booking'
+                message:
+                  type: string
+      '400':
+        description: Invalid request or pincode mismatch
+      '404':
+        description: Booking not found or no pincode found
+      '500':
+        description: Server error

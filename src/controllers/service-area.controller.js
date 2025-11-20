@@ -1,8 +1,11 @@
+// Get list of applied service areas for logged-in user
+
 import { uploadOnCloudinary } from '../utils/cloudinary.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { ServiceArea } from '../models/service-area.model.js';
+import mongoose from 'mongoose';
 import { User } from '../models/user.model.js';
 import logger from '../utils/logger.js';
 
@@ -410,6 +413,113 @@ const addServiceForCompletedProfile = asyncHandler(async (req, res, next) => {
   }
 });
 
+const updateServiceArea = asyncHandler(async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { availableLocations } = req.body;
+
+    let locationsArr = [];
+    logger.info(
+      `Raw availableLocations: ${JSON.stringify(availableLocations)}`
+    );
+    if (Array.isArray(availableLocations)) {
+      locationsArr = availableLocations
+        .flatMap((val) =>
+          typeof val === 'string'
+            ? val
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0)
+            : []
+        )
+        .filter((s) => s.length > 0);
+    } else if (
+      typeof availableLocations === 'string' &&
+      availableLocations.trim() !== ''
+    ) {
+      locationsArr = availableLocations
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    }
+    // Remove duplicates and empty strings
+    locationsArr = Array.from(new Set(locationsArr)).filter(
+      (s) => s.length > 0
+    );
+    logger.info(`Parsed locationsArr: ${JSON.stringify(locationsArr)}`);
+    if (!locationsArr.length) {
+      logger.warn(
+        `availableLocations is empty after parsing: ${JSON.stringify(availableLocations)}`
+      );
+      throw new ApiError(
+        400,
+        'availableLocations is required and cannot be empty'
+      );
+    }
+
+    // Ensure user can only update their own service area
+    const updatedApplication = await ServiceArea.findOneAndUpdate(
+      { _id: id, provider: req.user._id },
+      { availableLocations: locationsArr },
+      { new: true, runValidators: true }
+    )
+      .populate('service')
+      .populate('provider');
+
+    if (!updatedApplication) {
+      throw new ApiError(404, 'Service area not found or not owned by user');
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          updatedApplication,
+          'Service area updated successfully'
+        )
+      );
+  } catch (err) {
+    next(err);
+  }
+});
+
+const getAppliedServiceAreas = asyncHandler(async (req, res, next) => {
+  try {
+    // Validate user._id is a valid ObjectId
+    logger.info(`Validating user._id: ${req.user._id}`, req.user._id);
+    if (!mongoose.Types.ObjectId.isValid(req.user._id)) {
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            [],
+            'Invalid user id for applied service areas fetch'
+          )
+        );
+    }
+    // Exclude 'availableLocations' from the result
+    const applications = await ServiceArea.find({ provider: req.user._id })
+      .select('-availableLocations')
+      .populate('service')
+      .populate('provider');
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          applications,
+          'Applied service areas fetched successfully'
+        )
+      );
+  } catch (err) {
+    next(err);
+    logger.error(`Error fetching applied service areas: ${err.message}`, err);
+  }
+});
+
 export {
   createServiceArea,
   updateServiceAreaStatus,
@@ -417,4 +527,6 @@ export {
   getServiceAreaById,
   getServiceAreasByProvider,
   addServiceForCompletedProfile,
+  getAppliedServiceAreas,
+  updateServiceArea,
 };
