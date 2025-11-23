@@ -105,7 +105,7 @@ router.get(
  * @desc    Get list of applied service areas for logged-in user
  * @access  Private (provider)
  */
-router.get('/complete-application/applied', verifyJWT, getAppliedServiceAreas);
+// router.get('/complete-application/applied', verifyJWT, getAppliedServiceAreas);
 
 /**
  * @route   GET /api/service-areas/:id

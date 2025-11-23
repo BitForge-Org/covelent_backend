@@ -427,6 +427,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
       );
   }
 });
+
 const acceptBooking = asyncHandler(async (req, res) => {
   logger.info(`[BOOKING] acceptBooking called by provider: ${req.user?._id}`);
   logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);

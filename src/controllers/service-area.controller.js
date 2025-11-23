@@ -5,6 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { ServiceArea } from '../models/service-area.model.js';
+import Pincode from '../models/pincode.model.js';
 import mongoose from 'mongoose';
 import { User } from '../models/user.model.js';
 import logger from '../utils/logger.js';
@@ -499,11 +500,28 @@ const getAppliedServiceAreas = asyncHandler(async (req, res, next) => {
           )
         );
     }
-    // Exclude 'availableLocations' from the result
+    // Include availableLocations and restrict service fields
     const applications = await ServiceArea.find({ provider: req.user._id })
-      .select('-availableLocations')
-      .populate('service')
-      .populate('provider');
+      .populate({
+        path: 'service',
+        select: 'title description image pricingOptions',
+      })
+      .populate({
+        path: 'provider',
+        select: '_id fullName email phoneNumber avatar role isProfileCompleted',
+      })
+      .populate({
+        path: 'availableLocations',
+        select: '_id name city state pincodes',
+      });
+    // Ensure pincodes array is always present in availableLocations
+    for (const app of applications) {
+      if (app.availableLocations && Array.isArray(app.availableLocations)) {
+        for (const loc of app.availableLocations) {
+          loc.pincodes = loc.pincodes || [];
+        }
+      }
+    }
 
     return res
       .status(200)
