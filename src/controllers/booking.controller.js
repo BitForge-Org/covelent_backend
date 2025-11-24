@@ -395,7 +395,19 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
           now,
         ],
       },
-    }).populate('service location');
+    })
+      .populate({
+        path: 'service',
+        select:
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
+      })
+      .populate({
+        path: 'user',
+        select: 'fullName email',
+      })
+      .populate({
+        path: 'location',
+      });
 
     if (!bookings.length) {
       return res
@@ -617,6 +629,197 @@ const getAcceptedBookings = asyncHandler(async (req, res) => {
   } catch (error) {
     logger.error('Error in getAcceptedBookings:', error);
     throw new ApiError(500, 'Failed to retrieve accepted bookings');
+  }
+});
+
+// Update booking status to any allowed value
+const allowedStatuses = [
+  'booking-requested',
+  'booking-confirmed',
+  'booking-in-progress',
+  'booking-completed',
+  'booking-cancelled',
+  // 'booking-rejected',
+];
+
+const updateBookingStatus = asyncHandler(async (req, res) => {
+  try {
+    const { bookingId, status, latitude, longitude } = req.body;
+    if (!bookingId || !status) {
+      return res.status(400).json({
+        statusCode: 400,
+        data: null,
+        success: false,
+        message: 'bookingId and status are required',
+        errors: ['bookingId and status are required'],
+      });
+    }
+    if (!isValidObjectId(bookingId)) {
+      return res.status(400).json({
+        statusCode: 400,
+        data: null,
+        success: false,
+        message: 'Invalid bookingId',
+        errors: ['Invalid bookingId'],
+      });
+    }
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        statusCode: 400,
+        data: null,
+        success: false,
+        message: 'Invalid status value',
+        errors: ['Invalid status value'],
+      });
+    }
+    const booking = await Booking.findById(bookingId).populate({
+      path: 'location',
+      select: 'pincode',
+    });
+    if (!booking) {
+      return res.status(404).json({
+        statusCode: 404,
+        data: null,
+        success: false,
+        message: 'Booking not found',
+        errors: ['Booking not found'],
+      });
+    }
+
+    // For booking-confirmed, check user's location is in service area
+    if (status === 'booking-confirmed') {
+      if (!latitude || !longitude) {
+        return res.status(400).json({
+          statusCode: 400,
+          data: null,
+          success: false,
+          message: 'Latitude and longitude are required for confirmation',
+          errors: ['Latitude and longitude are required for confirmation'],
+        });
+      }
+      let pincode;
+      try {
+        const locationController = await import('./location.controller.js');
+        if (typeof locationController.getPincodeFromLatLng === 'function') {
+          pincode = await locationController.getPincodeFromLatLng(
+            latitude,
+            longitude
+          );
+        } else {
+          throw new Error(
+            'Location controller does not support pincode lookup'
+          );
+        }
+      } catch (err) {
+        logger.error('[BOOKING] Error getting pincode from coordinates:', err);
+        return res.status(500).json({
+          statusCode: 500,
+          data: null,
+          success: false,
+          message: 'Failed to get pincode from coordinates',
+          errors: ['Failed to get pincode from coordinates'],
+        });
+      }
+      if (!pincode) {
+        return res.status(404).json({
+          statusCode: 404,
+          data: null,
+          success: false,
+          message: 'No pincode found for provided coordinates',
+          errors: ['No pincode found for provided coordinates'],
+        });
+      }
+      if (String(booking.location?.pincode) !== String(pincode)) {
+        return res.status(400).json({
+          statusCode: 400,
+          data: null,
+          success: false,
+          message:
+            'User location pincode does not match booking address pincode',
+          errors: [
+            'User location pincode does not match booking address pincode',
+          ],
+        });
+      }
+    }
+
+    // For booking-in-progress and booking-completed, check pincode match
+    if (status === 'booking-in-progress' || status === 'booking-completed') {
+      if (!latitude || !longitude) {
+        return res.status(400).json({
+          statusCode: 400,
+          data: null,
+          success: false,
+          message: 'Latitude and longitude are required',
+          errors: ['Latitude and longitude are required'],
+        });
+      }
+      let pincode;
+      try {
+        const locationController = await import('./location.controller.js');
+        if (typeof locationController.getPincodeFromLatLng === 'function') {
+          pincode = await locationController.getPincodeFromLatLng(
+            latitude,
+            longitude
+          );
+        } else {
+          throw new Error(
+            'Location controller does not support pincode lookup'
+          );
+        }
+      } catch (err) {
+        logger.error('[BOOKING] Error getting pincode from coordinates:', err);
+        return res.status(500).json({
+          statusCode: 500,
+          data: null,
+          success: false,
+          message: 'Failed to get pincode from coordinates',
+          errors: ['Failed to get pincode from coordinates'],
+        });
+      }
+      if (!pincode) {
+        return res.status(404).json({
+          statusCode: 404,
+          data: null,
+          success: false,
+          message: 'No pincode found for provided coordinates',
+          errors: ['No pincode found for provided coordinates'],
+        });
+      }
+      if (String(booking.location?.pincode) !== String(pincode)) {
+        return res.status(400).json({
+          statusCode: 400,
+          data: null,
+          success: false,
+          message:
+            'User location pincode does not match booking address pincode',
+          errors: [
+            'User location pincode does not match booking address pincode',
+          ],
+        });
+      }
+      if (status === 'booking-completed') {
+        booking.completedAt = new Date();
+      }
+    }
+
+    booking.bookingStatus = status;
+    await booking.save();
+    logger.info(
+      `[BOOKING] Status updated for booking ${bookingId} to ${status}`
+    );
+    return res
+      .status(200)
+      .json(new ApiResponse(200, booking, 'Booking status updated'));
+  } catch (error) {
+    logger.error('[BOOKING] Error in updateBookingStatus:', error);
+    return res.status(500).json({
+      statusCode: 500,
+      data: null,
+      success: false,
+      message: 'Failed to update booking status',
+      errors: [error?.message || 'Failed to update booking status'],
+    });
   }
 });
 
@@ -942,4 +1145,5 @@ export {
   bookingInProgress,
   bookingComplete,
   bookingCancel,
+  updateBookingStatus,
 };

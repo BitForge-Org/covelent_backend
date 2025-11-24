@@ -1326,6 +1326,69 @@ paths:
           description: Unauthorized
         '500':
           description: Server error
+  /bookings/update-status:
+    post:
+      summary: Update booking status (generic)
+      description: |
+        Update the status of a booking to any allowed value. For status values 'booking-confirmed', 'booking-in-progress', and 'booking-completed', the API checks if the user's location pincode matches the booking address pincode using latitude and longitude.
+      tags:
+        - Bookings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+                - status
+              properties:
+                bookingId:
+                  type: string
+                  description: The ObjectId of the booking
+                status:
+                  type: string
+                  enum:
+                    - booking-requested
+                    - booking-confirmed
+                    - booking-in-progress
+                    - booking-completed
+                    - booking-cancelled
+                    - booking-rejected
+                  description: New status to set for the booking
+                latitude:
+                  type: number
+                  format: float
+                  description: User's current latitude (required for certain status updates)
+                longitude:
+                  type: number
+                  format: float
+                  description: User's current longitude (required for certain status updates)
+      responses:
+        '200':
+          description: Booking status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      booking:
+                        $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+        '400':
+          description: Invalid request or pincode mismatch
+        '404':
+          description: Booking not found or no pincode found
+        '500':
+          description: Server error
   /bookings/reject:
     post:
       summary: Provider rejects a booking (does not change booking status)

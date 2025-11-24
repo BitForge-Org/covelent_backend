@@ -11,6 +11,7 @@ import {
   bookingInProgress,
   bookingComplete,
   bookingCancel,
+  updateBookingStatus,
 } from '../controllers/booking.controller.js';
 
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -49,5 +50,8 @@ router.post('/cancel', verifyJWT, bookingCancel);
 
 // Get booking by ID
 router.get('/:bookingId', verifyJWT, getBookingById);
+
+// Update booking status (generic)
+router.post('/update-status', verifyJWT, updateBookingStatus);
 
 export default router;

@@ -80,6 +80,8 @@ paths:
     $ref: './paths/booking.yaml#/~1booking~1history'
   /bookings/accepted:
     $ref: './paths/booking.yaml#/~1bookings~1accepted'
+  /bookings/update-status:
+    $ref: './paths/booking.yaml#/~1bookings~1update-status'
   /bookings/reject:
     $ref: './paths/booking.yaml#/~1bookings~1reject'
 
