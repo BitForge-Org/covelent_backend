@@ -159,10 +159,28 @@ const createBooking = asyncHandler(async (req, res) => {
     logger.info(
       `[BOOKING] Transaction committed for booking: ${booking[0]?._id}`
     );
+    // Populate user and service for response
+    const populatedBooking = await Booking.findById(booking[0]._id)
+      .populate({
+        path: 'service',
+        select:
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
+      })
+      .populate({
+        path: 'user',
+        select: 'fullName email',
+      })
+      .populate({
+        path: 'location',
+      });
     return res
       .status(201)
       .json(
-        new ApiResponse(201, { booking: booking[0], order }, 'Booking created')
+        new ApiResponse(
+          201,
+          { booking: populatedBooking, order },
+          'Booking created'
+        )
       );
   } catch (err) {
     await session.abortTransaction();
@@ -188,8 +206,15 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
     const bookings = await Booking.find(filter)
       .populate({
         path: 'service',
-        select: 'title description category image pricingOptions',
-        populate: { path: 'category', select: 'name' }, // if category is ref
+        select:
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
+      })
+      .populate({
+        path: 'user',
+        select: 'fullName email',
+      })
+      .populate({
+        path: 'location',
       })
       .lean();
 
@@ -599,8 +624,15 @@ const getAcceptedBookings = asyncHandler(async (req, res) => {
     const bookings = await Booking.find(filter)
       .populate({
         path: 'service',
-        select: 'title description category image pricingOptions',
-        populate: { path: 'category', select: 'name' },
+        select:
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
+      })
+      .populate({
+        path: 'user',
+        select: 'fullName email',
+      })
+      .populate({
+        path: 'location',
       })
       .lean();
 
@@ -882,14 +914,15 @@ const getBookingById = asyncHandler(async (req, res) => {
     const booking = await Booking.findById(bookingId)
       .populate({
         path: 'service',
-        select: 'title description category image pricingOptions',
-        populate: { path: 'category', select: 'name' },
+        select:
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
       })
-      .populate({ path: 'user', select: 'name email phone' })
-      .populate({ path: 'provider', select: 'name email phone' })
+      .populate({
+        path: 'user',
+        select: 'fullName email',
+      })
       .populate({
         path: 'location',
-        select: 'address city state pincode coordinates',
       });
     if (!booking) {
       throw new ApiError(404, 'Booking not found');
@@ -944,14 +977,15 @@ const getAllBookings = asyncHandler(async (req, res) => {
         const populated = await Booking.findById(booking._id)
           .populate({
             path: 'service',
-            select: 'title description category image pricingOptions',
-            populate: { path: 'category', select: 'name' },
+            select:
+              'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
           })
-          .populate({ path: 'user', select: 'name email phone' })
-          .populate({ path: 'provider', select: 'name email phone' })
+          .populate({
+            path: 'user',
+            select: 'fullName email',
+          })
           .populate({
             path: 'location',
-            select: 'address city state pincode coordinates',
           })
           .lean();
         // Attach selected pricing option details
