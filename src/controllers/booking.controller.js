@@ -164,7 +164,7 @@ const createBooking = asyncHandler(async (req, res) => {
       .populate({
         path: 'service',
         select:
-          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
+          'title description category duration createdAt image media bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
       })
       .populate({
         path: 'user',
@@ -424,7 +424,7 @@ const getAvailableBookings = asyncHandler(async (req, res) => {
       .populate({
         path: 'service',
         select:
-          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment ',
       })
       .populate({
         path: 'user',

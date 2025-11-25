@@ -1,4 +1,32 @@
 paths:
+  /services/{serviceId}/areas:
+    get:
+      summary: Get serviceable areas for a service
+      tags:
+        - Service
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+          description: Service ObjectId
+      responses:
+        '200':
+          description: Serviceable areas retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: './../schemas/Area.yaml'
+                  message:
+                    type: string
   /services/by-coordinates:
     get:
       summary: Get services available by coordinates
@@ -339,67 +367,6 @@ paths:
                     $ref: './../schemas/Service.yaml'
                   message:
                     type: string
-
-  /services/{serviceId}/areas:
-    post:
-      summary: Assign service to specific areas
-      tags:
-        - Service (Admin)
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: serviceId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - areaIds
-              properties:
-                areaIds:
-                  type: array
-                  items:
-                    type: string
-                  example:
-                    ['68e3f964c615c935d6d756bf', '68e3f964c615c935d6d756c0']
-      responses:
-        '200':
-          description: Service assigned to areas successfully
-
-    delete:
-      summary: Remove service from specific areas
-      tags:
-        - Service (Admin)
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: serviceId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - areaIds
-              properties:
-                areaIds:
-                  type: array
-                  items:
-                    type: string
-      responses:
-        '200':
-          description: Areas removed from service
 
   /services/{serviceId}/city:
     post:

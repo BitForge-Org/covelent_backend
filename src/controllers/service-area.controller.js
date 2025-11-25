@@ -538,6 +538,41 @@ const getAppliedServiceAreas = asyncHandler(async (req, res, next) => {
   }
 });
 
+const getServiceAreaApplicationStatus = asyncHandler(async (req, res, next) => {
+  try {
+    // Find all service area applications for the logged-in user
+    const applications = await ServiceArea.find({ provider: req.user._id })
+      .select('service applicationStatus createdAt updatedAt')
+      .populate({ path: 'service', select: 'title description' });
+
+    // If no applications found, return empty array
+    if (!applications || applications.length === 0) {
+      return res
+        .status(200)
+        .json(new ApiResponse(200, [], 'No service-area applications found'));
+    }
+
+    // Return status for each application
+    const statusList = applications.map((app) => ({
+      service: app.service,
+      applicationStatus: app.applicationStatus,
+      createdAt: app.createdAt,
+      updatedAt: app.updatedAt,
+    }));
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          statusList,
+          'Service-area application status fetched successfully'
+        )
+      );
+  } catch (err) {
+    next(err);
+  }
+});
 export {
   createServiceArea,
   updateServiceAreaStatus,
@@ -547,4 +582,6 @@ export {
   addServiceForCompletedProfile,
   getAppliedServiceAreas,
   updateServiceArea,
+  getServiceAreaApplicationStatus,
 };
+// Get service-area application status for logged-in user

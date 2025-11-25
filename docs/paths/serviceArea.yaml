@@ -1,4 +1,37 @@
 paths:
+  /applications/application-status:
+    get:
+      summary: Get service-area application status for logged-in user
+      tags:
+        - ServiceArea
+      description: Returns the status of all service-area applications for the logged-in provider, including service info and status fields.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of service-area application statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    service:
+                      $ref: '../schemas/Service.yaml#/Service'
+                    applicationStatus:
+                      type: string
+                      description: Application status (pending, approved, rejected, suspended)
+                    createdAt:
+                      type: string
+                      format: date-time
+                    updatedAt:
+                      type: string
+                      format: date-time
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
   /applications/add-service:
     post:
       summary: Add service for completed profile

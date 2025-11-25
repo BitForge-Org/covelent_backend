@@ -47,6 +47,8 @@ paths:
     $ref: './paths/users/avatar.yaml#/~1avatar'
   /applications/complete-application:
     $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application'
+  /applications/application-status:
+    $ref: './paths/serviceArea.yaml#/paths/~1applications~1application-status'
   /applications/complete-application/applied:
     $ref: './paths/serviceArea.yaml#/paths/~1applications~1complete-application~1applied'
   /applications/complete-application/{id}:

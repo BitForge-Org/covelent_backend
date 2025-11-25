@@ -28,7 +28,14 @@ import {
   addServiceForCompletedProfile,
   getAppliedServiceAreas,
   updateServiceArea,
+  getServiceAreaApplicationStatus,
 } from '../controllers/service-area.controller.js';
+/**
+ * @route   GET /api/service-areas/application-status
+ * @desc    Get service-area application status for logged-in user
+ * @access  Private (provider)
+ */
+
 /**
  * @route   POST /api/service-areas/add-service
  * @desc    Add service for completed profile
@@ -120,5 +127,7 @@ router.get('/complete-application/:id', verifyJWT, getServiceAreaById);
  * @access  Private (provider)
  */
 router.patch('/complete-application/:id', verifyJWT, updateServiceArea);
+
+router.get('/application-status', verifyJWT, getServiceAreaApplicationStatus);
 
 export default router;

@@ -489,6 +489,39 @@ paths:
           description: Invalid filter
         '500':
           description: Server error
+  /applications/application-status:
+    get:
+      summary: Get service-area application status for logged-in user
+      tags:
+        - ServiceArea
+      description: 'Returns the status of all service-area applications for the logged-in provider, including service info and status fields.'
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of service-area application statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    service:
+                      $ref: '#/paths/~1services~1%7BserviceId%7D/get/responses/200/content/application~1json/schema/properties/data/Service'
+                    applicationStatus:
+                      type: string
+                      description: 'Application status (pending, approved, rejected, suspended)'
+                    createdAt:
+                      type: string
+                      format: date-time
+                    updatedAt:
+                      type: string
+                      format: date-time
+        '401':
+          description: Unauthorized
+        '500':
+          description: Server error
   /applications/complete-application/applied:
     get:
       summary: Get list of applied service areas for logged-in user
@@ -1026,65 +1059,60 @@ paths:
                   message:
                     type: string
   '/services/{serviceId}/areas':
-    post:
-      summary: Assign service to specific areas
+    get:
+      summary: Get serviceable areas for a service
       tags:
-        - Service (Admin)
-      security:
-        - BearerAuth: []
+        - Service
       parameters:
         - in: path
           name: serviceId
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - areaIds
-              properties:
-                areaIds:
-                  type: array
-                  items:
-                    type: string
-                  example:
-                    - 68e3f964c615c935d6d756bf
-                    - 68e3f964c615c935d6d756c0
+          description: Service ObjectId
       responses:
         '200':
-          description: Service assigned to areas successfully
-    delete:
-      summary: Remove service from specific areas
-      tags:
-        - Service (Admin)
-      security:
-        - BearerAuth: []
-      parameters:
-        - in: path
-          name: serviceId
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - areaIds
-              properties:
-                areaIds:
-                  type: array
-                  items:
+          description: Serviceable areas retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      Area:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                          name:
+                            type: string
+                          city:
+                            type: string
+                            description: City ObjectId reference
+                          pincode:
+                            type: string
+                          serviceable:
+                            type: boolean
+                            default: true
+                          coordinates:
+                            type: object
+                            properties:
+                              latitude:
+                                type: number
+                              longitude:
+                                type: number
+                        required:
+                          - name
+                          - city
+                          - pincode
+                          - serviceable
+                          - coordinates
+                  message:
                     type: string
-      responses:
-        '200':
-          description: Areas removed from service
   '/services/{serviceId}/city':
     post:
       summary: Assign service to entire city (all serviceable areas)
@@ -2593,7 +2621,7 @@ paths:
                   areas:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Area'
+                      $ref: '#/paths/~1services~1%7BserviceId%7D~1areas/get/responses/200/content/application~1json/schema/properties/data/items/Area'
                   pagination:
                     type: object
                     properties:
@@ -2631,7 +2659,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Area'
+                $ref: '#/paths/~1services~1%7BserviceId%7D~1areas/get/responses/200/content/application~1json/schema/properties/data/items/Area'
         '404':
           description: Area not found
           content:
@@ -2855,7 +2883,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Area'
+                  $ref: '#/paths/~1services~1%7BserviceId%7D~1areas/get/responses/200/content/application~1json/schema/properties/data/items/Area'
   '/location-import/areas/{areaId}/serviceability':
     patch:
       summary: Update area serviceability (admin only)
@@ -3288,33 +3316,7 @@ components:
         - pincodeRanges
         - centerCoords
     Area:
-      type: object
-      properties:
-        _id:
-          type: string
-        name:
-          type: string
-        city:
-          type: string
-          description: City ObjectId reference
-        pincode:
-          type: string
-        serviceable:
-          type: boolean
-          default: true
-        coordinates:
-          type: object
-          properties:
-            latitude:
-              type: number
-            longitude:
-              type: number
-      required:
-        - name
-        - city
-        - pincode
-        - serviceable
-        - coordinates
+      $ref: '#/paths/~1services~1%7BserviceId%7D~1areas/get/responses/200/content/application~1json/schema/properties/data/items/Area'
     SubArea:
       type: object
       properties:

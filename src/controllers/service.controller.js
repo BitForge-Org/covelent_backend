@@ -14,7 +14,6 @@ import { redisClient } from '../utils/redisClient.js';
 import logger from '../utils/logger.js';
 import Area from '../models/area.model.js';
 import City from '../models/city.model.js';
-import { log } from 'console';
 
 const createService = asyncHandler(async (req, res) => {
   try {
@@ -790,6 +789,41 @@ const makeAllAreasServiceable = asyncHandler(async (req, res) => {
   }
 });
 
+const areaByService = asyncHandler(async (req, res) => {
+  logger.info('areaByService called');
+  try {
+    const { serviceId } = req.params;
+    if (!serviceId) {
+      throw new ApiError(400, 'Service ID is required');
+    }
+
+    const service = await Service.findById(serviceId).populate({
+      path: 'serviceableAreas',
+      select: 'name pincodes',
+    });
+
+    if (!service) {
+      throw new ApiError(404, 'Service not found');
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          service,
+          'Serviceable areas retrieved successfully'
+        )
+      );
+  } catch (error) {
+    logger.error('Error in serviceAvailabilityAreas:', error);
+    throw new ApiError(
+      error.statusCode || 500,
+      error.message || 'Failed to retrieve serviceable areas'
+    );
+  }
+});
+
 export {
   createService,
   getServices,
@@ -803,4 +837,5 @@ export {
   checkServiceAvailability,
   getServicesByCoordinates,
   makeAllAreasServiceable,
+  areaByService,
 };
