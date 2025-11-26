@@ -275,10 +275,35 @@ const getServiceAreas = asyncHandler(async (req, res, next) => {
 const getServiceAreaById = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const application = await ServiceArea.findById(id);
+  const application = await ServiceArea.findById(id)
+    .select(
+      '_id service provider availableLocations applicationStatus createdAt updatedAt'
+    )
+    .populate({
+      path: 'service',
+      select: 'title description image pricingOptions',
+    })
+    .populate({
+      path: 'provider',
+      select: '_id fullName email phoneNumber avatar role isProfileCompleted',
+    })
+    .populate({
+      path: 'availableLocations',
+      select: '_id name city state pincodes slug',
+    });
 
   if (!application) {
     throw new ApiError(404, 'Service area not found');
+  }
+
+  // Ensure pincodes array is always present in availableLocations
+  if (
+    application.availableLocations &&
+    Array.isArray(application.availableLocations)
+  ) {
+    for (const loc of application.availableLocations) {
+      loc.pincodes = loc.pincodes || [];
+    }
   }
 
   return res
@@ -512,7 +537,7 @@ const getAppliedServiceAreas = asyncHandler(async (req, res, next) => {
       })
       .populate({
         path: 'availableLocations',
-        select: '_id name city state pincodes',
+        select: '_id name city state pincodes slug',
       });
     // Ensure pincodes array is always present in availableLocations
     for (const app of applications) {
