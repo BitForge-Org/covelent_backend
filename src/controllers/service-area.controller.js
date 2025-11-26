@@ -281,7 +281,7 @@ const getServiceAreaById = asyncHandler(async (req, res, next) => {
     )
     .populate({
       path: 'service',
-      select: 'title description image pricingOptions',
+      select: 'title description image ',
     })
     .populate({
       path: 'provider',
