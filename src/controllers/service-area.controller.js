@@ -597,6 +597,71 @@ const getServiceAreaApplicationStatus = asyncHandler(async (req, res, next) => {
     next(err);
   }
 });
+
+// Clear availableLocations for a ServiceArea ObjectId (owner only)
+const clearServiceAreaLocations = asyncHandler(async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    // Ensure user can only update their own service area
+    const updatedApplication = await ServiceArea.findOneAndUpdate(
+      { _id: id, provider: req.user._id },
+      { availableLocations: [] },
+      { new: true, runValidators: true }
+    )
+      .populate('service')
+      .populate('provider');
+
+    if (!updatedApplication) {
+      throw new ApiError(404, 'Service area not found or not owned by user');
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          updatedApplication,
+          'Service area locations cleared successfully'
+        )
+      );
+  } catch (err) {
+    next(err);
+  }
+});
+// Remove a single location from availableLocations for a ServiceArea ObjectId (owner only)
+const removeServiceAreaLocation = asyncHandler(async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { locationId } = req.body;
+    if (!locationId) {
+      throw new ApiError(400, 'locationId is required');
+    }
+    // Only allow owner to update
+    const updatedApplication = await ServiceArea.findOneAndUpdate(
+      { _id: id, provider: req.user._id },
+      { $pull: { availableLocations: locationId } },
+      { new: true, runValidators: true }
+    )
+      .populate('service')
+      .populate('provider');
+
+    if (!updatedApplication) {
+      throw new ApiError(404, 'Service area not found or not owned by user');
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          updatedApplication,
+          'Location removed from service area successfully'
+        )
+      );
+  } catch (err) {
+    next(err);
+  }
+});
 export {
   createServiceArea,
   updateServiceAreaStatus,
@@ -607,5 +672,7 @@ export {
   getAppliedServiceAreas,
   updateServiceArea,
   getServiceAreaApplicationStatus,
+  clearServiceAreaLocations,
+  removeServiceAreaLocation,
 };
 // Get service-area application status for logged-in user

@@ -29,7 +29,32 @@ import {
   getAppliedServiceAreas,
   updateServiceArea,
   getServiceAreaApplicationStatus,
+  clearServiceAreaLocations,
+  removeServiceAreaLocation,
 } from '../controllers/service-area.controller.js';
+/**
+ * @route   PATCH /api/service-areas/complete-application/:id/remove-location
+ * @desc    Remove a single location from availableLocations for a service area (provider only)
+ * @access  Private (provider)
+ */
+
+/**
+ * @route   PATCH /api/service-areas/:id/clear-locations
+ * @desc    Remove all availableLocations for a service area (provider only)
+ * @access  Private (provider)
+ *
+ */
+
+import { upload } from '../middlewares/multer.middleware.js';
+import { isAdmin, verifyJWT } from '../middlewares/auth.middleware.js';
+
+const router = express.Router();
+
+router.patch(
+  '/complete-application/:id/clear-locations',
+  verifyJWT,
+  clearServiceAreaLocations
+);
 /**
  * @route   GET /api/service-areas/application-status
  * @desc    Get service-area application status for logged-in user
@@ -41,11 +66,6 @@ import {
  * @desc    Add service for completed profile
  * @access  Private (provider)
  */
-
-import { isAdmin, verifyJWT } from '../middlewares/auth.middleware.js';
-import { upload } from '../middlewares/multer.middleware.js';
-
-const router = express.Router();
 
 /**
  * @route   POST /api/service-areas
@@ -63,6 +83,12 @@ router.post(
   createServiceArea
 );
 
+router.patch(
+  '/complete-application/:id/remove-location',
+  verifyJWT,
+  removeServiceAreaLocation
+);
+
 router.post('/add-service', verifyJWT, addServiceForCompletedProfile);
 
 /**
@@ -70,6 +96,7 @@ router.post('/add-service', verifyJWT, addServiceForCompletedProfile);
  * @desc    Update service area status (pending/approved/rejected/suspended)
  * @access  Private (admin)
  */
+
 router.patch(
   '/complete-application/:id/status',
   isAdmin,

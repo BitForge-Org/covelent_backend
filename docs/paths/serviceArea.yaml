@@ -1,4 +1,72 @@
 paths:
+  /applications/complete-application/{id}/remove-location:
+    patch:
+      tags:
+        - ServiceArea
+      summary: Remove a single location from availableLocations for a service area
+      description: Removes the specified locationId from the availableLocations array for the given ServiceArea ObjectId. Only the owning provider can perform this action.
+      operationId: removeServiceAreaLocation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ServiceArea ObjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - locationId
+              properties:
+                locationId:
+                  type: string
+                  description: Location ObjectId to remove
+      responses:
+        '200':
+          description: Location removed from service area successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ServiceArea.yaml'
+        '404':
+          description: Service area not found or not owned by user
+        '400':
+          description: locationId is required
+        '401':
+          description: Unauthorized
+  /applications/complete-application/{id}/clear-locations:
+    patch:
+      tags:
+        - ServiceArea
+      summary: Remove all availableLocations for a service area
+      description: Clears the availableLocations array for the specified ServiceArea ObjectId. Only the owning provider can perform this action.
+      operationId: clearServiceAreaLocations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ServiceArea ObjectId
+      responses:
+        '200':
+          description: Service area locations cleared successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../schemas/ServiceArea.yaml'
+        '404':
+          description: Service area not found or not owned by user
+        '401':
+          description: Unauthorized
   /applications/application-status:
     get:
       summary: Get service-area application status for logged-in user
