@@ -5,7 +5,6 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { ServiceArea } from '../models/service-area.model.js';
-import Pincode from '../models/pincode.model.js';
 import mongoose from 'mongoose';
 import { User } from '../models/user.model.js';
 import logger from '../utils/logger.js';

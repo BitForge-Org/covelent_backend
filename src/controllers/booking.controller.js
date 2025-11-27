@@ -195,8 +195,6 @@ const createBooking = asyncHandler(async (req, res) => {
 
 // Get user's booking history with optional status filter
 const getBookingsHistory = asyncHandler(async (req, res) => {
-  logger.info(`[BOOKING] getBookingsHistory called for user: ${req.user?._id}`);
-  logger.debug(`[BOOKING] Query params: ${JSON.stringify(req.query)}`);
   try {
     const { status } = req.query;
     const filter = { user: req.user._id };
@@ -207,7 +205,7 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
       .populate({
         path: 'service',
         select:
-          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment pricingOptions',
       })
       .populate({
         path: 'user',
