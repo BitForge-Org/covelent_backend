@@ -192,7 +192,7 @@ const getAddresses = asyncHandler(async (req, res) => {
   });
   res
     .status(200)
-    .json(new ApiResponse(200, 'Addresses fetched successfully', addresses));
+    .json(new ApiResponse(200, addresses, 'Addresses fetched successfully'));
 });
 
 const updateAddress = asyncHandler(async (req, res) => {
