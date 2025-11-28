@@ -38,6 +38,9 @@ router.get('/check-availability', checkServiceAvailability);
 // ⭐ NEW: Get services by area
 // (Removed /by-area/:areaId route, only coordinates-based route is available)
 
+// ⭐ Add bulk assign serviceable areas to a service
+router.post('/:serviceId/areas', isAdmin, assignServiceToAreas);
+
 // Admin routes
 router.post(
   '/',

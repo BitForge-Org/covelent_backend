@@ -1182,6 +1182,47 @@ paths:
                   message:
                     type: string
   '/services/{serviceId}/areas':
+    post:
+      summary: Bulk assign serviceable areas to a service
+      tags:
+        - Service (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+          description: Service ObjectId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - areaIds
+              properties:
+                areaIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of Area ObjectIds to assign
+      responses:
+        '200':
+          description: Service assigned to areas successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  data:
+                    $ref: '#/paths/~1services~1%7BserviceId%7D/get/responses/200/content/application~1json/schema/properties/data'
+                  message:
+                    type: string
     get:
       summary: Get serviceable areas for a service
       tags:

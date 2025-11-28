@@ -73,6 +73,7 @@ import locationRoutes from './routes/locationImport.routes.js';
 
 import webhookRouter from './routes/webhook.routes.js';
 import location from './routes/location.router.js';
+import { sendTestNotification } from './utils/sendTestNotification.js';
 
 app.use('/api/v1/admin', authLimiter, adminRouter); // 👈 apply authLimiter to admin routes
 
