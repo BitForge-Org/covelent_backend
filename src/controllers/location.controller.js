@@ -656,7 +656,7 @@ export const getAddressFromCoordinates = asyncHandler(async (req, res) => {
     res
       .status(200)
       .json(
-        new ApiResponse(200, 'Address retrieved successfully', responseData)
+        new ApiResponse(200, responseData, 'Address retrieved successfully')
       );
   } catch (error) {
     if (axios.isAxiosError(error)) {
