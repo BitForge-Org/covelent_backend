@@ -205,7 +205,7 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
       .populate({
         path: 'service',
         select:
-          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment pricingOptions',
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment ',
       })
       .populate({
         path: 'user',
@@ -213,6 +213,10 @@ const getBookingsHistory = asyncHandler(async (req, res) => {
       })
       .populate({
         path: 'location',
+      })
+      .populate({
+        path: 'provider',
+        select: 'phoneNumber fullName avatar',
       })
       .lean();
 
