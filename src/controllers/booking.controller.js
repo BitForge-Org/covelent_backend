@@ -925,7 +925,12 @@ const getBookingById = asyncHandler(async (req, res) => {
       })
       .populate({
         path: 'location',
+      })
+      .populate({
+        path: 'provider',
+        select: 'phoneNumber fullName avatar',
       });
+
     if (!booking) {
       throw new ApiError(404, 'Booking not found');
     }
