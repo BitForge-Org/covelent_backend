@@ -1317,12 +1317,6 @@ const bookingComplete = asyncHandler(async (req, res) => {
     }
 
     // Only allow status change if current status is 'booking-in-progress'
-    if (booking.bookingStatus !== 'booking-in-progress') {
-      throw new ApiError(
-        400,
-        'Booking status can only be changed to completed from in-progress status'
-      );
-    }
 
     // Get pincode from lat/lng
     let pincode;
