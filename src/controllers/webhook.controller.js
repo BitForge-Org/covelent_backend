@@ -43,9 +43,59 @@ const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
       case 'order.paid':
         await handleOrderPaid(event.payload.order.entity);
         break;
+      case 'payment.authorized':
+        await handlePaymentAuthorized(event.payload.payment.entity);
+        break;
       default:
         logger.warn(`Unhandled event type: ${event.event}`);
     }
+    // Handle payment authorized event
+    const handlePaymentAuthorized = async (payment) => {
+      try {
+        logger.info(
+          `[Webhook] handlePaymentAuthorized called for order_id: ${payment.order_id}, payment_id: ${payment.id}`
+        );
+        const booking = await Booking.findOne({
+          'payment.orderId': payment.order_id,
+        });
+
+        if (!booking) {
+          logger.error(
+            `[Webhook] Booking not found for order ID: ${payment.order_id}. Payment entity: ${JSON.stringify(payment)}`
+          );
+          return;
+        }
+
+        logger.info(
+          `[Webhook] Booking found: ${booking._id}, current payment status: ${booking.payment.paymentStatus}`
+        );
+
+        // Update payment status
+        booking.payment.paymentId = payment.id;
+        booking.payment.paymentStatus = 'authorized';
+        booking.payment.paidAmount = payment.amount / 100;
+        booking.payment.paymentDate = new Date();
+        booking.payment.paymentMethod = payment.method;
+
+        // Update booking status to requested if payment is authorized
+        if (
+          booking.bookingStatus === 'pending' ||
+          booking.bookingStatus === 'booking-requested'
+        ) {
+          booking.bookingStatus = 'booking-requested';
+        }
+
+        await booking.save();
+
+        logger.info(
+          `[Webhook] Payment authorized and booking updated: ${booking._id}, new payment status: ${booking.payment.paymentStatus}`
+        );
+        // TODO: Send notification to user/provider if needed
+      } catch (error) {
+        logger.error('Error handling payment authorized:', error);
+        throw error;
+      }
+    };
 
     return res
       .status(200)
