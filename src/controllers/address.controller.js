@@ -261,7 +261,7 @@ const updateAddress = asyncHandler(async (req, res) => {
     res
       .status(200)
       .json(
-        new ApiResponse(200, 'Address updated successfully', updatedAddress)
+        new ApiResponse(200, updatedAddress, 'Address updated successfully')
       );
   } catch (error) {
     await session.abortTransaction();
@@ -282,7 +282,7 @@ const deleteAddress = asyncHandler(async (req, res) => {
   }
   res
     .status(200)
-    .json(new ApiResponse(200, 'Address deleted successfully', deletedAddress));
+    .json(new ApiResponse(200, deletedAddress, 'Address deleted successfully'));
 });
 
 // Additional controller to get a single address by ID
@@ -294,7 +294,7 @@ const getAddressById = asyncHandler(async (req, res) => {
   }
   res
     .status(200)
-    .json(new ApiResponse(200, 'Address fetched successfully', address));
+    .json(new ApiResponse(200, address, 'Address fetched successfully'));
 });
 
 export {
