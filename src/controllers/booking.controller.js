@@ -1316,6 +1316,14 @@ const bookingComplete = asyncHandler(async (req, res) => {
       throw new ApiError(404, 'Booking not found for this provider');
     }
 
+    // Only allow status change if current status is 'booking-in-progress'
+    if (booking.bookingStatus !== 'booking-in-progress') {
+      throw new ApiError(
+        400,
+        'Booking status can only be changed to completed from in-progress status'
+      );
+    }
+
     // Get pincode from lat/lng
     let pincode;
     try {
@@ -1353,7 +1361,13 @@ const bookingComplete = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, { booking }, 'Booking marked as completed'));
   } catch (error) {
     logger.error('Error in bookingComplete:', error);
-    throw new ApiError(500, 'Failed to mark booking as completed');
+    // Return the actual error message for easier debugging
+    return res.status(500).json({
+      statusCode: 500,
+      success: false,
+      message: error?.message || 'Failed to mark booking as completed',
+      error: error,
+    });
   }
 });
 
