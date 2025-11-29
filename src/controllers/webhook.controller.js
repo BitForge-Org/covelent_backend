@@ -6,6 +6,85 @@ import crypto from 'crypto';
 import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
 
+// Handle payment captured event
+const handlePaymentCaptured = async (payment) => {
+  try {
+    logger.info(
+      `[Webhook] handlePaymentCaptured called for order_id: ${payment.order_id}, payment_id: ${payment.id}`
+    );
+    const booking = await Booking.findOne({
+      'payment.orderId': payment.order_id,
+    });
+    if (!booking) {
+      logger.error(
+        `[Webhook] Booking not found for order ID: ${payment.order_id}. Payment entity: ${JSON.stringify(
+          payment
+        )}`
+      );
+      return;
+    }
+    logger.info(
+      `[Webhook] Booking found: ${booking._id}, current payment status: ${booking.payment.paymentStatus}`
+    );
+    booking.payment.paymentId = payment.id;
+    booking.payment.paymentStatus = 'completed';
+    booking.payment.paidAmount = payment.amount / 100;
+    booking.payment.paymentDate = new Date();
+    booking.payment.paymentMethod = payment.method;
+    if (booking.bookingStatus === 'pending') {
+      booking.bookingStatus = 'confirmed';
+    }
+    await booking.save();
+    logger.info(
+      `[Webhook] Payment captured and booking updated: ${booking._id}, new payment status: ${booking.payment.paymentStatus}`
+    );
+    // TODO: Send notification to user and provider
+  } catch (error) {
+    logger.error('Error handling payment captured:', error);
+    throw error;
+  }
+};
+
+// Handle payment failed event
+const handlePaymentFailed = async (payment) => {
+  try {
+    logger.info(
+      `[Webhook] handlePaymentFailed called for order_id: ${payment.order_id}, payment_id: ${payment.id}`
+    );
+    const booking = await Booking.findOne({
+      'payment.orderId': payment.order_id,
+    });
+    if (!booking) {
+      logger.error(
+        `[Webhook] Booking not found for order ID: ${payment.order_id}. Payment entity: ${JSON.stringify(
+          payment
+        )}`
+      );
+      return;
+    }
+    logger.info(
+      `[Webhook] Booking found: ${booking._id}, current payment status: ${booking.payment.paymentStatus}`
+    );
+    booking.payment.paymentId = payment.id;
+    booking.payment.paymentStatus = 'failed';
+    booking.payment.failureReason =
+      payment.error_description || 'Payment failed';
+    if (booking.bookingStatus === 'pending') {
+      booking.bookingStatus = 'cancelled';
+      booking.cancellationReason = 'Payment failed';
+      booking.cancelledAt = new Date();
+    }
+    await booking.save();
+    logger.info(
+      `[Webhook] Payment failed and booking updated: ${booking._id}, new payment status: ${booking.payment.paymentStatus}`
+    );
+    // TODO: Send notification to user about payment failure
+  } catch (error) {
+    logger.error('Error handling payment failed:', error);
+    throw error;
+  }
+};
+
 // Webhook handler for Razorpay events
 const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
   try {
@@ -36,7 +115,6 @@ const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
       case 'payment.captured':
         await handlePaymentCaptured(event.payload.payment.entity);
         break;
-
       case 'payment.failed':
         await handlePaymentFailed(event.payload.payment.entity);
         break;
@@ -49,53 +127,6 @@ const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
       default:
         logger.warn(`Unhandled event type: ${event.event}`);
     }
-    // Handle payment authorized event
-    const handlePaymentAuthorized = async (payment) => {
-      try {
-        logger.info(
-          `[Webhook] handlePaymentAuthorized called for order_id: ${payment.order_id}, payment_id: ${payment.id}`
-        );
-        const booking = await Booking.findOne({
-          'payment.orderId': payment.order_id,
-        });
-
-        if (!booking) {
-          logger.error(
-            `[Webhook] Booking not found for order ID: ${payment.order_id}. Payment entity: ${JSON.stringify(payment)}`
-          );
-          return;
-        }
-
-        logger.info(
-          `[Webhook] Booking found: ${booking._id}, current payment status: ${booking.payment.paymentStatus}`
-        );
-
-        // Update payment status
-        booking.payment.paymentId = payment.id;
-        booking.payment.paymentStatus = 'authorized';
-        booking.payment.paidAmount = payment.amount / 100;
-        booking.payment.paymentDate = new Date();
-        booking.payment.paymentMethod = payment.method;
-
-        // Update booking status to requested if payment is authorized
-        if (
-          booking.bookingStatus === 'pending' ||
-          booking.bookingStatus === 'booking-requested'
-        ) {
-          booking.bookingStatus = 'booking-requested';
-        }
-
-        await booking.save();
-
-        logger.info(
-          `[Webhook] Payment authorized and booking updated: ${booking._id}, new payment status: ${booking.payment.paymentStatus}`
-        );
-        // TODO: Send notification to user/provider if needed
-      } catch (error) {
-        logger.error('Error handling payment authorized:', error);
-        throw error;
-      }
-    };
 
     return res
       .status(200)
@@ -105,53 +136,6 @@ const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
     throw new ApiError(500, 'Webhook processing failed');
   }
 });
-
-const handlePaymentFailed = async (payment) => {
-  try {
-    logger.info(
-      `[Webhook] handlePaymentFailed called for order_id: ${payment.order_id}, payment_id: ${payment.id}`
-    );
-    const booking = await Booking.findOne({
-      'payment.orderId': payment.order_id,
-    });
-
-    if (!booking) {
-      logger.error(
-        `[Webhook] Booking not found for order ID: ${payment.order_id}. Payment entity: ${JSON.stringify(payment)}`
-      );
-      return;
-    }
-
-    logger.info(
-      `[Webhook] Booking found: ${booking._id}, current payment status: ${booking.payment.paymentStatus}`
-    );
-
-    // Update payment status
-    booking.payment.paymentId = payment.id;
-    booking.payment.paymentStatus = 'failed';
-    booking.payment.failureReason =
-      payment.error_description || 'Payment failed';
-
-    // Update booking status to cancelled if payment failed
-    if (booking.bookingStatus === 'pending') {
-      booking.bookingStatus = 'cancelled';
-      booking.cancellationReason = 'Payment failed';
-      booking.cancelledAt = new Date();
-    }
-
-    await booking.save();
-
-    logger.info(
-      `[Webhook] Payment failed and booking updated: ${booking._id}, new payment status: ${booking.payment.paymentStatus}`
-    );
-
-    // TODO: Send notification to user about payment failure
-    // await sendPaymentFailureNotification(booking);
-  } catch (error) {
-    logger.error('Error handling payment failed:', error);
-    throw error;
-  }
-};
 
 // Handle order paid event
 const handleOrderPaid = async (order) => {
@@ -187,7 +171,47 @@ const handleOrderPaid = async (order) => {
   }
 };
 
-// Verify payment manually (for client-side verification)
+// Handler for payment authorized
+async function handlePaymentAuthorized(payment) {
+  try {
+    logger.info(
+      `[Webhook] handlePaymentAuthorized called for order_id: ${payment.order_id}, payment_id: ${payment.id}`
+    );
+    const booking = await Booking.findOne({
+      'payment.orderId': payment.order_id,
+    });
+    if (!booking) {
+      logger.error(
+        `[Webhook] Booking not found for order ID: ${payment.order_id}. Payment entity: ${JSON.stringify(payment)}`
+      );
+      return;
+    }
+    logger.info(
+      `[Webhook] Booking found: ${booking._id}, current payment status: ${booking.payment.paymentStatus}`
+    );
+    booking.payment.paymentId = payment.id;
+    booking.payment.paymentStatus = 'authorized';
+    booking.payment.paidAmount = payment.amount / 100;
+    booking.payment.paymentDate = new Date();
+    booking.payment.paymentMethod = payment.method;
+    if (
+      booking.bookingStatus === 'pending' ||
+      booking.bookingStatus === 'booking-requested'
+    ) {
+      booking.bookingStatus = 'booking-requested';
+    }
+    await booking.save();
+    logger.info(
+      `[Webhook] Payment authorized and booking updated: ${booking._id}, new payment status: ${booking.payment.paymentStatus}`
+    );
+    // TODO: Send notification to user/provider if needed
+  } catch (error) {
+    logger.error('Error handling payment authorized:', error);
+    throw error;
+  }
+}
+
+// Webhook handler for Razorpay events
 const verifyPayment = asyncHandler(async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
