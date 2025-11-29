@@ -17,9 +17,9 @@ const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
 
     // Verify webhook signature
     const signature = req.headers['x-razorpay-signature'];
-    const rawBody = req.rawBody;
+    const rawBody = req.body; // Buffer
     logger.info(
-      `[Webhook] rawBody for signature verification: ${rawBody ? rawBody.slice(0, 200) : 'undefined'}`
+      `[Webhook] rawBody for signature verification: ${rawBody ? rawBody.toString('utf8').slice(0, 200) : 'undefined'}`
     );
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
@@ -30,7 +30,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
       throw new ApiError(400, 'Invalid webhook signature: ' + signature);
     }
 
-    const event = req.body;
+    const event = JSON.parse(rawBody.toString());
 
     switch (event.event) {
       case 'payment.captured':
@@ -154,7 +154,7 @@ const verifyPayment = asyncHandler(async (req, res, next) => {
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
+      .update(body)
       .digest('hex');
 
     if (expectedSignature !== razorpay_signature) {

@@ -90,15 +90,8 @@ app.use('/api/v1/location', location);
 
 // Webhook routes
 // Razorpay webhook: capture raw body for signature verification
-app.use(
-  '/api/v1/webhook/razorpay',
-  express.json({
-    verify: (req, res, buf) => {
-      req.rawBody = buf.toString();
-    },
-    limit: '16kb',
-  })
-);
+// Razorpay webhook must use raw body
+app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
 app.use('/api/v1/webhook', webhookRouter);
 
 setupSwagger(app);
