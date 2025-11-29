@@ -33,7 +33,7 @@ async function handlePaymentAuthorized(payment) {
 
     await applyPaymentUpdate(booking, {
       paymentId: payment.id,
-      status: 'authorized',
+      status: 'completed',
       paymentMethod: payment.method,
       paidAmount: payment.amount / 100,
       paymentDate: new Date(),
