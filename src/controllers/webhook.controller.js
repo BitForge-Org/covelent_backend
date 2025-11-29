@@ -37,11 +37,9 @@ const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
       case 'payment.failed':
         await handlePaymentFailed(event.payload.payment.entity);
         break;
-
       case 'order.paid':
         await handleOrderPaid(event.payload.order.entity);
         break;
-
       default:
         logger.warn(`Unhandled event type: ${event.event}`);
     }
@@ -55,53 +53,25 @@ const handleRazorpayWebhook = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Handle successful payment capture
-const handlePaymentCaptured = async (payment) => {
-  try {
-    const booking = await Booking.findOne({
-      'payment.orderId': payment.order_id,
-    });
-
-    if (!booking) {
-      logger.error(`Booking not found for order ID: ${payment.order_id}`);
-      return;
-    }
-
-    // Update booking with payment details
-    booking.payment.paymentId = payment.id;
-    booking.payment.paymentStatus = 'completed';
-    booking.payment.paidAmount = payment.amount / 100; // Convert paise to rupees
-    booking.payment.paymentDate = new Date();
-    booking.payment.paymentMethod = payment.method;
-
-    // Update booking status to confirmed if payment is successful
-    if (booking.bookingStatus === 'pending') {
-      booking.bookingStatus = 'confirmed';
-    }
-
-    await booking.save();
-
-    logger.info(`Payment captured for booking: ${booking._id}`);
-
-    // TODO: Send notification to user and provider
-    // await sendBookingConfirmationNotification(booking);
-  } catch (error) {
-    logger.error('Error handling payment captured:', error);
-    throw error;
-  }
-};
-
-// Handle failed payment
 const handlePaymentFailed = async (payment) => {
   try {
+    logger.info(
+      `[Webhook] handlePaymentFailed called for order_id: ${payment.order_id}, payment_id: ${payment.id}`
+    );
     const booking = await Booking.findOne({
       'payment.orderId': payment.order_id,
     });
 
     if (!booking) {
-      logger.error(`Booking not found for order ID: ${payment.order_id}`);
+      logger.error(
+        `[Webhook] Booking not found for order ID: ${payment.order_id}. Payment entity: ${JSON.stringify(payment)}`
+      );
       return;
     }
+
+    logger.info(
+      `[Webhook] Booking found: ${booking._id}, current payment status: ${booking.payment.paymentStatus}`
+    );
 
     // Update payment status
     booking.payment.paymentId = payment.id;
@@ -118,7 +88,9 @@ const handlePaymentFailed = async (payment) => {
 
     await booking.save();
 
-    logger.info(`Payment failed for booking: ${booking._id}`);
+    logger.info(
+      `[Webhook] Payment failed and booking updated: ${booking._id}, new payment status: ${booking.payment.paymentStatus}`
+    );
 
     // TODO: Send notification to user about payment failure
     // await sendPaymentFailureNotification(booking);
@@ -131,14 +103,21 @@ const handlePaymentFailed = async (payment) => {
 // Handle order paid event
 const handleOrderPaid = async (order) => {
   try {
+    logger.info(`[Webhook] handleOrderPaid called for order_id: ${order.id}`);
     const booking = await Booking.findOne({
       'payment.orderId': order.id,
     });
 
     if (!booking) {
-      logger.error(`Booking not found for order ID: ${order.id}`);
+      logger.error(
+        `[Webhook] Booking not found for order ID: ${order.id}. Order entity: ${JSON.stringify(order)}`
+      );
       return;
     }
+
+    logger.info(
+      `[Webhook] Booking found: ${booking._id}, current order status: ${booking.payment.orderStatus}`
+    );
 
     // Update order status
     booking.payment.orderStatus = order.status;
@@ -146,7 +125,9 @@ const handleOrderPaid = async (order) => {
 
     await booking.save();
 
-    logger.info(`Order paid event processed for booking: ${booking._id}`);
+    logger.info(
+      `[Webhook] Order paid and booking updated: ${booking._id}, new order status: ${booking.payment.orderStatus}`
+    );
   } catch (error) {
     logger.error('Error handling order paid:', error);
     throw error;
@@ -224,7 +205,7 @@ const getPaymentStatus = asyncHandler(async (req, res, next) => {
     const { bookingId } = req.params;
 
     const booking = await Booking.findById(bookingId).select(
-      'payment bookingStatus'
+      'payment bookingStatus user'
     );
 
     if (!booking) {
@@ -232,8 +213,66 @@ const getPaymentStatus = asyncHandler(async (req, res, next) => {
     }
 
     // Check if user owns this booking
+    if (!booking.user) {
+      logger.error(
+        `Booking found but user field is missing. Booking: ${JSON.stringify(booking)}`
+      );
+      throw new ApiError(500, 'Booking user field is missing');
+    }
     if (booking.user.toString() !== req.user._id.toString()) {
       throw new ApiError(403, 'Access denied');
+    }
+
+    // Fetch payment status from Razorpay using orderId
+    let razorpayOrderStatus = null;
+    let razorpayPayments = [];
+    let newBookingStatus = booking.bookingStatus;
+    try {
+      if (booking.payment && booking.payment.orderId) {
+        // Fetch order details from Razorpay
+        const razorpayOrder = await razorpay.orders.fetch(
+          booking.payment.orderId
+        );
+        razorpayOrderStatus = razorpayOrder.status;
+        // Fetch all payments for this order using correct SDK method
+        const paymentsResp = await razorpay.payments.all({
+          order_id: booking.payment.orderId,
+        });
+        razorpayPayments = paymentsResp.items || [];
+
+        // Find payments for this booking's orderId
+        const relevantPayments = razorpayPayments.filter(
+          (p) => p.order_id === booking.payment.orderId
+        );
+        // Determine status
+        if (relevantPayments.some((p) => p.status === 'captured')) {
+          newBookingStatus = 'booking-confirmed';
+        } else if (relevantPayments.some((p) => p.status === 'authorized')) {
+          newBookingStatus = 'booking-requested';
+        } else if (
+          relevantPayments.some(
+            (p) => p.status === 'failed' || p.status === 'refunded'
+          )
+        ) {
+          newBookingStatus = 'booking-cancelled';
+        }
+        // Optionally update booking in DB if status changed
+        if (newBookingStatus !== booking.bookingStatus) {
+          logger.info(
+            `[PaymentStatus] Updating booking ${booking._id} status from ${booking.bookingStatus} to ${newBookingStatus} based on Razorpay payments.`
+          );
+          booking.bookingStatus = newBookingStatus;
+          await booking.save();
+        } else {
+          logger.info(
+            `[PaymentStatus] Booking ${booking._id} status remains ${booking.bookingStatus}. No change needed.`
+          );
+        }
+      }
+    } catch (err) {
+      logger.error(
+        `Error fetching Razorpay order/payment status: ${err.message}`
+      );
     }
 
     return res.status(200).json(
@@ -245,6 +284,8 @@ const getPaymentStatus = asyncHandler(async (req, res, next) => {
           orderId: booking.payment.orderId,
           paymentId: booking.payment.paymentId,
           paidAmount: booking.payment.paidAmount,
+          razorpayOrderStatus,
+          razorpayPayments,
         },
         'Payment status retrieved successfully'
       )
