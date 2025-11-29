@@ -1173,7 +1173,7 @@ const getBookingById = asyncHandler(async (req, res) => {
       .populate({
         path: 'service',
         select:
-          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment',
+          'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment pricingOptions',
       })
       .populate({
         path: 'user',
@@ -1190,26 +1190,37 @@ const getBookingById = asyncHandler(async (req, res) => {
     if (!booking) {
       throw new ApiError(404, 'Booking not found');
     }
-    // Attach selected pricing option details
+    // Attach selected pricing option details (always return full object)
     if (
       booking.service &&
       Array.isArray(booking.service.pricingOptions) &&
-      booking.selectedPricingOption !== null
+      booking.selectedPricingOption
     ) {
+      let selectedId = booking.selectedPricingOption;
+      if (typeof selectedId === 'object' && selectedId._id) {
+        selectedId = selectedId._id;
+      }
       const option = booking.service.pricingOptions.find(
-        (opt) =>
-          opt &&
-          opt._id &&
-          booking.selectedPricingOption &&
-          opt._id.toString() === booking.selectedPricingOption.toString()
+        (opt) => opt && opt._id && opt._id.toString() === selectedId.toString()
       );
-      booking.selectedPricingOption = option || null;
+      // Deep clone booking to avoid mutation issues
+      const bookingObj = booking.toObject
+        ? booking.toObject()
+        : JSON.parse(JSON.stringify(booking));
+      bookingObj.selectedPricingOption =
+        option || booking.selectedPricingOption;
+      return res
+        .status(200)
+        .json(new ApiResponse(200, bookingObj, 'Booking retrieved'));
     } else {
       booking.selectedPricingOption = null;
+      return res
+        .status(200)
+        .json(new ApiResponse(200, booking, 'Booking retrieved'));
     }
-    return res
-      .status(200)
-      .json(new ApiResponse(200, booking, 'Booking retrieved'));
+    // return res
+    //   .status(200)
+    //   .json(new ApiResponse(200, booking, 'Booking retrieved'));
   } catch (error) {
     logger.error('Error in getBookingById:', error);
     throw new ApiError(500, 'Failed to retrieve booking');
