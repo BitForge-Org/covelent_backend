@@ -8,6 +8,7 @@ import {
   rejectBooking,
   getBookingById,
   getAllBookings,
+  booking, // <-- add main booking controller
   bookingInProgress,
   bookingComplete,
   bookingCancel,
@@ -22,6 +23,7 @@ const router = Router();
 router.post('/', verifyJWT, createBooking);
 
 // Get booking history for logged-in user
+router.get('/', verifyJWT, booking);
 router.get('/history', verifyJWT, getBookingsHistory);
 
 // Get all bookings for all users (admin/testing)

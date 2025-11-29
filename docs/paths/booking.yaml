@@ -1,3 +1,80 @@
+/bookings:
+  get:
+    summary: Get bookings (user/provider, filter by status)
+    description: |
+      Retrieve bookings for the authenticated user or provider.
+      - For users: Returns bookings filtered by status (e.g. booking-requested, booking-confirmed, etc.).
+      - For providers: If status is 'booking-requested', latitude and longitude query parameters are required to filter available bookings by location. For other statuses, returns bookings where provider matches user.
+      Query parameters:
+        - status: Booking status to filter (optional)
+        - latitude: Required for providers when status is 'booking-requested'
+        - longitude: Required for providers when status is 'booking-requested'
+    tags:
+      - Bookings
+    security:
+      - BearerAuth: []
+    parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Booking status to filter (e.g. booking-requested, booking-confirmed, etc.)
+      - name: latitude
+        in: query
+        required: false
+        schema:
+          type: number
+          format: float
+        description: Latitude (required for provider when status is booking-requested)
+      - name: longitude
+        in: query
+        required: false
+        schema:
+          type: number
+          format: float
+        description: Longitude (required for provider when status is booking-requested)
+    responses:
+      '200':
+        description: Bookings retrieved
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    bookings:
+                      type: array
+                      items:
+                        $ref: './../schemas/booking.yaml#/Booking'
+                message:
+                  type: string
+      '204':
+        description: No bookings found
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    bookings:
+                      type: array
+                      items:
+                        $ref: './../schemas/booking.yaml#/Booking'
+                message:
+                  type: string
+      '400':
+        description: Bad request (missing coordinates for provider)
+      '500':
+        description: Internal server error
 /bookings/all:
   get:
     summary: Get all bookings (admin/testing)
@@ -190,64 +267,6 @@
         description: Booking not found
       '500':
         description: Server error
-/bookings:
-  post:
-    summary: Create a new booking
-    tags:
-      - Bookings
-    security:
-      - BearerAuth: []
-    requestBody:
-      required: true
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - serviceId
-              - selectedPricingOption
-              - scheduledDate
-              - scheduledTime
-              - paymentMethod
-            properties:
-              serviceId:
-                type: string
-              selectedPricingOption:
-                type: string
-                description: The ObjectId of the chosen pricing option
-              scheduledDate:
-                type: string
-                format: date
-              scheduledTime:
-                type: string
-                format: time
-              specialInstructions:
-                type: string
-              location:
-                $ref: './../schemas/location.yaml#/Location'
-              paymentMethod:
-                type: string
-                enum: [cash, online]
-    responses:
-      '201':
-        description: Booking created
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                success:
-                  type: boolean
-                data:
-                  type: object
-                  properties:
-                    booking:
-                      $ref: './../schemas/booking.yaml#/Booking'
-                    order:
-                      type: object
-                      nullable: true
-                message:
-                  type: string
 
 /booking/history:
   get:
@@ -499,6 +518,78 @@
         description: Booking not found or no pincode found
       '500':
         description: Server error
+
+  /bookings/{status}:
+    get:
+      summary: Get bookings by status (user or provider)
+      description: |
+        Returns bookings for the authenticated user or provider. If the user is a provider and status is 'booking-requested', latitude and longitude are required to filter available bookings. For other statuses, returns bookings where provider matches user.
+      tags:
+        - Bookings
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Booking status to filter (e.g. booking-requested, booking-confirmed, etc.)
+        - name: latitude
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+          description: Latitude (required for provider when status is booking-requested)
+        - name: longitude
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+          description: Longitude (required for provider when status is booking-requested)
+      responses:
+        '200':
+          description: Bookings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: './../schemas/booking.yaml#/Booking'
+                  message:
+                    type: string
+        '204':
+          description: No bookings found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: './../schemas/booking.yaml#/Booking'
+                  message:
+                    type: string
+        '400':
+          description: Bad request (missing coordinates for provider)
+        '500':
+          description: Internal server error
 
 /bookings/update-status:
   post:

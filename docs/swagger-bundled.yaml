@@ -1306,80 +1306,44 @@ paths:
         '200':
           description: Service assigned to city successfully
   /bookings:
-    post:
-      summary: Create a new booking
+    get:
+      summary: 'Get bookings (user/provider, filter by status)'
+      description: |
+        Retrieve bookings for the authenticated user or provider.
+        - For users: Returns bookings filtered by status (e.g. booking-requested, booking-confirmed, etc.).
+        - For providers: If status is 'booking-requested', latitude and longitude query parameters are required to filter available bookings by location. For other statuses, returns bookings where provider matches user.
+        Query parameters:
+          - status: Booking status to filter (optional)
+          - latitude: Required for providers when status is 'booking-requested'
+          - longitude: Required for providers when status is 'booking-requested'
       tags:
         - Bookings
       security:
         - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - serviceId
-                - selectedPricingOption
-                - scheduledDate
-                - scheduledTime
-                - paymentMethod
-              properties:
-                serviceId:
-                  type: string
-                selectedPricingOption:
-                  type: string
-                  description: The ObjectId of the chosen pricing option
-                scheduledDate:
-                  type: string
-                  format: date
-                scheduledTime:
-                  type: string
-                  format: time
-                specialInstructions:
-                  type: string
-                location:
-                  oneOf:
-                    - type: string
-                      description: Address ObjectId reference
-                      example: 6503e2c1f1a2b3c4d5e6f7a8
-                    - type: object
-                      properties:
-                        houseNo:
-                          type: string
-                        street:
-                          type: string
-                        city:
-                          type: string
-                        state:
-                          type: string
-                        pincode:
-                          type: string
-                        country:
-                          type: string
-                        latitude:
-                          type: number
-                          format: double
-                        longitude:
-                          type: number
-                          format: double
-                      required:
-                        - houseNo
-                        - street
-                        - city
-                        - state
-                        - pincode
-                        - country
-                        - latitude
-                        - longitude
-                paymentMethod:
-                  type: string
-                  enum:
-                    - cash
-                    - online
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 'Booking status to filter (e.g. booking-requested, booking-confirmed, etc.)'
+        - name: latitude
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+          description: Latitude (required for provider when status is booking-requested)
+        - name: longitude
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+          description: Longitude (required for provider when status is booking-requested)
       responses:
-        '201':
-          description: Booking created
+        '200':
+          description: Bookings retrieved
           content:
             application/json:
               schema:
@@ -1390,13 +1354,34 @@ paths:
                   data:
                     type: object
                     properties:
-                      booking:
-                        $ref: '#/components/schemas/Booking'
-                      order:
-                        type: object
-                        nullable: true
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
                   message:
                     type: string
+        '204':
+          description: No bookings found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+                  message:
+                    type: string
+        '400':
+          description: Bad request (missing coordinates for provider)
+        '500':
+          description: Internal server error
   /bookings/available:
     get:
       summary: Get available bookings for provider (location-based)
@@ -1901,6 +1886,77 @@ paths:
           description: Booking not found or no pincode found
         '500':
           description: Server error
+    '/bookings/{status}':
+      get:
+        summary: Get bookings by status (user or provider)
+        description: |
+          Returns bookings for the authenticated user or provider. If the user is a provider and status is 'booking-requested', latitude and longitude are required to filter available bookings. For other statuses, returns bookings where provider matches user.
+        tags:
+          - Bookings
+        security:
+          - BearerAuth: []
+        parameters:
+          - name: status
+            in: path
+            required: true
+            schema:
+              type: string
+            description: 'Booking status to filter (e.g. booking-requested, booking-confirmed, etc.)'
+          - name: latitude
+            in: query
+            required: false
+            schema:
+              type: number
+              format: float
+            description: Latitude (required for provider when status is booking-requested)
+          - name: longitude
+            in: query
+            required: false
+            schema:
+              type: number
+              format: float
+            description: Longitude (required for provider when status is booking-requested)
+        responses:
+          '200':
+            description: Bookings retrieved
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    success:
+                      type: boolean
+                    data:
+                      type: object
+                      properties:
+                        bookings:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Booking'
+                    message:
+                      type: string
+          '204':
+            description: No bookings found
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    success:
+                      type: boolean
+                    data:
+                      type: object
+                      properties:
+                        bookings:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/Booking'
+                    message:
+                      type: string
+          '400':
+            description: Bad request (missing coordinates for provider)
+          '500':
+            description: Internal server error
   /addresses:
     get:
       summary: Get all addresses for the logged-in user

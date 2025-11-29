@@ -20,6 +20,262 @@ function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(id);
 }
 
+const booking = asyncHandler(async (req, res) => {
+  // TODO: Implement booking logic or remove this function if unused
+  const user = req.user;
+  const { status } = req.query;
+  logger.info(
+    `[BOOKING] booking called by user: ${req.user?._id} with status: ${status}`,
+    status
+  );
+
+  if (user.role === 'user') {
+    try {
+      const filter = { user: req.user._id };
+      if (status) {
+        filter.bookingStatus = { $eq: status };
+      }
+      const bookings = await Booking.find(filter)
+        .populate({
+          path: 'service',
+          select:
+            'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment ',
+        })
+        .populate({
+          path: 'user',
+          select: 'fullName email',
+        })
+        .populate({
+          path: 'location',
+        })
+        .populate({
+          path: 'provider',
+          select: 'phoneNumber fullName avatar',
+        })
+        .lean();
+
+      bookings.forEach((booking) => {
+        if (
+          booking.service &&
+          Array.isArray(booking.service.pricingOptions) &&
+          booking.selectedPricingOption !== null
+        ) {
+          const option = booking.service.pricingOptions.find(
+            (opt) =>
+              opt &&
+              opt._id &&
+              booking.selectedPricingOption &&
+              opt._id.toString() === booking.selectedPricingOption.toString()
+          );
+          booking.selectedPricingOption = option || null;
+        } else {
+          booking.selectedPricingOption = null;
+        }
+      });
+
+      // If no bookings found, return 204 No Content
+      return res
+        .status(200)
+        .json(new ApiResponse(200, bookings, 'Bookings retrieved'));
+    } catch (error) {
+      logger.error('Error in getBookingsHistory:', error);
+      throw new ApiError(500, 'Failed to retrieve bookings history');
+    }
+  } else if (user.role === 'provider') {
+    if (status === 'booking-requested') {
+      const { latitude, longitude } = req.query;
+      logger.info(
+        `Provider requested bookings with coordinates: ${latitude}, ${longitude}`
+      );
+      if (!latitude || !longitude) {
+        throw new ApiError(400, 'Coordinates are required for providers');
+      }
+      let pincode;
+      try {
+        const locationController = await import('./location.controller.js');
+        if (typeof locationController.getPincodeFromLatLng === 'function') {
+          pincode = await locationController.getPincodeFromLatLng(
+            latitude,
+            longitude
+          );
+        } else {
+          throw new ApiError(
+            500,
+            'Location controller does not support pincode lookup'
+          );
+        }
+      } catch (err) {
+        throw new ApiError(500, 'Failed to get pincode from coordinates');
+      }
+      if (!pincode) {
+        throw new ApiError(404, 'No pincode found for provided coordinates');
+      }
+      const approvedProviderApps = await ServiceArea.find({
+        provider: user._id,
+        applicationStatus: 'approved',
+      }).populate('availableLocations');
+      if (!approvedProviderApps.length) {
+        return res
+          .status(200)
+          .json(
+            new ApiResponse(200, [], 'No approved provider applications found')
+          );
+      }
+      const serviceIdToPincodes = {};
+      approvedProviderApps.forEach((app) => {
+        const sid = app.service.toString();
+        if (!serviceIdToPincodes[sid]) serviceIdToPincodes[sid] = new Set();
+        (app.availableLocations || []).forEach((area) => {
+          if (Array.isArray(area.pincodes)) {
+            area.pincodes.forEach((pin) =>
+              serviceIdToPincodes[sid].add(String(pin))
+            );
+          } else if (area.pincode) {
+            serviceIdToPincodes[sid].add(String(area.pincode));
+          }
+        });
+      });
+      const serviceIds = Object.keys(serviceIdToPincodes);
+      const allPincodesSet = new Set();
+      Object.values(serviceIdToPincodes).forEach((pinSet) => {
+        pinSet.forEach((pin) => allPincodesSet.add(pin));
+      });
+      const allPincodes = Array.from(allPincodesSet);
+      if (!allPincodes.length) {
+        return res
+          .status(200)
+          .json(
+            new ApiResponse(204, [], 'No pincodes found for your service areas')
+          );
+      }
+      const AddressModel = (await import('../models/address.model.js')).Address;
+      const addresses = await AddressModel.find({
+        pincode: { $in: allPincodes },
+      }).select('_id');
+      const validAddressIds = addresses
+        .map((a) => a._id)
+        .filter(isValidObjectId);
+      if (!validAddressIds.length) {
+        return res
+          .status(200)
+          .json(
+            new ApiResponse(204, [], 'No addresses found for your pincodes')
+          );
+      }
+      const rejectedBookings = await ProviderRejection.find({
+        provider: user._id,
+      });
+      const rejectedBookingIds = new Set(
+        rejectedBookings.map((r) => r.booking.toString())
+      );
+      const now = new Date();
+      const bookings = await Booking.find({
+        service: { $in: serviceIds },
+        location: { $in: validAddressIds },
+        bookingStatus: 'booking-requested',
+        _id: { $nin: Array.from(rejectedBookingIds) },
+        $expr: {
+          $gt: [
+            {
+              $dateFromString: {
+                dateString: {
+                  $concat: [
+                    {
+                      $dateToString: {
+                        format: '%Y-%m-%d',
+                        date: '$scheduledDate',
+                      },
+                    },
+                    'T',
+                    '$scheduledTime',
+                  ],
+                },
+              },
+            },
+            now,
+          ],
+        },
+      })
+        .populate({
+          path: 'service',
+          select:
+            'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment ',
+        })
+        .populate({
+          path: 'user',
+          select: 'fullName email',
+        })
+        .populate({
+          path: 'location',
+        });
+      if (!bookings.length) {
+        return res
+          .status(200)
+          .json(
+            new ApiResponse(
+              204,
+              [],
+              'No booking-requested bookings found for your services and pincodes'
+            )
+          );
+      }
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            bookings,
+            'Booking-requested bookings for your services and pincodes retrieved'
+          )
+        );
+    } else {
+      const filter = { provider: user._id };
+      if (status) {
+        filter.bookingStatus = status;
+      }
+      const bookings = await Booking.find(filter)
+        .populate({
+          path: 'service',
+          select:
+            'title description category duration createdAt image bookingStatus scheduledDate scheduledTime location selectedPricingOption finalPrice specialInstructions payment ',
+        })
+        .populate({
+          path: 'user',
+          select: 'fullName email',
+        })
+        .populate({
+          path: 'location',
+        })
+        .populate({
+          path: 'provider',
+          select: 'phoneNumber fullName avatar',
+        })
+        .lean();
+      bookings.forEach((booking) => {
+        if (
+          booking.service &&
+          Array.isArray(booking.service.pricingOptions) &&
+          booking.selectedPricingOption !== null
+        ) {
+          const option = booking.service.pricingOptions.find(
+            (opt) =>
+              opt &&
+              opt._id &&
+              booking.selectedPricingOption &&
+              opt._id.toString() === booking.selectedPricingOption.toString()
+          );
+          booking.selectedPricingOption = option || null;
+        } else {
+          booking.selectedPricingOption = null;
+        }
+      });
+      return res
+        .status(200)
+        .json(new ApiResponse(200, bookings, 'Provider bookings retrieved'));
+    }
+  }
+});
+
 const createBooking = asyncHandler(async (req, res) => {
   // If scheduledTime is a full ISO string, extract only the time part
 
@@ -1187,4 +1443,5 @@ export {
   bookingComplete,
   bookingCancel,
   updateBookingStatus,
+  booking,
 };
