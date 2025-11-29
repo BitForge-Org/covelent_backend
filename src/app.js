@@ -1,17 +1,14 @@
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import { initRedis } from './utils/redisClient.js';
 import logger from './utils/logger.js';
 import path from 'path';
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import lusca from 'lusca';
-// const { csrf } = lusca;
-
-import { generalLimiter, authLimiter } from './utils/rateLimiter.js';
-import { setupSwagger } from './swagger.js';
-
 const app = express();
+
+// Razorpay webhook MUST be before json() / urlencoded()
+app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
 
 // Ensure Redis is connected at app startup
 initRedis()
@@ -39,6 +36,8 @@ app.use(
     credentials: true,
   })
 );
+
+// Global body parsers (apply after Razorpay raw body)
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 
@@ -58,6 +57,7 @@ app.get('/csrf-token', (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 // app.use(csrf());
+// app.use(csrf());
 
 import userRouter from './routes/user.routes.js';
 import healthcheckRouter from './routes/healthcheck.routes.js';
@@ -74,6 +74,8 @@ import locationRoutes from './routes/locationImport.routes.js';
 import webhookRouter from './routes/webhook.routes.js';
 import location from './routes/location.router.js';
 import { sendTestNotification } from './utils/sendTestNotification.js';
+import { authLimiter, generalLimiter } from './utils/rateLimiter.js';
+import { setupSwagger } from './swagger.js';
 
 app.use('/api/v1/admin', authLimiter, adminRouter); // 👈 apply authLimiter to admin routes
 
