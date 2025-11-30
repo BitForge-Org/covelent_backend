@@ -5,6 +5,7 @@ import { Booking } from '../models/booking.model.js';
 import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
 import crypto from 'crypto';
+import { error } from 'console';
 
 /* ========================================================
    Helper: Update booking payment safely
@@ -172,7 +173,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
       .digest('hex');
     if (expected !== signature) {
       logger.error('[Webhook] Invalid signature');
-      throw new ApiError(400, 'Invalid Razorpay signature');
+      throw new ApiError(400, 'Invalid Razorpay signature', secret);
     }
 
     const event = JSON.parse(rawBody.toString());
