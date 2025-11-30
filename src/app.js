@@ -5,10 +5,11 @@ import session from 'express-session';
 import { initRedis } from './utils/redisClient.js';
 import logger from './utils/logger.js';
 import path from 'path';
+import { handleRazorpayWebhook } from './controllers/webhook.controller.js';
 const app = express();
 
-// Razorpay webhook MUST be before json() / urlencoded()
-app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
+// Mount Razorpay webhook route with raw body parser directly
+app.post('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }), handleRazorpayWebhook);
 
 // Ensure Redis is connected at app startup
 initRedis()
@@ -91,9 +92,6 @@ app.use('/api/v1/location-import', locationRoutes);
 app.use('/api/v1/location', location);
 
 // Webhook routes
-// Razorpay webhook: capture raw body for signature verification
-// Razorpay webhook must use raw body
-app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
 app.use('/api/v1/webhook', webhookRouter);
 
 setupSwagger(app);

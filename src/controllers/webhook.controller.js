@@ -164,7 +164,9 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
 
     // Log all headers for debugging
     logger.info(`[Webhook] All headers: ${JSON.stringify(req.headers)}`);
-    logger.info(`[Webhook] Raw Body (first 200 chars): ${rawBody.toString().slice(0, 200)}`);
+    logger.info(
+      `[Webhook] Raw Body (first 200 chars): ${rawBody.toString().slice(0, 200)}`
+    );
     logger.info(`[Webhook] x-razorpay-signature header: ${signature}`);
 
     // Verify signature
