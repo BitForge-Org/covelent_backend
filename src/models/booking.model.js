@@ -56,7 +56,15 @@ const bookingSchema = new Schema(
     payment: {
       paymentMethod: {
         type: String,
-        enum: ['online', 'cash', 'upi', 'card', 'wallet', 'netbanking'],
+        enum: [
+          'online',
+          'cash',
+          'upi',
+          'card',
+          'wallet',
+          'netbanking',
+          'razorpay',
+        ],
         required: true,
       },
       status: {
