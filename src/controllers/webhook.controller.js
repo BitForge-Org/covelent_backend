@@ -157,15 +157,14 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
   // Focused debug logs for Razorpay webhook signature verification
   try {
     const secret = process.env.RAZORPAY_KEY_SECRET;
-    // logger.info(`[Webhook] RAZORPAY_KEY_SECRET: ${secret}`); // Remove secret from logs for security
     if (!secret) throw new ApiError(500, 'Webhook secret missing');
 
     const rawBody = req.body; // buffer
     const signature = req.headers['x-razorpay-signature'];
 
-    logger.info(
-      `[Webhook] ${secret} Raw Body (first 200 chars): ${rawBody.toString().slice(0, 200)}`
-    );
+    // Log all headers for debugging
+    logger.info(`[Webhook] All headers: ${JSON.stringify(req.headers)}`);
+    logger.info(`[Webhook] Raw Body (first 200 chars): ${rawBody.toString().slice(0, 200)}`);
     logger.info(`[Webhook] x-razorpay-signature header: ${signature}`);
 
     // Verify signature
@@ -175,7 +174,9 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
       .digest('hex');
     logger.info(`[Webhook] Computed signature: ${expected}`);
     if (expected !== signature) {
-      logger.error('[Webhook] Invalid signature');
+      logger.error(
+        `[Webhook] Invalid signature - expected ${expected}, got ${signature}`
+      );
       throw new ApiError(400, 'Invalid Razorpay signature');
     }
 
