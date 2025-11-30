@@ -155,7 +155,7 @@ async function handleOrderPaid(order) {
 const handleRazorpayWebhook = asyncHandler(async (req, res) => {
   try {
     const secret = process.env.RAZORPAY_KEY_SECRET;
-    logger.info(`[Webhook] RAZORPAY_KEY_SECRET: ${secret}`);
+    logger.info(`[Webhook] RAZORPAY_KEY_SECRET: ${secret}`, secret);
     if (!secret) throw new ApiError(500, 'Webhook secret missing');
 
     const rawBody = req.body; // buffer
