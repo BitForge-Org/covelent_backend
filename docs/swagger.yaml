@@ -12,6 +12,8 @@ servers:
     description: Local development server
   - url: http://65.0.253.148:80/api/v1
     description: Production server
+  - url: https://www.covelnt.com/api/v1
+    description: Production server
 
 tags:
   - name: Auth

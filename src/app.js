@@ -9,7 +9,11 @@ import { handleRazorpayWebhook } from './controllers/webhook.controller.js';
 const app = express();
 
 // Mount Razorpay webhook route with raw body parser directly
-app.post('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }), handleRazorpayWebhook);
+app.post(
+  '/api/v1/webhook/razorpay',
+  express.raw({ type: 'application/json' }),
+  handleRazorpayWebhook
+);
 
 // Ensure Redis is connected at app startup
 initRedis()
