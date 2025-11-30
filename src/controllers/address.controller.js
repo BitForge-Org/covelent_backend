@@ -187,7 +187,12 @@ const addAddress = asyncHandler(async (req, res) => {
 });
 
 const getAddresses = asyncHandler(async (req, res) => {
-  const addresses = await Address.find({ user: req.user._id }).sort({
+  const { isDefault } = req.query;
+  let filter = { user: req.user._id };
+  if (isDefault === 'true') {
+    filter.isDefault = true;
+  }
+  const addresses = await Address.find(filter).sort({
     createdAt: -1,
   });
   res
