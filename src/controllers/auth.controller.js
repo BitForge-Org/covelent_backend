@@ -1,3 +1,5 @@
+// Helper to set cookie expiry from JWT token
+
 import logger from '../utils/logger.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -29,6 +31,19 @@ function getSafeUploadPath(inputPath) {
     return null;
   }
   return resolvedPath;
+}
+
+function getCookieOptions(token) {
+  let expires;
+  try {
+    const decoded = jwt.decode(token);
+    if (decoded && decoded.exp) {
+      expires = new Date(decoded.exp * 1000);
+    }
+  } catch (err) {
+    expires = undefined;
+  }
+  return { httpOnly: true, secure: true, ...(expires && { expires }) };
 }
 
 /**
@@ -354,14 +369,14 @@ const loginUser = asyncHandler(async (req, res) => {
     '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
   );
 
-  const options = { httpOnly: true, secure: true };
+  // ...existing code...
 
   logger.info(`[LOGIN] Success for email: ${email}`);
 
   return res
     .status(200)
-    .cookie('accessToken', accessToken, options)
-    .cookie('refreshToken', refreshToken, options)
+    .cookie('accessToken', accessToken, getCookieOptions(accessToken))
+    .cookie('refreshToken', refreshToken, getCookieOptions(refreshToken))
     .json(
       new ApiResponse(
         200,
@@ -414,14 +429,14 @@ const loginProvider = asyncHandler(async (req, res) => {
     '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
   );
 
-  const options = { httpOnly: true, secure: true };
+  // ...existing code...
 
   logger.info(`[LOGIN] Success for email: ${email}`);
 
   return res
     .status(200)
-    .cookie('accessToken', accessToken, options)
-    .cookie('refreshToken', refreshToken, options)
+    .cookie('accessToken', accessToken, getCookieOptions(accessToken))
+    .cookie('refreshToken', refreshToken, getCookieOptions(refreshToken))
     .json(
       new ApiResponse(
         200,
@@ -480,18 +495,19 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, 'Refresh token is expired or used');
     }
 
-    const options = {
-      httpOnly: true,
-      secure: true,
-    };
+    // ...existing code...
 
     const { accessToken, newRefreshToken } =
       await generateAccessAndRefreshTokens(user._id);
 
     return res
       .status(200)
-      .cookie('accessToken', accessToken, options)
-      .cookie('refreshToken', newRefreshToken, options)
+      .cookie('accessToken', accessToken, getCookieOptions(accessToken))
+      .cookie(
+        'refreshToken',
+        newRefreshToken,
+        getCookieOptions(newRefreshToken)
+      )
       .json(
         new ApiResponse(
           200,

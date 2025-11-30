@@ -25,7 +25,7 @@ const booking = asyncHandler(async (req, res) => {
   const user = req.user;
   const { status } = req.query;
   logger.info(
-    `[BOOKING] booking called by user: ${req.user?._id} with status: ${status}`,
+    `[BOOKING] booking called by user: ${req.user?._id}  with status: ${status}`,
     status
   );
 
@@ -35,6 +35,8 @@ const booking = asyncHandler(async (req, res) => {
       if (status) {
         filter.bookingStatus = { $eq: status };
       }
+      logger.info(`[BOOKING] User bookings filter: ${JSON.stringify(filter)}`);
+      logger.info(`[BOOKING] Query filter: ${JSON.stringify(filter)}`);
       const bookings = await Booking.find(filter)
         .populate({
           path: 'service',
@@ -53,6 +55,7 @@ const booking = asyncHandler(async (req, res) => {
           select: 'phoneNumber fullName avatar',
         })
         .lean();
+      logger.info(`[BOOKING] User bookings found: ${bookings.length}`);
 
       bookings.forEach((booking) => {
         if (
@@ -74,12 +77,17 @@ const booking = asyncHandler(async (req, res) => {
       });
 
       // If no bookings found, return 204 No Content
+      if (!bookings.length) {
+        return res
+          .status(204)
+          .json(new ApiResponse(204, [], 'No bookings found'));
+      }
       return res
         .status(200)
         .json(new ApiResponse(200, bookings, 'Bookings retrieved'));
     } catch (error) {
       logger.error('Error in getBookingsHistory:', error);
-      throw new ApiError(500, 'Failed to retrieve bookings history');
+      throw new ApiError(500, 'Failed to retrieve bookings history', error);
     }
   } else if (user.role === 'provider') {
     if (status === 'booking-requested') {
@@ -269,6 +277,12 @@ const booking = asyncHandler(async (req, res) => {
           booking.selectedPricingOption = null;
         }
       });
+      // If no bookings found, return 204 No Content
+      if (!bookings.length) {
+        return res
+          .status(204)
+          .json(new ApiResponse(204, [], 'No bookings found'));
+      }
       return res
         .status(200)
         .json(new ApiResponse(200, bookings, 'Provider bookings retrieved'));
