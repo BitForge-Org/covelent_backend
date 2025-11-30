@@ -173,7 +173,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
       .digest('hex');
     if (expected !== signature) {
       logger.error('[Webhook] Invalid signature');
-      throw new ApiError(400, 'Invalid Razorpay signature', secret);
+      throw new ApiError(400, `Invalid Razorpay signature ${secret}`); // include secret for debugging
     }
 
     const event = JSON.parse(rawBody.toString());
