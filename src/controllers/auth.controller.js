@@ -43,7 +43,7 @@ function getCookieOptions(token) {
   } catch (err) {
     expires = undefined;
   }
-  return { httpOnly: true, secure: true, ...(expires && { expires }) };
+  return { httpOnly: false, secure: false, ...(expires && { expires }) };
 }
 
 /**
