@@ -154,6 +154,8 @@ async function handleOrderPaid(order) {
    MAIN: Razorpay Webhook Handler
 ======================================================== */
 const handleRazorpayWebhook = asyncHandler(async (req, res) => {
+  logger.info(`[Webhook] Content-Type: ${req.headers['content-type']}`);
+  logger.info(`[Webhook] Endpoint URL: ${req.originalUrl}`);
   try {
     const secret = process.env.RAZORPAY_KEY_SECRET;
     logger.info(`[Webhook] RAZORPAY_KEY_SECRET: ${secret}`, secret);
