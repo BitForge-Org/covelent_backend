@@ -56,7 +56,7 @@ const bookingSchema = new Schema(
     payment: {
       paymentMethod: {
         type: String,
-        enum: ['online', 'cash'],
+        enum: ['online', 'cash', 'upi', 'card', 'wallet', 'netbanking'],
         required: true,
       },
       status: {
