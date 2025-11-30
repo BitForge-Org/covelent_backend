@@ -413,16 +413,7 @@ const createBooking = asyncHandler(async (req, res) => {
     );
     logger.info(`[BOOKING] Booking created: ${booking[0]?._id}`);
 
-    if (paymentMethod === 'online') {
-      if (!option || typeof option.price !== 'number') {
-        logger.error(
-          `[BOOKING] Cannot create Razorpay order: option or price missing`
-        );
-        throw new ApiError(
-          400,
-          'Pricing option or price missing for online payment'
-        );
-      }
+    if (paymentMethod !== 'online') {
       order = await razorpay.orders.create({
         amount: option.price * 100,
         currency: 'INR',
