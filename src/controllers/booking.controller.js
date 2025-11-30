@@ -413,7 +413,7 @@ const createBooking = asyncHandler(async (req, res) => {
     );
     logger.info(`[BOOKING] Booking created: ${booking[0]?._id}`);
 
-    if (paymentMethod !== 'cash') {
+    if (paymentMethod === 'online') {
       order = await razorpay.orders.create({
         amount: option.price * 100,
         currency: 'INR',
