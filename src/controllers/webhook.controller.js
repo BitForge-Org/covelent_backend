@@ -219,6 +219,11 @@ const verifyPayment = asyncHandler(async (req, res) => {
       .digest('hex');
 
     if (expected !== razorpay_signature) {
+      logger.error(
+        'verifyPayment: Invalid signature',
+        expected,
+        razorpay_signature
+      );
       throw new ApiError(400, 'Invalid signature');
     }
 
