@@ -2,7 +2,7 @@ import express from 'express';
 // Add raw body parser for Razorpay webhook before global body parsers
 // ...existing code...
 // This must come BEFORE express.json() and express.urlencoded()
-app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
+
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
@@ -92,7 +92,7 @@ app.use('/api/v1/location', location);
 
 // Webhook routes
 app.use('/api/v1/webhook', webhookRouter);
-
+app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
 setupSwagger(app);
 
 // Serve the health chart at a custom route
