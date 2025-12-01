@@ -6,6 +6,7 @@ import { initRedis } from './utils/redisClient.js';
 import logger from './utils/logger.js';
 import path from 'path';
 const app = express();
+import { handleRazorpayWebhook } from './controllers/webhook.controller.js';
 
 // Ensure Redis is connected at app startup
 initRedis()
@@ -80,7 +81,6 @@ import location from './routes/location.router.js';
 import { sendTestNotification } from './utils/sendTestNotification.js';
 import { authLimiter, generalLimiter } from './utils/rateLimiter.js';
 import { setupSwagger } from './swagger.js';
-import { handleRazorpayWebhook } from './controllers/webhook.controller.js';
 
 app.use('/api/v1/admin', authLimiter, adminRouter); // 👈 apply authLimiter to admin routes
 
