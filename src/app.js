@@ -1,6 +1,5 @@
 import express from 'express';
 // Add raw body parser for Razorpay webhook before global body parsers
-import webhookRouter from './routes/webhook.routes.js';
 // ...existing code...
 // This must come BEFORE express.json() and express.urlencoded()
 app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
