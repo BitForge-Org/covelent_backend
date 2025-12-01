@@ -5,7 +5,6 @@ import { Booking } from '../models/booking.model.js';
 import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
 import crypto from 'crypto';
-import { error } from 'console';
 
 /* ========================================================
    Helper: Update booking payment safely
@@ -154,7 +153,6 @@ async function handleOrderPaid(order) {
    MAIN: Razorpay Webhook Handler
 ======================================================== */
 const handleRazorpayWebhook = asyncHandler(async (req, res) => {
-  // Focused debug logs for Razorpay webhook signature verification
   try {
     const secret = process.env.RAZORPAY_KEY_SECRET;
     if (!secret) throw new ApiError(500, 'Webhook secret missing');
@@ -162,23 +160,17 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
     const rawBody = req.body; // buffer
     const signature = req.headers['x-razorpay-signature'];
 
-    // Log all headers for debugging
-    logger.info(`[Webhook] All headers: ${JSON.stringify(req.headers)}`);
     logger.info(
       `[Webhook] Raw Body (first 200 chars): ${rawBody.toString().slice(0, 200)}`
     );
-    logger.info(`[Webhook] x-razorpay-signature header: ${signature}`);
 
     // Verify signature
     const expected = crypto
       .createHmac('sha256', secret)
       .update(rawBody)
       .digest('hex');
-    logger.info(`[Webhook] Computed signature: ${expected}`);
     if (expected !== signature) {
-      logger.error(
-        `[Webhook] Invalid signature - expected ${expected}, got ${signature}`
-      );
+      logger.error('[Webhook] Invalid signature');
       throw new ApiError(400, 'Invalid Razorpay signature');
     }
 

@@ -1,8 +1,4 @@
 import express from 'express';
-// Add raw body parser for Razorpay webhook before global body parsers
-// ...existing code...
-// This must come BEFORE express.json() and express.urlencoded()
-
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
@@ -10,6 +6,9 @@ import { initRedis } from './utils/redisClient.js';
 import logger from './utils/logger.js';
 import path from 'path';
 const app = express();
+
+// Razorpay webhook MUST be before json() / urlencoded()
+app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
 
 // Ensure Redis is connected at app startup
 initRedis()
@@ -74,6 +73,7 @@ import locationRoutes from './routes/locationImport.routes.js';
 
 import webhookRouter from './routes/webhook.routes.js';
 import location from './routes/location.router.js';
+import { sendTestNotification } from './utils/sendTestNotification.js';
 import { authLimiter, generalLimiter } from './utils/rateLimiter.js';
 import { setupSwagger } from './swagger.js';
 
@@ -91,8 +91,11 @@ app.use('/api/v1/location-import', locationRoutes);
 app.use('/api/v1/location', location);
 
 // Webhook routes
-app.use('/api/v1/webhook', webhookRouter);
+// Razorpay webhook: capture raw body for signature verification
+// Razorpay webhook must use raw body
 app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
+app.use('/api/v1/webhook', webhookRouter);
+
 setupSwagger(app);
 
 // Serve the health chart at a custom route
