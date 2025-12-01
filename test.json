@@ -1,0 +1,16 @@
+{
+    "event": "payment.authorized",
+    "payload": {
+        "payment": {
+            "id": "pay_1234567890abcdef",
+            "entity": "payment",
+            "amount": 50000,
+            "currency": "INR",
+            "status": "authorized",
+            "order_id": "692d59bdb614ee9d389a32f1",
+            "method": "card",
+            "created_at": 1609459200,
+            "paidAmount": 50000
+        }
+    }
+}

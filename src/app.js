@@ -5,15 +5,7 @@ import session from 'express-session';
 import { initRedis } from './utils/redisClient.js';
 import logger from './utils/logger.js';
 import path from 'path';
-import { handleRazorpayWebhook } from './controllers/webhook.controller.js';
 const app = express();
-
-// Mount Razorpay webhook route with raw body parser directly
-app.post(
-  '/api/v1/webhook/razorpay',
-  express.raw({ type: 'application/json' }),
-  handleRazorpayWebhook
-);
 
 // Ensure Redis is connected at app startup
 initRedis()
@@ -78,7 +70,6 @@ import locationRoutes from './routes/locationImport.routes.js';
 
 import webhookRouter from './routes/webhook.routes.js';
 import location from './routes/location.router.js';
-import { sendTestNotification } from './utils/sendTestNotification.js';
 import { authLimiter, generalLimiter } from './utils/rateLimiter.js';
 import { setupSwagger } from './swagger.js';
 
