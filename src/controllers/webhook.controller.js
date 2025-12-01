@@ -158,7 +158,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
     if (!secret) throw new ApiError(500, 'Webhook secret missing');
 
     const rawBody = req.body; // buffer
-    const signature = req.headers['X-Razorpay-Signature'];
+    const signature = req.headers['x-razorpay-signature'];
     logger.info(`[Webhook] Headers: ${JSON.stringify(req.headers)}`);
 
     logger.info(

@@ -42,6 +42,12 @@ app.post(
   express.raw({ type: 'application/json' }),
   handleRazorpayWebhook
 );
+app.use((req, res, next) => {
+  logger.log('--- Incoming Headers ---');
+  logger.log(JSON.stringify(req.headers, null, 2));
+  logger.log('------------------------');
+  next();
+});
 
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
