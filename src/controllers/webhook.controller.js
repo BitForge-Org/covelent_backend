@@ -1,3 +1,4 @@
+import schedule from 'node-schedule';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
@@ -5,6 +6,71 @@ import { Booking } from '../models/booking.model.js';
 import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
 import crypto from 'crypto';
+
+// Scheduler to run syncPendingPaymentsWithRazorpay every hour
+export function scheduleSyncPendingPayments() {
+  schedule.scheduleJob('0 * * * *', async () => {
+    await syncPendingPaymentsWithRazorpay();
+  });
+  logger.info(
+    '[Webhook] Scheduled syncPendingPaymentsWithRazorpay to run every hour.'
+  );
+}
+// Sync all pending payments with Razorpay and update booking status
+export async function syncPendingPaymentsWithRazorpay() {
+  try {
+    const pendingBookings = await Booking.find({
+      'payment.status': 'pending',
+      'payment.paymentId': { $exists: true, $ne: null },
+      bookingStatus: { $in: ['booking-requested', 'pending'] },
+    });
+    for (const booking of pendingBookings) {
+      try {
+        const paymentId = booking.payment.paymentId;
+        const paymentDetails = await razorpay.payments.fetch(paymentId);
+        if (
+          paymentDetails.status === 'captured' ||
+          paymentDetails.status === 'authorized'
+        ) {
+          booking.payment.status = 'completed';
+          booking.bookingStatus = 'booking-confirmed';
+          booking.payment.paidAmount = paymentDetails.amount / 100;
+          booking.payment.paymentDate = new Date(
+            paymentDetails.created_at * 1000
+          );
+          await booking.save();
+          logger.info(
+            `[Webhook] Booking ${booking._id} marked as paid via Razorpay sync.`
+          );
+        } else if (
+          paymentDetails.status === 'failed' ||
+          paymentDetails.status === 'expired'
+        ) {
+          booking.payment.status = 'failed';
+          booking.bookingStatus = 'booking-cancelled';
+          booking.cancelledAt = new Date();
+          booking.cancellationReason =
+            'Payment failed or expired (Razorpay sync)';
+          await booking.save();
+          logger.info(
+            `[Webhook] Booking ${booking._id} cancelled due to failed/expired payment.`
+          );
+        } else {
+          logger.info(
+            `[Webhook] Booking ${booking._id} still pending in Razorpay.`
+          );
+        }
+      } catch (err) {
+        logger.error(
+          `[Webhook] Razorpay fetch failed for booking ${booking._id}:`,
+          err
+        );
+      }
+    }
+  } catch (err) {
+    logger.error('[Webhook] syncPendingPaymentsWithRazorpay error:', err);
+  }
+}
 
 /* ========================================================
    Helper: Update booking payment safely
@@ -160,6 +226,10 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
     const rawBody = req.body; // buffer
     const signature = req.headers['x-razorpay-signature'];
     logger.info(`[Webhook] Headers: ${JSON.stringify(req.headers)}`);
+    logger.info(
+      `[Webhook] Complete request headers: ${JSON.stringify(req.headers, null, 2)}`
+    );
+    logger.info(`[Webhook] Raw headers object:`, req.headers);
 
     logger.info(
       `[Webhook] Raw Body (first 200 chars): ${rawBody.toString().slice(0, 200)}`
@@ -177,11 +247,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
 
     if (expected !== signature) {
       logger.error('[Webhook] Invalid signature');
-      throw new ApiError(
-        400,
-        (expected, signature),
-        'Invalid Razorpay signature'
-      );
+      throw new ApiError(400, 'Invalid Razorpay signature');
     }
 
     const event = JSON.parse(rawBody.toString());
