@@ -65,6 +65,18 @@ export async function syncPendingPaymentsWithRazorpay() {
           `[Webhook] Razorpay fetch failed for booking ${booking._id}:`,
           err
         );
+        // If Razorpay returns BAD_REQUEST_ERROR for paymentId, mark booking as failed/cancelled
+        if (err?.error?.code === 'BAD_REQUEST_ERROR') {
+          booking.payment.status = 'failed';
+          booking.bookingStatus = 'booking-cancelled';
+          booking.cancelledAt = new Date();
+          booking.cancellationReason =
+            'Invalid paymentId (Razorpay BAD_REQUEST_ERROR)';
+          await booking.save();
+          logger.info(
+            `[Webhook] Booking ${booking._id} cancelled due to invalid paymentId.`
+          );
+        }
       }
     }
   } catch (err) {
