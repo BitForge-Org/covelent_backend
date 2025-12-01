@@ -169,6 +169,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
       .createHmac('sha256', secret)
       .update(rawBody)
       .digest('hex');
+
     if (expected !== signature) {
       logger.error('[Webhook] Invalid signature');
       throw new ApiError(400, 'Invalid Razorpay signature');
@@ -196,7 +197,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, {}, 'Webhook OK'));
   } catch (err) {
     logger.error('Webhook processing error:', err);
-    throw new ApiError(500, 'Webhook failed');
+    throw new ApiError(500, err, 'Webhook failed');
   }
 });
 
