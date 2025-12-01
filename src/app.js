@@ -43,9 +43,9 @@ app.post(
   handleRazorpayWebhook
 );
 app.use((req, res, next) => {
-  logger.log('--- Incoming Headers ---');
-  logger.log(JSON.stringify(req.headers, null, 2));
-  logger.log('------------------------');
+  logger.info('--- Incoming Headers ---');
+  logger.info(JSON.stringify(req.headers, null, 2));
+  logger.info('------------------------');
   next();
 });
 
