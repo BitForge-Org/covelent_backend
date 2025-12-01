@@ -8,6 +8,11 @@ import path from 'path';
 const app = express();
 import { handleRazorpayWebhook } from './controllers/webhook.controller.js';
 
+app.post(
+  '/api/v1/webhook/razorpay',
+  express.raw({ type: 'application/json' }),
+  handleRazorpayWebhook
+);
 // Ensure Redis is connected at app startup
 initRedis()
   .then(() => {
@@ -37,17 +42,6 @@ app.use(
 
 // Global body parsers (apply after Razorpay raw body)
 // Razorpay webhook must receive raw buffer BEFORE any body parser
-app.post(
-  '/api/v1/webhook/razorpay',
-  express.raw({ type: 'application/json' }),
-  handleRazorpayWebhook
-);
-app.use((req, res, next) => {
-  logger.info('--- Incoming Headers ---');
-  logger.info(JSON.stringify(req.headers, null, 2));
-  logger.info('------------------------');
-  next();
-});
 
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));

@@ -504,7 +504,7 @@ const getServicesByCoordinates = asyncHandler(async (req, res) => {
     // Get address from geocoding
     const data = await callGeocodingAPI(lat, lng);
     let addressData;
-    logger.info('GEOCODING DATA:', { data });
+    // logger.info('GEOCODING DATA:', { data });
     const GEOCODE_PROVIDER = process.env.GEOCODE_PROVIDER || 'google';
     if (GEOCODE_PROVIDER === 'google') {
       if (data.status !== 'OK' || !data.results || data.results.length === 0) {
@@ -523,7 +523,7 @@ const getServicesByCoordinates = asyncHandler(async (req, res) => {
     const areas = await Area.find({
       pincodes: parseInt(pincode),
     });
-    logger.info('DEBUG: Areas found for pincode:', { areas });
+    // logger.info('DEBUG: Areas found for pincode:', { areas });
     if (!areas.length) {
       return res
         .status(200)
@@ -564,10 +564,10 @@ const getServicesByCoordinates = asyncHandler(async (req, res) => {
       populate: { path: 'category', select: 'name' },
     });
 
-    logger.info('DEBUG: serviceAreas found:', {
-      count: serviceAreas.length,
-      serviceAreas,
-    });
+    // logger.info('DEBUG: serviceAreas found:', {
+    //   count: serviceAreas.length,
+    //   serviceAreas,
+    // });
 
     // Error logging after serviceAreas and services are defined
     if (!serviceAreas || serviceAreas.length === 0) {
@@ -576,10 +576,10 @@ const getServicesByCoordinates = asyncHandler(async (req, res) => {
 
     // Extract services from serviceAreas
     let services = serviceAreas.map((sa) => sa.service).filter(Boolean);
-    logger.info('DEBUG: services extracted:', {
-      count: services.length,
-      services,
-    });
+    // logger.info('DEBUG: services extracted:', {
+    //   count: services.length,
+    //   services,
+    // });
 
     if (!services || services.length === 0) {
       logger.error('DEBUG: No services extracted from serviceAreas', {
