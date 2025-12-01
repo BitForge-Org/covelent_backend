@@ -8,14 +8,14 @@ import logger from '../utils/logger.js';
 import crypto from 'crypto';
 
 // Scheduler to run syncPendingPaymentsWithRazorpay every hour
-export function scheduleSyncPendingPayments() {
-  schedule.scheduleJob('0 * * * *', async () => {
-    await syncPendingPaymentsWithRazorpay();
-  });
-  logger.info(
-    '[Webhook] Scheduled syncPendingPaymentsWithRazorpay to run every hour.'
-  );
-}
+// export function scheduleSyncPendingPayments() {
+//   schedule.scheduleJob('0 * * * *', async () => {
+//     await syncPendingPaymentsWithRazorpay();
+//   });
+//   logger.info(
+//     '[Webhook] Scheduled syncPendingPaymentsWithRazorpay to run every hour.'
+//   );
+// }
 // Sync all pending payments with Razorpay and update booking status
 export async function syncPendingPaymentsWithRazorpay() {
   try {
