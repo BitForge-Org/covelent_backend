@@ -32,6 +32,7 @@ app.use(express.static(path.resolve('public')));
 
 app.use(generalLimiter); // 👈 use rate limiter middleware
 
+//
 // Allow all origins for development/testing. Change to specific origin in production.
 app.use(
   cors({
