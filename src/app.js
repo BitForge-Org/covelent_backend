@@ -6,13 +6,10 @@ import { initRedis } from './utils/redisClient.js';
 import logger from './utils/logger.js';
 import path from 'path';
 const app = express();
-import { handleRazorpayWebhook } from './controllers/webhook.controller.js';
 
-app.post(
-  '/api/v1/webhook/razorpay',
-  express.raw({ type: 'application/json' }),
-  handleRazorpayWebhook
-);
+// Razorpay webhook MUST be before json() / urlencoded()
+app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
+
 // Ensure Redis is connected at app startup
 initRedis()
   .then(() => {
@@ -32,7 +29,6 @@ app.use(express.static(path.resolve('public')));
 
 app.use(generalLimiter); // 👈 use rate limiter middleware
 
-//
 // Allow all origins for development/testing. Change to specific origin in production.
 app.use(
   cors({
@@ -42,8 +38,6 @@ app.use(
 );
 
 // Global body parsers (apply after Razorpay raw body)
-// Razorpay webhook must receive raw buffer BEFORE any body parser
-
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 
@@ -99,6 +93,7 @@ app.use('/api/v1/location', location);
 // Webhook routes
 // Razorpay webhook: capture raw body for signature verification
 // Razorpay webhook must use raw body
+app.use('/api/v1/webhook/razorpay', express.raw({ type: 'application/json' }));
 app.use('/api/v1/webhook', webhookRouter);
 
 setupSwagger(app);
