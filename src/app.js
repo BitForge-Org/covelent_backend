@@ -1,4 +1,5 @@
 import express from 'express';
+import './scheduler/paymentStatusScheduler.js'; // Start payment status scheduler at app startup
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
