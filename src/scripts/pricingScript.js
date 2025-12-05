@@ -3,15 +3,11 @@ import { Service } from '../models/service.model.js';
 
 async function addMissingPricingIds() {
   try {
-    console.log('🔧 Adding missing _id fields to pricing options...\n');
-
-    await mongoose.connect(
-      'mongodb+srv://sonawaneteju4:bgx1KVAmM81rOgu3@cluster0.pqpzbne.mongodb.net/covelent'
-    );
-    console.log('✅ Connected to MongoDB\n');
+    await mongoose.connect('mongodb+srv:///covelent');
+    // console.log('✅ Connected to MongoDB\n');
 
     const services = await Service.find({});
-    let updatedCount = 0;
+    let _updatedCount = 0;
 
     for (const service of services) {
       let modified = false;
@@ -39,23 +35,23 @@ async function addMissingPricingIds() {
         service.markModified('pricingOptions');
 
         await service.save();
-        updatedCount++;
+        _updatedCount++;
 
-        console.log(`✅ Updated: "${service.title}"`);
-        updatedOptions.forEach((opt, idx) => {
-          console.log(`   ${idx + 1}. "${opt.label}" → _id: ${opt._id}`);
+        // console.log(`✅ Updated: "${service.title}"`);
+        updatedOptions.forEach(() => {
+          // console.log('');
         });
-        console.log('');
+        // console.log('');
       }
     }
 
-    console.log('='.repeat(70));
-    console.log(`\n✨ Complete! Updated ${updatedCount} services.`);
+    // console.log('='.repeat(70));
+    // console.log(`\n✨ Complete! Updated ${updatedCount} services.`);
 
     await mongoose.connection.close();
     process.exit(0);
-  } catch (error) {
-    console.error('❌ Error:', error);
+  } catch (_) {
+    // console.error('❌ Error:', error);
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
     }

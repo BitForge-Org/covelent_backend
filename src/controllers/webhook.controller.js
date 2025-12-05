@@ -158,6 +158,7 @@ const handleRazorpayWebhook = asyncHandler(async (req, res) => {
     if (!secret) throw new ApiError(500, 'Webhook secret missing');
 
     const rawBody = req.body; // buffer
+    // Check and update pending Razorpay payments before processing event
     const signature = req.headers['x-razorpay-signature'];
     logger.info(`[Webhook] Headers: ${JSON.stringify(req.headers)}`);
     logger.info(
@@ -341,4 +342,49 @@ const getPaymentStatus = asyncHandler(async (req, res) => {
 /* ========================================================
    EXPORT CONTROLLER
 ======================================================== */
-export { handleRazorpayWebhook, verifyPayment, getPaymentStatus };
+export {
+  handleRazorpayWebhook,
+  verifyPayment,
+  getPaymentStatus,
+  checkAndUpdatePendingPayments,
+};
+
+/* ========================================================
+   Scheduler: Check and update pending Razorpay payments
+======================================================== */
+async function checkAndUpdatePendingPayments() {
+  try {
+    const pendingBookings = await Booking.find({
+      'payment.status': 'pending',
+      'payment.orderId': { $exists: true, $ne: null },
+    });
+
+    for (const booking of pendingBookings) {
+      try {
+        const order = await razorpay.orders.fetch(booking.payment.orderId);
+        if (order.status === 'paid') {
+          const payments = await razorpay.orders.payments(
+            booking.payment.orderId
+          );
+          const payment = payments.items.find((p) => p.status === 'captured');
+          if (payment) {
+            await applyPaymentUpdate(booking, {
+              paymentId: payment.id,
+              status: 'completed',
+              paidAmount: payment.amount / 100,
+              paymentDate: new Date(payment.created_at * 1000),
+              orderStatus: order.status,
+            });
+            logger.info(`[Scheduler] Booking ${booking._id} marked as paid.`);
+          }
+        }
+      } catch (err) {
+        logger.error(
+          `[Scheduler] Error checking booking ${booking._id}: ${err.message}`
+        );
+      }
+    }
+  } catch (err) {
+    logger.error('[Scheduler] checkAndUpdatePendingPayments error:', err);
+  }
+}

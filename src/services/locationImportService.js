@@ -1,12 +1,13 @@
 // src/services/locationImportService.js
 import https from 'https';
-import fs from 'fs';
 import City from '../models/city.model.js';
 import Area from '../models/area.model.js';
 import SubArea from '../models/subarea.model.js';
 import Pincode from '../models/pincode.model.js';
 import ImportLog from '../models/importlog.model.js';
 import logger from '../utils/logger.js';
+
+// Use Node.js global setTimeout/clearTimeout, no need to import 'fs' or 'timers'.
 
 class LocationImportService {
   constructor() {
@@ -23,7 +24,7 @@ class LocationImportService {
   async fetchFromIndiaPost(pincode) {
     return new Promise((resolve) => {
       const url = `https://api.postalpincode.in/pincode/${pincode}`;
-      const timeout = setTimeout(
+      const timeout = globalThis.setTimeout(
         () => resolve(null),
         this.config.requestTimeout
       );
@@ -33,7 +34,7 @@ class LocationImportService {
           let data = '';
           res.on('data', (chunk) => (data += chunk));
           res.on('end', () => {
-            clearTimeout(timeout);
+            globalThis.clearTimeout(timeout);
             try {
               const json = JSON.parse(data);
               if (json[0]?.Status === 'Success' && json[0].PostOffice) {
@@ -59,7 +60,7 @@ class LocationImportService {
           });
         })
         .on('error', () => {
-          clearTimeout(timeout);
+          globalThis.clearTimeout(timeout);
           resolve(null);
         });
     });
@@ -70,7 +71,7 @@ class LocationImportService {
       const query = encodeURIComponent(`${locationName}, ${cityName}, India`);
       const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
 
-      const timeout = setTimeout(
+      const timeout = globalThis.setTimeout(
         () => resolve(null),
         this.config.requestTimeout
       );
@@ -83,7 +84,7 @@ class LocationImportService {
             let data = '';
             res.on('data', (chunk) => (data += chunk));
             res.on('end', () => {
-              clearTimeout(timeout);
+              globalThis.clearTimeout(timeout);
               try {
                 const json = JSON.parse(data);
                 if (json.length > 0) {
@@ -98,7 +99,7 @@ class LocationImportService {
           }
         )
         .on('error', () => {
-          clearTimeout(timeout);
+          globalThis.clearTimeout(timeout);
           resolve(null);
         });
     });
@@ -110,7 +111,9 @@ class LocationImportService {
         const indiaPostData = await this.fetchFromIndiaPost(pincode);
         if (!indiaPostData) {
           if (attempt < this.config.maxRetries) {
-            await new Promise((r) => setTimeout(r, this.config.retryDelay));
+            await new Promise((r) =>
+              globalThis.setTimeout(r, this.config.retryDelay)
+            );
             continue;
           }
           return { pincode, found: false };
@@ -125,7 +128,9 @@ class LocationImportService {
             const geocoded = await this.geocodeWithNominatim(po.name, cityName);
             if (geocoded) {
               coords = geocoded;
-              await new Promise((r) => setTimeout(r, this.config.geocodeDelay));
+              await new Promise((r) =>
+                globalThis.setTimeout(r, this.config.geocodeDelay)
+              );
             }
           }
 
@@ -234,7 +239,9 @@ class LocationImportService {
         });
 
         if (i + this.config.batchSize < total) {
-          await new Promise((r) => setTimeout(r, this.config.batchDelay));
+          await new Promise((r) =>
+            globalThis.setTimeout(r, this.config.batchDelay)
+          );
         }
       }
 

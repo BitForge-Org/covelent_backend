@@ -116,7 +116,7 @@ export const callGoogleGeocodingAPI = async (
   } catch (error) {
     if (retries > 0 && error.code !== 'ENOTFOUND') {
       logger.warn(`Google API retry. Retries left: ${retries}`);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => globalThis.setTimeout(resolve, 1000));
       return callGoogleGeocodingAPI(latitude, longitude, retries - 1);
     }
     throw error;

@@ -111,7 +111,7 @@ async function fetchPincodeData(
       if (!indiaPostData) {
         if (attempt < retries) {
           log(`Retrying pincode ${pincode}...`, 'progress');
-          await new Promise((r) => setTimeout(r, CONFIG.retryDelay));
+          await new Promise((r) => globalThis.setTimeout(r, CONFIG.retryDelay));
           continue;
         }
         log(`No data found after retries for pincode ${pincode}`, 'error');
@@ -126,7 +126,7 @@ async function fetchPincodeData(
           const geocoded = await geocodeWithNominatim(po.name, cityName);
           if (geocoded) {
             coords = [geocoded.latitude, geocoded.longitude];
-            await new Promise((r) => setTimeout(r, 1000)); // Nominatim rate limit
+            await new Promise((r) => globalThis.setTimeout(r, 1000)); // Nominatim rate limit
           }
         }
         enrichedPostOffices.push({
@@ -178,7 +178,7 @@ async function fetchPincodesInBatches(pincodes, cityName) {
     results.push(...batchResults);
     if (i + CONFIG.batchSize < total) {
       log(`Waiting ${CONFIG.batchDelay}ms before next batch...`, 'progress');
-      await new Promise((r) => setTimeout(r, CONFIG.batchDelay));
+      await new Promise((r) => globalThis.setTimeout(r, CONFIG.batchDelay));
     }
   }
   log(`Completed fetching all pincodes.`, 'success');
