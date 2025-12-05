@@ -3,9 +3,7 @@ import { Service } from '../models/service.model.js';
 
 async function addMissingPricingIds() {
   try {
-    await mongoose.connect(
-      'mongodb+srv://sonawaneteju4:bgx1KVAmM81rOgu3@cluster0.pqpzbne.mongodb.net/covelent'
-    );
+    await mongoose.connect('mongodb+srv:///covelent');
     // console.log('✅ Connected to MongoDB\n');
 
     const services = await Service.find({});
