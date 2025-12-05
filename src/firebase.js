@@ -1,5 +1,4 @@
 import admin from 'firebase-admin';
-import fs from 'fs';
 
 // const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
 // if (!serviceAccountPath) {

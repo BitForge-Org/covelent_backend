@@ -74,7 +74,6 @@ import locationRoutes from './routes/locationImport.routes.js';
 
 import webhookRouter from './routes/webhook.routes.js';
 import location from './routes/location.router.js';
-import { sendTestNotification } from './utils/sendTestNotification.js';
 import { authLimiter, generalLimiter } from './utils/rateLimiter.js';
 import { setupSwagger } from './swagger.js';
 
@@ -83,26 +82,17 @@ app.use('/api/v1/admin', authLimiter, adminRouter); // 👈 apply authLimiter to
 app.use('/api/v1/users', authLimiter, userRouter); // 👈 apply authLimiter to user routes
 app.use('/api/v1/auth', authLimiter, authRouter); // 👈 apply authLimiter to auth routes
 app.use('/api/v1/healthcheck', healthcheckRouter);
-app.use('/api/v1/categories', categoryRouter);
-app.use('/api/v1/services', serviceRoutes);
-app.use('/api/v1/applications', serviceAreaRouter);
-app.use('/api/v1/bookings', BookingRouter);
-app.use('/api/v1/addresses', AddressRouter);
-app.use('/api/v1/location-import', locationRoutes);
-app.use('/api/v1/location', location);
-
-// Webhook routes
-// Razorpay webhook: capture raw body for signature verification
-// Razorpay webhook must use raw body
+app.use('/api/v1/categories', categoryRouter, generalLimiter);
+app.use('/api/v1/services', serviceRoutes, generalLimiter);
+app.use('/api/v1/applications', serviceAreaRouter, generalLimiter);
+app.use('/api/v1/bookings', BookingRouter, generalLimiter);
+app.use('/api/v1/addresses', AddressRouter, generalLimiter);
+app.use('/api/v1/location-import', locationRoutes, generalLimiter);
+app.use('/api/v1/location', location, generalLimiter);
 
 app.use('/api/v1/webhook', webhookRouter);
 
 setupSwagger(app);
-
-// Serve the health chart at a custom route
-// app.use("/health/memory-chart", (req, res) => {
-//   res.sendFile(path.resolve("public/health-heapused-chart.html"));
-// });
 
 // Global error handler
 app.use((err, req, res, next) => {
@@ -114,8 +104,5 @@ app.use((err, req, res, next) => {
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 });
-
-// Example route usage (add your routes here)
-// app.use("/api/health", healthcheckRouter);
 
 export { app };

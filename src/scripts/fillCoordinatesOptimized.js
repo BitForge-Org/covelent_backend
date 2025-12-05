@@ -1,3 +1,4 @@
+import { URL } from 'url';
 // src/scripts/fillCoordinatesWorker.js
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
