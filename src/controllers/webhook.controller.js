@@ -359,9 +359,16 @@ async function checkAndUpdatePendingPayments() {
       'payment.orderId': { $exists: true, $ne: null },
     });
 
+
+
+    let processedCount = 0;
+    let updatedCount = 0;
+
     for (const booking of pendingBookings) {
+      processedCount++;
       try {
         const order = await razorpay.orders.fetch(booking.payment.orderId);
+        
         if (order.status === 'paid') {
           const payments = await razorpay.orders.payments(
             booking.payment.orderId
@@ -375,16 +382,110 @@ async function checkAndUpdatePendingPayments() {
               paymentDate: new Date(payment.created_at * 1000),
               orderStatus: order.status,
             });
-            logger.info(`[Scheduler] Booking ${booking._id} marked as paid.`);
+            
+            // Confirm the booking if payment is captured
+            if (booking.bookingStatus === 'booking-requested' || booking.bookingStatus === 'pending') {
+              booking.bookingStatus = 'booking-confirmed';
+              await booking.save();
+            }
+
+            logger.info(`[Scheduler] Booking ${booking._id} marked as paid and confirmed.`);
+            updatedCount++;
           }
+        } else {
+             // Check for timeout
+             const createdAt = new Date(booking.createdAt).getTime();
+             const now = Date.now();
+             const oneDayMs = 24 * 60 * 60 * 1000;
+             const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+             const diff = now - createdAt;
+
+             // Rule 1: After 1 day, mark booking as failed (if not already handled)
+             if (diff > oneDayMs) {
+                if (booking.bookingStatus === 'pending' || booking.bookingStatus === 'booking-requested') {
+                    booking.bookingStatus = 'booking-failed';
+                    booking.cancellationReason = 'System failed: Payment pending > 24 hours';
+                    booking.cancelledAt = new Date();
+                    await booking.save();
+                    updatedCount++;
+                }
+             }
+
+             // Rule 2: After 3 days, mark payment as failed (stops retries)
+             if (diff > threeDaysMs) {
+                 await applyPaymentUpdate(booking, {
+                    status: 'failed',
+                    failureReason: 'Payment timeout: No payment received within 3 days',
+                    paymentDate: new Date(),
+                  });
+                  updatedCount++;
+             }
         }
       } catch (err) {
-        logger.error(
-          `[Scheduler] Error checking booking ${booking._id}: ${err.message}`
-        );
+        // Handle "Order ID not found" specifically to stop retries
+        if (
+          err.statusCode === 400 &&
+          err.error &&
+          (err.error.code === 'BAD_REQUEST_ERROR' ||
+            err.error.description === 'The id provided does not exist')
+        ) {
+          logger.warn(
+            `[Scheduler] Invalid Razorpay Order ID "${booking.payment?.orderId}" for booking ${booking._id}. Marking as failed to stop retries.`
+          );
+          await applyPaymentUpdate(booking, {
+            status: 'failed',
+            failureReason: `Invalid Razorpay Order ID: ${booking.payment?.orderId}`,
+            paymentDate: new Date(),
+          });
+          // Also fail booking if it was pending
+          if (booking.bookingStatus === 'pending' || booking.bookingStatus === 'booking-requested') {
+            booking.bookingStatus = 'booking-failed';
+            booking.cancellationReason =
+              'System failed: Invalid Payment Order ID';
+            booking.cancelledAt = new Date();
+            await booking.save();
+          }
+          updatedCount++; // We updated it to failed
+        } else {
+          logger.error(
+            `[Scheduler] Error checking booking ${booking._id}:`,
+            err
+          );
+        }
       }
     }
+
   } catch (err) {
     logger.error('[Scheduler] checkAndUpdatePendingPayments error:', err);
+  }
+}
+
+/* ========================================================
+   Scheduler: Sync "payment.status: failed" -> "bookingStatus: booking-failed"
+   (Cleanup job for consistency)
+======================================================== */
+export async function syncFailedBookings() {
+  try {
+    const result = await Booking.updateMany(
+      {
+        'payment.status': 'failed',
+        bookingStatus: { $ne: 'booking-failed' },
+      },
+      {
+        $set: {
+          bookingStatus: 'booking-failed',
+          cancellationReason: 'System Sync: Payment failed',
+          cancelledAt: new Date(),
+        },
+      }
+    );
+
+    if (result.modifiedCount > 0) {
+      logger.info(
+        `[Sync Scheduler] Synced ${result.modifiedCount} bookings to "booking-failed" status.`
+      );
+    }
+  } catch (err) {
+    logger.error('[Sync Scheduler] Error syncing failed bookings:', err);
   }
 }

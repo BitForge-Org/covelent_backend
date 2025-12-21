@@ -26,6 +26,7 @@ const bookingSchema = new Schema(
         'booking-completed',
         'booking-cancelled',
         'booking-rejected',
+        'booking-failed',
       ],
       default: 'booking-requested',
     },
