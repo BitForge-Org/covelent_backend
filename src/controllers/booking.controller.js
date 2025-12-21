@@ -806,7 +806,13 @@ const acceptBooking = asyncHandler(async (req, res) => {
             '[Provider Name]': req.user.fullName || 'Service Provider',
             '[Date]': fullBooking.scheduledDate.toISOString().split('T')[0],
             '[Time]': fullBooking.scheduledTime,
-            '[Location]': fullBooking.location.address || 'Your Location',
+            '[Location]': fullBooking.location
+              ? `${fullBooking.location.houseNo}, ${fullBooking.location.street}, ${fullBooking.location.city}, ${fullBooking.location.state} - ${fullBooking.location.pincode}`.replace(
+                  /^"+|"+$/g,
+                  ''
+                )
+              : 'Your Location',
+            '[Booking Link]': `https://covelnt.com/bookings/${booking._id}`,
             '[Current Year]': new Date().getFullYear().toString(),
           });
 
@@ -1414,6 +1420,7 @@ const bookingComplete = asyncHandler(async (req, res) => {
             '[User Name]': fullBooking.user.fullName || 'User',
             '[Service Name]': fullBooking.service.title || 'Service',
             '[Provider Name]': fullBooking.provider.fullName || 'Service Provider',
+            '[Booking Link]': `https://covelnt.com/bookings/${booking._id}`,
             '[Current Year]': new Date().getFullYear().toString(),
           });
 
@@ -1510,6 +1517,7 @@ const bookingCancel = asyncHandler(async (req, res) => {
           const emailHtml = await loadTemplate('booking-cancelled.html', {
             '[User Name]': fullBooking.user.fullName || 'User',
             '[Service Name]': fullBooking.service.title || 'Service',
+            '[Booking Link]': `https://covelnt.com/bookings/${booking._id}`,
             '[Current Year]': new Date().getFullYear().toString(),
           });
 
