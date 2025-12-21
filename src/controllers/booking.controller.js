@@ -1385,13 +1385,10 @@ const bookingCancel = asyncHandler(async (req, res) => {
   logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
   try {
     const providerId = req.user._id;
-    const { bookingId, latitude, longitude, cancellationReason } = req.body;
+    const { bookingId, cancellationReason } = req.body;
 
     if (!bookingId) {
       throw new ApiError(400, 'Booking ID is required');
-    }
-    if (!latitude || !longitude) {
-      throw new ApiError(400, 'Latitude and longitude are required');
     }
 
     const booking = await Booking.findOne({
@@ -1413,31 +1410,26 @@ const bookingCancel = asyncHandler(async (req, res) => {
       );
     }
 
-    // Get pincode from lat/lng
-    let pincode;
-    try {
-      const locationController = await import('./location.controller.js');
-      if (typeof locationController.getPincodeFromLatLng === 'function') {
-        pincode = await locationController.getPincodeFromLatLng(
-          latitude,
-          longitude
-        );
-      } else {
-        throw new Error('Location controller does not support pincode lookup');
-      }
-    } catch (err) {
-      logger.error('[BOOKING] Error getting pincode from coordinates:', err);
-      throw new ApiError(500, 'Failed to get pincode from coordinates');
+    // Only allow cancellation if at least 1 hour before scheduled time
+    // booking.scheduledDate (Date), booking.scheduledTime (string, e.g. '14:00')
+    let scheduledDateTime;
+    if (booking.scheduledDate && booking.scheduledTime) {
+      // Combine date and time into a single Date object
+      const dateStr =
+        booking.scheduledDate instanceof Date
+          ? booking.scheduledDate.toISOString().split('T')[0]
+          : String(booking.scheduledDate);
+      scheduledDateTime = new Date(`${dateStr}T${booking.scheduledTime}`);
+    } else {
+      throw new ApiError(400, 'Booking scheduled date/time not set');
     }
-    if (!pincode) {
-      throw new ApiError(404, 'No pincode found for provided coordinates');
-    }
-
-    // Compare pincodes
-    if (String(booking.location?.pincode) !== String(pincode)) {
+    const now = new Date();
+    const diffMs = scheduledDateTime - now;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    if (diffHours < 1) {
       throw new ApiError(
         400,
-        'Provider location pincode does not match booking address pincode'
+        'Booking can only be cancelled at least 1 hour before scheduled time'
       );
     }
 

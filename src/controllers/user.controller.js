@@ -28,14 +28,8 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullName, email, dateOfBirth, phoneNumber } = req.body;
-
   logger.info(`[USER] updateAccountDetails called for user: ${req.user?._id}`);
   logger.debug(`[USER] Request body: ${JSON.stringify(req.body)}`);
-  if (!fullName || !email) {
-    logger.warn(`[USER] Missing required fields: fullName or email`);
-    throw new ApiError(400, 'All fields are required');
-  }
 
   // Prevent aadhaar and pan number update
   if (req.body?.aadhaar?.number || req.body?.pan?.number) {
@@ -49,30 +43,38 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       );
   }
 
-  // Type validation to prevent NoSQL injection
-  if (typeof fullName !== 'string' || typeof email !== 'string') {
-    logger.warn(`[USER] Invalid types for fullName or email`);
-    return res
-      .status(400)
-      .json(new ApiResponse(400, null, 'Full Name and Email must be strings'));
-  }
-  if (dateOfBirth !== undefined && typeof dateOfBirth !== 'string') {
-    logger.warn(`[USER] Invalid type for dateOfBirth`);
-    return res
-      .status(400)
-      .json(new ApiResponse(400, null, 'Date of Birth must be a string'));
-  }
-  if (phoneNumber !== undefined && typeof phoneNumber !== 'string') {
-    logger.warn(`[USER] Invalid type for phoneNumber`);
-    return res
-      .status(400)
-      .json(new ApiResponse(400, null, 'Phone Number must be a string'));
+  // Build updateFields dynamically and validate only provided fields
+  const allowedFields = ['fullName', 'email', 'dateOfBirth', 'phoneNumber'];
+  const updateFields = {};
+  for (const field of allowedFields) {
+    if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+      const value = req.body[field];
+      if (
+        ['fullName', 'email', 'dateOfBirth', 'phoneNumber'].includes(field) &&
+        value !== undefined &&
+        typeof value !== 'string'
+      ) {
+        logger.warn(`[USER] Invalid type for ${field}`);
+        return res
+          .status(400)
+          .json(
+            new ApiResponse(
+              400,
+              null,
+              `${field.replace(/([A-Z])/g, ' $1')} must be a string`
+            )
+          );
+      }
+      updateFields[field] = value;
+    }
   }
 
-  // Only update allowed fields with validated values
-  const updateFields = { fullName, email };
-  if (dateOfBirth !== undefined) updateFields.dateOfBirth = dateOfBirth;
-  if (phoneNumber !== undefined) updateFields.phoneNumber = phoneNumber;
+  if (Object.keys(updateFields).length === 0) {
+    logger.warn(`[USER] No valid fields provided for update`);
+    return res
+      .status(400)
+      .json(new ApiResponse(400, null, 'No valid fields provided for update'));
+  }
 
   const user = await User.findByIdAndUpdate(
     req.user._id,
