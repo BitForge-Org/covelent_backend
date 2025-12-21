@@ -15,6 +15,9 @@ import { Address } from '../models/address.model.js';
 import razorpay from '../utils/razorpay.js';
 import logger from '../utils/logger.js';
 import mongoose from 'mongoose';
+import { sendMail } from '../utils/EmailService.js';
+import { loadTemplate } from '../utils/templateHelper.js';
+
 
 function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(id);
@@ -788,11 +791,46 @@ const acceptBooking = asyncHandler(async (req, res) => {
 
       await session.commitTransaction();
       session.endSession();
+
+      // Send confirmation email asynchronously
+      try {
+        const fullBooking = await Booking.findById(booking._id)
+          .populate('user')
+          .populate('service')
+          .populate({ path: 'location' });
+
+        if (fullBooking && fullBooking.user && fullBooking.user.email) {
+          const emailHtml = await loadTemplate('booking-confirmed.html', {
+            '[User Name]': fullBooking.user.fullName || 'User',
+            '[Service Name]': fullBooking.service.title || 'Service',
+            '[Provider Name]': req.user.fullName || 'Service Provider',
+            '[Date]': fullBooking.scheduledDate.toISOString().split('T')[0],
+            '[Time]': fullBooking.scheduledTime,
+            '[Location]': fullBooking.location.address || 'Your Location',
+            '[Current Year]': new Date().getFullYear().toString(),
+          });
+
+          sendMail({
+            to: fullBooking.user.email,
+            subject: 'Booking Confirmed - Covelnt',
+            html: emailHtml,
+          }).catch((err) =>
+            logger.error(
+              `Failed to send confirmation email for booking ${booking._id}:`,
+              err
+            )
+          );
+        }
+      } catch (emailErr) {
+        logger.error('Error preparing confirmation email:', emailErr);
+      }
+
       return res
         .status(200)
         .json(
           new ApiResponse(200, { booking }, 'Booking accepted successfully')
         );
+
     } catch (err) {
       await session.abortTransaction();
       session.endSession();
@@ -1364,6 +1402,38 @@ const bookingComplete = asyncHandler(async (req, res) => {
     booking.completedAt = new Date();
     await booking.save();
 
+      // Send completion email asynchronously
+      try {
+        const fullBooking = await Booking.findById(booking._id)
+          .populate('user')
+          .populate('service')
+          .populate('provider');
+
+        if (fullBooking && fullBooking.user && fullBooking.user.email) {
+          const emailHtml = await loadTemplate('booking-completed.html', {
+            '[User Name]': fullBooking.user.fullName || 'User',
+            '[Service Name]': fullBooking.service.title || 'Service',
+            '[Provider Name]': fullBooking.provider.fullName || 'Service Provider',
+            '[Current Year]': new Date().getFullYear().toString(),
+          });
+
+          sendMail({
+            to: fullBooking.user.email,
+            subject: 'Booking Completed - Covelnt',
+            html: emailHtml,
+          }).catch((err) =>
+            logger.error(
+              `Failed to send completion email for booking ${booking._id}:`,
+              err
+            )
+          );
+        }
+      } catch (emailErr) {
+        logger.error('Error preparing completion email:', emailErr);
+      }
+
+
+
     return res
       .status(200)
       .json(new ApiResponse(200, { booking }, 'Booking marked as completed'));
@@ -1429,6 +1499,35 @@ const bookingCancel = asyncHandler(async (req, res) => {
     booking.cancelledAt = new Date();
     if (cancellationReason) booking.cancellationReason = cancellationReason;
     await booking.save();
+
+      // Send cancellation email asynchronously
+      try {
+        const fullBooking = await Booking.findById(booking._id)
+          .populate('user')
+          .populate('service');
+
+        if (fullBooking && fullBooking.user && fullBooking.user.email) {
+          const emailHtml = await loadTemplate('booking-cancelled.html', {
+            '[User Name]': fullBooking.user.fullName || 'User',
+            '[Service Name]': fullBooking.service.title || 'Service',
+            '[Current Year]': new Date().getFullYear().toString(),
+          });
+
+          sendMail({
+            to: fullBooking.user.email,
+            subject: 'Booking Cancelled - Covelnt',
+            html: emailHtml,
+          }).catch((err) =>
+            logger.error(
+              `Failed to send cancellation email for booking ${booking._id}:`,
+              err
+            )
+          );
+        }
+      } catch (emailErr) {
+        logger.error('Error preparing cancellation email:', emailErr);
+      }
+
 
     return res
       .status(200)
