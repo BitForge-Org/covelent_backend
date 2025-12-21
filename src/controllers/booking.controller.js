@@ -1399,15 +1399,9 @@ const bookingCancel = asyncHandler(async (req, res) => {
       throw new ApiError(404, 'Booking not found for this user');
     }
 
-    // Only allow status change if current status is 'booking-confirmed' or 'booking-in-progress'
-    if (
-      booking.bookingStatus !== 'booking-confirmed' &&
-      booking.bookingStatus !== 'booking-in-progress'
-    ) {
-      throw new ApiError(
-        400,
-        'Booking can only be cancelled from confirmed or in-progress status'
-      );
+    // Only block cancellation if booking is already completed
+    if (booking.bookingStatus === 'booking-completed') {
+      throw new ApiError(400, 'Completed bookings cannot be cancelled');
     }
 
     // Only allow cancellation if at least 1 hour before scheduled time
