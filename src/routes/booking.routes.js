@@ -13,6 +13,7 @@ import {
   bookingComplete,
   bookingCancel,
   updateBookingStatus,
+  rescheduleBooking,
 } from '../controllers/booking.controller.js';
 
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -55,5 +56,8 @@ router.get('/:bookingId', verifyJWT, getBookingById);
 
 // Update booking status (generic)
 router.post('/update-status', verifyJWT, updateBookingStatus);
+
+// Reschedule booking
+router.post('/reschedule', verifyJWT, rescheduleBooking);
 
 export default router;

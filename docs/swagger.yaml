@@ -111,6 +111,9 @@ paths:
   /bookings/cancel:
     $ref: './paths/booking.yaml#/~1bookings~1cancel'
 
+  /bookings/reschedule:
+    $ref: './paths/booking-reschedule.yaml#/~1bookings~1reschedule'
+
   /addresses:
     $ref: './paths/address.yaml#/~1addresses'
   /addresses/{id}:

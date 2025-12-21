@@ -1439,6 +1439,69 @@ const bookingCancel = asyncHandler(async (req, res) => {
   }
 });
 
+
+const rescheduleBooking = asyncHandler(async (req, res) => {
+  const { bookingId, scheduledDate, scheduledTime } = req.body;
+
+  if (!isValidObjectId(bookingId)) {
+    throw new ApiError(400, 'Invalid booking ID');
+  }
+
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    throw new ApiError(404, 'Booking not found');
+  }
+
+  // user check
+  if (booking.user.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, 'You are not authorized to reschedule this booking');
+  }
+
+  // Status Check
+  if (booking.bookingStatus !== 'booking-requested') {
+    throw new ApiError(400, 'Only pending bookings can be rescheduled');
+  }
+
+  // Time Check (1 hour before current scheduled time)
+  // Construct current scheduled Date object
+  // scheduledDate is a Date object (from Mongoose schema), scheduledTime is "HH:mm" string
+  const currentScheduledDateStr = booking.scheduledDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  const currentDateTimeStr = `${currentScheduledDateStr}T${booking.scheduledTime.length === 5 ? booking.scheduledTime + ':00' : booking.scheduledTime}`;
+  const currentScheduledDateTime = new Date(currentDateTimeStr);
+  
+  const now = new Date();
+  const oneHour = 60 * 60 * 1000;
+
+  if (currentScheduledDateTime.getTime() - now.getTime() < oneHour) {
+    throw new ApiError(400, 'Cannot reschedule less than 1 hour before the scheduled time');
+  }
+
+  // Validate new Date/Time
+   if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
+    throw new ApiError(400, 'scheduledDate must be in YYYY-MM-DD format');
+  }
+   if (!/^\d{2}:\d{2}(:\d{2}(\.\d{3})?)?$/.test(scheduledTime)) {
+      throw new ApiError(400, 'scheduledTime must be in HH:mm format');
+   }
+
+  const newScheduledDateTimeString = `${scheduledDate}T${scheduledTime.length === 5 ? scheduledTime + ':00' : scheduledTime}`;
+  const newScheduledDateTime = new Date(newScheduledDateTimeString);
+
+  if (newScheduledDateTime <= now) {
+      throw new ApiError(400, 'New scheduled date and time must be in the future');
+  }
+
+  // Update
+  booking.scheduledDate = scheduledDate;
+  booking.scheduledTime = scheduledTime;
+  await booking.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, booking, 'Booking rescheduled successfully'));
+});
+
+
 export {
   createBooking,
   getBookingsHistory,
@@ -1453,4 +1516,5 @@ export {
   bookingCancel,
   updateBookingStatus,
   booking,
+  rescheduleBooking
 };

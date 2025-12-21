@@ -1,0 +1,53 @@
+
+/bookings/reschedule:
+  post:
+    summary: Reschedule a booking
+    description: >
+      Allows a user to reschedule their booking. The booking must be in 'booking-requested' status, and the request must be made at least 1 hour before the currently scheduled time.
+    tags:
+      - Bookings
+    security:
+      - BearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - bookingId
+              - scheduledDate
+              - scheduledTime
+            properties:
+              bookingId:
+                type: string
+                description: The ObjectId of the booking to reschedule
+              scheduledDate:
+                type: string
+                format: date
+                description: New scheduled date (YYYY-MM-DD)
+              scheduledTime:
+                type: string
+                description: New scheduled time (HH:mm)
+    responses:
+      '200':
+        description: Booking rescheduled successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  $ref: './../schemas/booking.yaml#/Booking'
+                message:
+                  type: string
+      '400':
+        description: Invalid request, status invalid, or too late to reschedule
+      '403':
+        description: Unauthorized
+      '404':
+        description: Booking not found
+      '500':
+        description: Server error
