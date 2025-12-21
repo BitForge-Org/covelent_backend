@@ -1379,12 +1379,12 @@ const bookingComplete = asyncHandler(async (req, res) => {
   }
 });
 
-// Mark booking as cancelled by provider, with pincode check
+// Mark booking as cancelled by user (not provider)
 const bookingCancel = asyncHandler(async (req, res) => {
-  logger.info(`[BOOKING] bookingCancel called by provider: ${req.user?._id}`);
+  logger.info(`[BOOKING] bookingCancel called by user: ${req.user?._id}`);
   logger.debug(`[BOOKING] Request body: ${JSON.stringify(req.body)}`);
   try {
-    const providerId = req.user._id;
+    const userId = req.user._id;
     const { bookingId, cancellationReason } = req.body;
 
     if (!bookingId) {
@@ -1393,10 +1393,10 @@ const bookingCancel = asyncHandler(async (req, res) => {
 
     const booking = await Booking.findOne({
       _id: bookingId,
-      provider: providerId,
+      user: userId,
     }).populate({ path: 'location', select: 'pincode' });
     if (!booking) {
-      throw new ApiError(404, 'Booking not found for this provider');
+      throw new ApiError(404, 'Booking not found for this user');
     }
 
     // Only allow status change if current status is 'booking-confirmed' or 'booking-in-progress'
@@ -1411,10 +1411,8 @@ const bookingCancel = asyncHandler(async (req, res) => {
     }
 
     // Only allow cancellation if at least 1 hour before scheduled time
-    // booking.scheduledDate (Date), booking.scheduledTime (string, e.g. '14:00')
     let scheduledDateTime;
     if (booking.scheduledDate && booking.scheduledTime) {
-      // Combine date and time into a single Date object
       const dateStr =
         booking.scheduledDate instanceof Date
           ? booking.scheduledDate.toISOString().split('T')[0]
