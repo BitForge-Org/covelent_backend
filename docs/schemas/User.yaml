@@ -17,6 +17,8 @@ User:
       type: boolean
     isVerified:
       type: boolean
+    isEmailVerified:
+      type: boolean
     role:
       type: string
       enum:

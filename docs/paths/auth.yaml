@@ -89,22 +89,12 @@
                   properties:
                     user:
                       $ref: '../schemas/User.yaml#/User'
-                    accessToken:
-                      type: string
-                    refreshToken:
-                      type: string
-                    role:
-                      type: string
-                    dateOfBirth:
-                      type: string
-                    isVerified:
+                    isEmailVerified:
                       type: boolean
-                    isActive:
-                      type: boolean
-                    phoneNumber:
-                      type: string
+                      default: false
                 message:
                   type: string
+                  example: User registered successfully. Please verify your email to login.
 
 /auth/register/provider:
   post:
@@ -434,5 +424,64 @@
                   properties:
                     email:
                       type: string
+                message:
+                  type: string
+
+/auth/verify-email/{token}:
+  get:
+    summary: Verify email address
+    tags:
+      - Auth
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema:
+          type: string
+        description: Email verification token
+    responses:
+      '200':
+        description: Email verified successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                message:
+                  type: string
+
+/auth/resend-verification-email:
+  post:
+    summary: Resend verification email
+    tags:
+      - Auth
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - email
+            properties:
+              email:
+                type: string
+                format: email
+    responses:
+      '200':
+        description: Verification email sent
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
                 message:
                   type: string

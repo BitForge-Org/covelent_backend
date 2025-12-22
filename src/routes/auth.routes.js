@@ -10,6 +10,8 @@ import {
   verifyOtp,
   loginProvider,
   registerProvider,
+  verifyEmail,
+  resendVerificationEmail,
 } from '../controllers/auth.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -58,5 +60,7 @@ router.route('/change-password').post(verifyJWT, changeCurrentPassword);
 router.route('/forgot-password').post(forgotPassword);
 router.route('/reset-password').post(resetPassword);
 router.route('/verify-otp').post(verifyOtp);
+router.route('/verify-email/:token').get(verifyEmail);
+router.route('/resend-verification-email').post(resendVerificationEmail);
 
 export default router;

@@ -153,6 +153,10 @@ const registerUser = asyncHandler(async (req, res) => {
     ? await uploadOnCloudinary(panImageLocalPath, 'pan')
     : null;
 
+  // Generate email verification token
+  const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+  const emailVerificationExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
   // Add new fields from user.model.js
   const user = await User.create({
     fullName,
@@ -172,12 +176,40 @@ const registerUser = asyncHandler(async (req, res) => {
     isProfileCompleted,
     dateOfBirth,
     phoneNumber,
+    isEmailVerified: false,
+    emailVerificationToken,
+    emailVerificationExpiry,
   });
 
-  // Generate tokens and return with role, isVerified, isActive
-  const tokens = await generateAccessAndRefreshTokens(user._id);
+  // Send Verification Email
+  try {
+    const templatePath = path.join(
+      process.cwd(),
+      'public',
+      'email-templates',
+      'email-verification.html'
+    );
+    const verifyLink = `${process.env.FRONTEND_URL || 'https://covelnt.com'}/verify-email/${emailVerificationToken}`;
+    
+    let template = fs.readFileSync(templatePath, 'utf8');
+    template = template
+      .replace("[User's First Name]", user.fullName)
+      .replace(/\[VERIFY_LINK\]/g, verifyLink)
+      .replace('[Current Year]', new Date().getFullYear());
+
+    await sendMail({
+      to: user.email,
+      subject: 'Verify your email - Covelent',
+      html: template,
+    });
+    logger.info(`[REGISTER] Verification email sent to: ${user.email}`);
+  } catch (err) {
+    logger.error('Failed to send verification email:', err);
+    // Note: We don't rollback user creation, but user will need to resend verification
+  }
+
   const createdUser = await User.findById(user._id).select(
-    '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
+    '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken -emailVerificationToken -emailVerificationExpiry'
   );
 
   if (!createdUser) {
@@ -185,44 +217,15 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, 'Something went wrong while registering the user');
   }
 
-  // Send Welcome email after successful registration
-  try {
-    const templatePath = path.join(
-      process.cwd(),
-      'public',
-      'email-templates',
-      'Welcome.html'
-    );
-    let template = fs
-      .readFileSync(templatePath, 'utf8')
-      .replace("[User's First Name]", user.fullName)
-      .replace(/\[Your Company Name\]/g, 'Covelent')
-      .replace('[GET_STARTED_LINK]', 'https://localhost/dashboard')
-      .replace('[Current Year]', new Date().getFullYear());
-    await sendMail({
-      to: user.email,
-      subject: 'Welcome to Covelent',
-      html: template,
-    });
-    logger.info(`[REGISTER] Welcome email sent to: ${user.email}`);
-  } catch (err) {
-    logger.error('Failed to send welcome email:', err);
-  }
-
+  // Do NOT generate tokens. Require verification.
   return res.status(201).json(
     new ApiResponse(
-      200,
+      201,
       {
         user: createdUser,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        role: user.role,
-        dateOfBirth: user.dateOfBirth,
-        isVerified: user.isVerified,
-        isActive: user.isActive,
-        phoneNumber: user.phoneNumber,
+        isEmailVerified: false,
       },
-      'User registered Successfully'
+      'User registered successfully. Please verify your email to login.'
     )
   );
 });
@@ -354,6 +357,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (!user.isVerified) {
     throw new ApiError(401, 'User account is not verified');
+  }
+
+  if (!user.isEmailVerified) {
+    throw new ApiError(403, 'Email is not verified. Please verify your email.');
   }
 
   if (!(await user.isPasswordCorrect(password))) {
@@ -549,7 +556,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
     .readFileSync(templatePath, 'utf8')
     .replace("[User's First Name]", user.fullName)
     .replace(/\[Your Company Name'\]/g, 'Covelent')
-    .replace('[RESET_LINK]', `Your OTP for password reset is: <b>${otp}</b>`)
+    .replace('[RESET_LINK]', `<b>${otp}</b>`)
     .replace('[Current Year]', new Date().getFullYear());
 
   await sendMail({
@@ -648,6 +655,106 @@ const resetPassword = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, 'Password reset successfully'));
 });
 
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  if (!token) {
+    throw new ApiError(400, 'Verification token is required');
+  }
+
+  const user = await User.findOne({ 
+    emailVerificationToken: token,
+    emailVerificationExpiry: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    throw new ApiError(400, 'Invalid or expired verification token');
+  }
+
+  user.isEmailVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpiry = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  // Send Welcome email after successful verification
+  try {
+    const templatePath = path.join(
+      process.cwd(),
+      'public',
+      'email-templates',
+      'Welcome.html'
+    );
+    // Check if welcome template exists, otherwise skip or use a simple one
+    if (fs.existsSync(templatePath)) {
+        let template = fs
+        .readFileSync(templatePath, 'utf8')
+        .replace("[User's First Name]", user.fullName)
+        .replace(/\[Your Company Name\]/g, 'Covelent')
+        .replace('[GET_STARTED_LINK]', `${process.env.FRONTEND_URL || 'https://covelnt.com'}/login`)
+        .replace('[Current Year]', new Date().getFullYear());
+        
+        await sendMail({
+        to: user.email,
+        subject: 'Welcome to Covelent',
+        html: template,
+        });
+    }
+  } catch (err) {
+    logger.error('Failed to send welcome email:', err);
+  }
+
+  return res.status(200).json(new ApiResponse(200, {}, 'Email verified successfully'));
+});
+
+const resendVerificationEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) throw new ApiError(400, 'Email is required');
+
+  const user = await User.findOne({ email });
+  if (!user) throw new ApiError(404, 'User not found');
+  if (user.isEmailVerified) throw new ApiError(400, 'Email is already verified');
+
+  // Check if existing token is still valid (policy: valid for 24 hrs)
+  let token = user.emailVerificationToken;
+  if (user.emailVerificationExpiry && user.emailVerificationExpiry > Date.now()) {
+     // Token is still valid, reuse it
+     token = user.emailVerificationToken;
+     logger.info(`[RESEND VERIFICATION] Reusing valid token for: ${email}`);
+  } else {
+     // Generate new token
+     token = crypto.randomBytes(32).toString('hex');
+     user.emailVerificationToken = token;
+     user.emailVerificationExpiry = Date.now() + 24 * 60 * 60 * 1000;
+     await user.save({ validateBeforeSave: false });
+  }
+
+  try {
+    const templatePath = path.join(
+      process.cwd(),
+      'public',
+      'email-templates',
+      'email-verification.html'
+    );
+    const verifyLink = `${process.env.FRONTEND_URL || 'https://covelnt.com'}/verify-email/${token}`;
+    
+    let template = fs.readFileSync(templatePath, 'utf8');
+    template = template
+      .replace("[User's First Name]", user.fullName)
+      .replace(/\[VERIFY_LINK\]/g, verifyLink)
+      .replace('[Current Year]', new Date().getFullYear());
+
+    await sendMail({
+      to: user.email,
+      subject: 'Verify your email - Covelent',
+      html: template,
+    });
+  } catch (err) {
+    throw new ApiError(500, 'Failed to send verification email');
+  }
+
+  return res.status(200).json(new ApiResponse(200, {}, 'Verification email sent'));
+});
+
 export {
   registerUser,
   loginUser,
@@ -657,5 +764,7 @@ export {
   forgotPassword,
   resetPassword,
   verifyOtp,
+  verifyEmail,
+  resendVerificationEmail,
   loginProvider,
 };

@@ -11,6 +11,16 @@ const userSchema = new Schema({
     index: true,
     lowercase: true,
   },
+  isEmailVerified: {
+    type: Boolean,
+    default: false,
+  },
+  emailVerificationToken: {
+    type: String,
+  },
+  emailVerificationExpiry: {
+    type: Date,
+  },
   phoneNumber: {
     type: String,
     unique: true,
@@ -152,6 +162,8 @@ userSchema.methods.generateRefreshToken = function () {
  *         isActive:
  *           type: boolean
  *         isVerified:
+ *           type: boolean
+ *         isEmailVerified:
  *           type: boolean
  *         googleId:
  *           type: string
