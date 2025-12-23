@@ -485,3 +485,46 @@
                   type: object
                 message:
                   type: string
+
+/auth/google-login:
+  post:
+    summary: Login user with Google
+    tags:
+      - Auth
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - idToken
+            properties:
+              idToken:
+                type: string
+                description: Firebase ID Token
+              role:
+                type: string
+                description: User role (optional, defaults to 'user')
+                enum: [user, provider]
+    responses:
+      '200':
+        description: User logged in successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    user:
+                      $ref: '../schemas/User.yaml#/User'
+                    accessToken:
+                      type: string
+                    refreshToken:
+                      type: string
+                message:
+                  type: string

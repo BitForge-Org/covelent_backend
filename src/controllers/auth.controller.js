@@ -13,6 +13,7 @@ import path from 'path';
 // Define the root upload directories, adjust as needed per your configuration.
 import { sendMail } from '../utils/EmailService.js';
 import crypto from 'crypto';
+import admin from '../firebase.js';
 
 // Directory where local uploaded files are temporarily stored
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
@@ -755,6 +756,79 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, {}, 'Verification email sent'));
 });
 
+const googleLogin = asyncHandler(async (req, res) => {
+  const { idToken, role } = req.body; // role can be 'user' or 'provider'
+
+  if (!idToken) {
+    throw new ApiError(400, 'Google ID Token is required');
+  }
+
+  let decodedToken;
+  try {
+    decodedToken = await admin.auth().verifyIdToken(idToken);
+  } catch (error) {
+    logger.error('Error verifying Google ID token:', error);
+    throw new ApiError(401, 'Invalid or expired Google ID token');
+  }
+
+  const { email, name, picture, uid } = decodedToken;
+
+  if (!email) {
+    throw new ApiError(400, 'Google account does not have an email');
+  }
+
+  let user = await User.findOne({ email });
+
+  if (user) {
+    // User exists, link googleId if not present
+    if (!user.googleId) {
+      user.googleId = uid;
+    }
+    // Auto-verify email if verified by Google
+    if (!user.isEmailVerified) {
+      user.isEmailVerified = true;
+      user.emailVerificationToken = undefined;
+      user.emailVerificationExpiry = undefined;
+    }
+    await user.save({ validateBeforeSave: false });
+  } else {
+    // Create new user
+    // If role is not provided, default to user
+    const userRole = role === 'provider' ? 'provider' : 'user';
+
+    user = await User.create({
+      fullName: name || 'Google User',
+      email,
+      googleId: uid,
+      avatar: picture,
+      role: userRole,
+      isEmailVerified: true,
+      isProfileCompleted: userRole === 'user', // Providers need to upload docs
+      // password is omitted, validation should pass due to conditional required
+    });
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    '-password -refreshToken -aadhaar -pan -resetPasswordExpires -resetPasswordToken'
+  );
+
+  return res
+    .status(200)
+    .cookie('accessToken', accessToken, getCookieOptions(accessToken))
+    .cookie('refreshToken', refreshToken, getCookieOptions(refreshToken))
+    .json(
+      new ApiResponse(
+        200,
+        { user: loggedInUser, accessToken, refreshToken },
+        'User logged in successfully with Google'
+      )
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -767,4 +841,5 @@ export {
   verifyEmail,
   resendVerificationEmail,
   loginProvider,
+  googleLogin,
 };

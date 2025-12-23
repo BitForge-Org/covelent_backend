@@ -1,0 +1,94 @@
+Product:
+  type: object
+  properties:
+    _id:
+      type: string
+      description: Auto-generated MongoDB ID
+    name:
+      type: string
+      description: Name of the product
+    description:
+      type: string
+      description: Detailed description
+    categoryId:
+      type: string
+      description: Reference to Category ID
+    images:
+      type: array
+      items:
+        type: string
+      description: Array of image URLs (max 5)
+    isFeatured:
+      type: boolean
+      default: false
+    isActive:
+      type: boolean
+      default: true
+    taxPercentage:
+      type: number
+      description: Tax percentage applicable to the product
+    discount:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [PERCENTAGE, FLAT, NONE]
+        value:
+          type: number
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+ProductVariant:
+  type: object
+  properties:
+    _id:
+      type: string
+    productId:
+      type: string
+    label:
+      type: string
+      description: Variant label (e.g., 1 Kg)
+    sku:
+      type: string
+      description: Unique Stock Keeping Unit
+    buyingPrice:
+      type: number
+    sellingPrice:
+      type: number
+      description: Tax-inclusive selling price
+    stockQuantity:
+      type: number
+    lowStockThreshold:
+      type: number
+    isActive:
+      type: boolean
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+StockMovement:
+  type: object
+  properties:
+    _id:
+      type: string
+    variantId:
+      type: string
+    type:
+      type: string
+      enum: [IN, OUT]
+    quantity:
+      type: number
+    reason:
+      type: string
+    createdBy:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
