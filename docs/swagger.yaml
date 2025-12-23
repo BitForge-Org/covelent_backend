@@ -146,6 +146,8 @@ paths:
     $ref: './paths/auth.yaml#/~1auth~1provider~1upload-documents'
   /auth/verify-email/{token}:
     $ref: './paths/auth.yaml#/~1auth~1verify-email~1{token}'
+  /auth/google-login:
+    $ref: './paths/auth.yaml#/~1auth~1google-login'
   /auth/resend-verification-email:
     $ref: './paths/auth.yaml#/~1auth~1resend-verification-email'
 

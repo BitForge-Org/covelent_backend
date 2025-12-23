@@ -12,6 +12,7 @@ import {
   registerProvider,
   verifyEmail,
   resendVerificationEmail,
+  googleLogin,
 } from '../controllers/auth.controller.js';
 import { upload } from '../middlewares/multer.middleware.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -62,5 +63,6 @@ router.route('/reset-password').post(resetPassword);
 router.route('/verify-otp').post(verifyOtp);
 router.route('/verify-email/:token').get(verifyEmail);
 router.route('/resend-verification-email').post(resendVerificationEmail);
+router.route('/google-login').post(googleLogin);
 
 export default router;
