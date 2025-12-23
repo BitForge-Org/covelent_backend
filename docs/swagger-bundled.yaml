@@ -13,6 +13,8 @@ servers:
   - url: 'https://www.covelnt.com/api/v1'
     description: Production server
 tags:
+  - name: Products
+    description: Product management (Admin & User)
   - name: Auth
     description: Authentication management
   - name: Categories
@@ -3412,6 +3414,335 @@ paths:
                     type: array
                     items:
                       type: string
+  /products:
+    get:
+      summary: List active products
+      tags:
+        - Products
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Search by name or description
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            enum:
+              - createdAt
+              - price
+              - isFeatured
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        '200':
+          description: List of products with variants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    image:
+                      type: string
+                    discountLabel:
+                      type: string
+                    startingFrom:
+                      type: number
+                    variants:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          variantId:
+                            type: string
+                          label:
+                            type: string
+                          price:
+                            type: number
+                          originalPrice:
+                            type: number
+                          stock:
+                            type: number
+    post:
+      summary: Create a new product (Admin)
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - categoryId
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                categoryId:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+                taxPercentage:
+                  type: number
+                discount:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - PERCENTAGE
+                        - FLAT
+                        - NONE
+                    value:
+                      type: number
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+  '/products/{id}':
+    get:
+      summary: Get product details
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Product ID
+      responses:
+        '200':
+          description: Product details with variants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  images:
+                    type: array
+                    items:
+                      type: string
+                  discountLabel:
+                    type: string
+                  variants:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        variantId:
+                          type: string
+                        label:
+                          type: string
+                        sku:
+                          type: string
+                        price:
+                          type: number
+                        originalPrice:
+                          type: number
+                        discountAmount:
+                          type: number
+                        stock:
+                          type: number
+                        taxDetails:
+                          type: object
+                          properties:
+                            rate:
+                              type: number
+                            amount:
+                              type: number
+                            base:
+                              type: number
+    put:
+      summary: Update product (Admin)
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+  '/products/{id}/variants':
+    post:
+      summary: Add variant to product (Admin)
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - label
+                - sku
+                - buyingPrice
+                - sellingPrice
+              properties:
+                label:
+                  type: string
+                sku:
+                  type: string
+                buyingPrice:
+                  type: number
+                sellingPrice:
+                  type: number
+                stockQuantity:
+                  type: number
+                lowStockThreshold:
+                  type: number
+                isActive:
+                  type: boolean
+      responses:
+        '201':
+          description: Variant added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductVariant'
+  '/products/variants/{id}/stock/in':
+    post:
+      summary: Add stock to variant (Admin)
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Variant ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+                - reason
+              properties:
+                quantity:
+                  type: number
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Stock added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductVariant'
+  '/products/variants/{id}/stock/out':
+    post:
+      summary: Remove stock from variant (Admin)
+      tags:
+        - Products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: Variant ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+                - reason
+              properties:
+                quantity:
+                  type: number
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Stock removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductVariant'
 components:
   securitySchemes:
     BearerAuth:
@@ -3777,3 +4108,100 @@ components:
         - city
         - area
         - isServiceable
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Auto-generated MongoDB ID
+        name:
+          type: string
+          description: Name of the product
+        description:
+          type: string
+          description: Detailed description
+        categoryId:
+          type: string
+          description: Reference to Category ID
+        images:
+          type: array
+          items:
+            type: string
+          description: Array of image URLs (max 5)
+        isFeatured:
+          type: boolean
+          default: false
+        isActive:
+          type: boolean
+          default: true
+        taxPercentage:
+          type: number
+          description: Tax percentage applicable to the product
+        discount:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - PERCENTAGE
+                - FLAT
+                - NONE
+            value:
+              type: number
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ProductVariant:
+      type: object
+      properties:
+        _id:
+          type: string
+        productId:
+          type: string
+        label:
+          type: string
+          description: 'Variant label (e.g., 1 Kg)'
+        sku:
+          type: string
+          description: Unique Stock Keeping Unit
+        buyingPrice:
+          type: number
+        sellingPrice:
+          type: number
+          description: Tax-inclusive selling price
+        stockQuantity:
+          type: number
+        lowStockThreshold:
+          type: number
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    StockMovement:
+      type: object
+      properties:
+        _id:
+          type: string
+        variantId:
+          type: string
+        type:
+          type: string
+          enum:
+            - IN
+            - OUT
+        quantity:
+          type: number
+        reason:
+          type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time

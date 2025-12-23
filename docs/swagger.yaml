@@ -16,6 +16,8 @@ servers:
     description: Production server
 
 tags:
+  - name: Products
+    description: Product management (Admin & User)
   - name: Auth
     description: Authentication management
   - name: Categories
@@ -193,6 +195,17 @@ paths:
   /location-import/search:
     $ref: './paths/locationImport.yaml#/paths/~1location-import~1search'
 
+  /products:
+    $ref: './paths/products.yaml#/~1products'
+  /products/{id}:
+    $ref: './paths/products.yaml#/~1products~1{id}'
+  /products/{id}/variants:
+    $ref: './paths/products.yaml#/~1products~1{id}~1variants'
+  /products/variants/{id}/stock/in:
+    $ref: './paths/products.yaml#/~1products~1variants~1{id}~1stock~1in'
+  /products/variants/{id}/stock/out:
+    $ref: './paths/products.yaml#/~1products~1variants~1{id}~1stock~1out'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -219,3 +232,9 @@ components:
       $ref: './schemas/SubArea.yaml#/SubArea'
     Pincode:
       $ref: './schemas/Pincode.yaml#/Pincode'
+    Product:
+      $ref: './schemas/products.yaml#/Product'
+    ProductVariant:
+      $ref: './schemas/products.yaml#/ProductVariant'
+    StockMovement:
+      $ref: './schemas/products.yaml#/StockMovement'

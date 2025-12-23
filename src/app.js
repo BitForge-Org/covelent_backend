@@ -71,6 +71,7 @@ import BookingRouter from './routes/booking.routes.js';
 import AddressRouter from './routes/address.routers.js';
 import adminRouter from './routes/admin.routes.js';
 import locationRoutes from './routes/locationImport.routes.js';
+import productRouter from './routes/product.routes.js';
 
 import webhookRouter from './routes/webhook.routes.js';
 import location from './routes/location.router.js';
@@ -89,6 +90,7 @@ app.use('/api/v1/bookings', BookingRouter, generalLimiter);
 app.use('/api/v1/addresses', AddressRouter, generalLimiter);
 app.use('/api/v1/location-import', locationRoutes, generalLimiter);
 app.use('/api/v1/location', location, generalLimiter);
+app.use('/api/v1/products', productRouter, generalLimiter);
 
 app.use('/api/v1/webhook', webhookRouter);
 
