@@ -806,6 +806,32 @@ const googleLogin = asyncHandler(async (req, res) => {
       isProfileCompleted: userRole === 'user', // Providers need to upload docs
       // password is omitted, validation should pass due to conditional required
     });
+
+    // Send Welcome email for Google Registration
+    try {
+      const templatePath = path.join(
+        process.cwd(),
+        'public',
+        'email-templates',
+        'Welcome.html'
+      );
+      if (fs.existsSync(templatePath)) {
+          let template = fs
+          .readFileSync(templatePath, 'utf8')
+          .replace("[User's First Name]", user.fullName)
+          .replace(/\[Your Company Name\]/g, 'Covelent')
+          .replace('[GET_STARTED_LINK]', `${process.env.FRONTEND_URL || 'https://covelnt.com'}/login`)
+          .replace('[Current Year]', new Date().getFullYear());
+          
+          await sendMail({
+          to: user.email,
+          subject: 'Welcome to Covelent',
+          html: template,
+          });
+      }
+    } catch (err) {
+      logger.error('Failed to send welcome email for Google user:', err);
+    }
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
