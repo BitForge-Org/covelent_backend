@@ -364,6 +364,10 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(403, 'Email is not verified. Please verify your email.');
   }
 
+  if (!user.password) {
+    throw new ApiError(401, 'Invalid user credentials');
+  }
+
   if (!(await user.isPasswordCorrect(password))) {
     logger.error(`[LOGIN] Invalid credentials for: ${email}`);
     throw new ApiError(401, 'Invalid user credentials');
@@ -423,6 +427,10 @@ const loginProvider = asyncHandler(async (req, res) => {
   // if (!user.isVerified) {
   //   throw new ApiError(401, 'User account is not verified');
   // }
+
+  if (!user.password) {
+    throw new ApiError(401, 'Invalid user credentials');
+  }
 
   if (!(await user.isPasswordCorrect(password))) {
     logger.error(`[LOGIN] Invalid credentials for: ${email}`);
