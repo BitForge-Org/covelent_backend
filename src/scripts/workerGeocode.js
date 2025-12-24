@@ -2,9 +2,17 @@
 import { parentPort, workerData } from 'worker_threads';
 import https from 'https';
 
-async function geocode(name, city) {
+async function geocode(name, city, pincode) {
   return new Promise((resolve) => {
-    const query = encodeURIComponent(`${name}, ${city}, India`);
+    let queryName = name;
+    let queryCity = city;
+
+    // Use provided pincode if available for better accuracy
+    if (pincode) {
+      queryName = `${name}, ${pincode}`;
+    }
+
+    const query = encodeURIComponent(`${queryName}, ${queryCity}, India`);
     const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
 
     https
@@ -31,6 +39,10 @@ async function geocode(name, city) {
 }
 
 (async () => {
-  const coords = await geocode(workerData.name, workerData.city);
+  const coords = await geocode(
+    workerData.name,
+    workerData.city,
+    workerData.pincode
+  );
   parentPort.postMessage(coords);
 })();
