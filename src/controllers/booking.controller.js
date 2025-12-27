@@ -18,7 +18,6 @@ import mongoose from 'mongoose';
 import { sendMail } from '../utils/EmailService.js';
 import { loadTemplate } from '../utils/templateHelper.js';
 
-
 function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(id);
 }
@@ -416,7 +415,7 @@ const createBooking = asyncHandler(async (req, res) => {
     );
     logger.info(`[BOOKING] Booking created: ${booking[0]?._id}`);
 
-    if (paymentMethod !== 'online') {
+    if (paymentMethod !== 'cash') {
       order = await razorpay.orders.create({
         amount: option.price * 100,
         currency: 'INR',
@@ -836,7 +835,6 @@ const acceptBooking = asyncHandler(async (req, res) => {
         .json(
           new ApiResponse(200, { booking }, 'Booking accepted successfully')
         );
-
     } catch (err) {
       await session.abortTransaction();
       session.endSession();
@@ -1408,38 +1406,37 @@ const bookingComplete = asyncHandler(async (req, res) => {
     booking.completedAt = new Date();
     await booking.save();
 
-      // Send completion email asynchronously
-      try {
-        const fullBooking = await Booking.findById(booking._id)
-          .populate('user')
-          .populate('service')
-          .populate('provider');
+    // Send completion email asynchronously
+    try {
+      const fullBooking = await Booking.findById(booking._id)
+        .populate('user')
+        .populate('service')
+        .populate('provider');
 
-        if (fullBooking && fullBooking.user && fullBooking.user.email) {
-          const emailHtml = await loadTemplate('booking-completed.html', {
-            '[User Name]': fullBooking.user.fullName || 'User',
-            '[Service Name]': fullBooking.service.title || 'Service',
-            '[Provider Name]': fullBooking.provider.fullName || 'Service Provider',
-            '[Booking Link]': `https://covelnt.com/bookings/${booking._id}`,
-            '[Current Year]': new Date().getFullYear().toString(),
-          });
+      if (fullBooking && fullBooking.user && fullBooking.user.email) {
+        const emailHtml = await loadTemplate('booking-completed.html', {
+          '[User Name]': fullBooking.user.fullName || 'User',
+          '[Service Name]': fullBooking.service.title || 'Service',
+          '[Provider Name]':
+            fullBooking.provider.fullName || 'Service Provider',
+          '[Booking Link]': `https://covelnt.com/bookings/${booking._id}`,
+          '[Current Year]': new Date().getFullYear().toString(),
+        });
 
-          sendMail({
-            to: fullBooking.user.email,
-            subject: 'Booking Completed - Covelnt',
-            html: emailHtml,
-          }).catch((err) =>
-            logger.error(
-              `Failed to send completion email for booking ${booking._id}:`,
-              err
-            )
-          );
-        }
-      } catch (emailErr) {
-        logger.error('Error preparing completion email:', emailErr);
+        sendMail({
+          to: fullBooking.user.email,
+          subject: 'Booking Completed - Covelnt',
+          html: emailHtml,
+        }).catch((err) =>
+          logger.error(
+            `Failed to send completion email for booking ${booking._id}:`,
+            err
+          )
+        );
       }
-
-
+    } catch (emailErr) {
+      logger.error('Error preparing completion email:', emailErr);
+    }
 
     return res
       .status(200)
@@ -1507,35 +1504,34 @@ const bookingCancel = asyncHandler(async (req, res) => {
     if (cancellationReason) booking.cancellationReason = cancellationReason;
     await booking.save();
 
-      // Send cancellation email asynchronously
-      try {
-        const fullBooking = await Booking.findById(booking._id)
-          .populate('user')
-          .populate('service');
+    // Send cancellation email asynchronously
+    try {
+      const fullBooking = await Booking.findById(booking._id)
+        .populate('user')
+        .populate('service');
 
-        if (fullBooking && fullBooking.user && fullBooking.user.email) {
-          const emailHtml = await loadTemplate('booking-cancelled.html', {
-            '[User Name]': fullBooking.user.fullName || 'User',
-            '[Service Name]': fullBooking.service.title || 'Service',
-            '[Booking Link]': `https://covelnt.com/bookings/${booking._id}`,
-            '[Current Year]': new Date().getFullYear().toString(),
-          });
+      if (fullBooking && fullBooking.user && fullBooking.user.email) {
+        const emailHtml = await loadTemplate('booking-cancelled.html', {
+          '[User Name]': fullBooking.user.fullName || 'User',
+          '[Service Name]': fullBooking.service.title || 'Service',
+          '[Booking Link]': `https://covelnt.com/bookings/${booking._id}`,
+          '[Current Year]': new Date().getFullYear().toString(),
+        });
 
-          sendMail({
-            to: fullBooking.user.email,
-            subject: 'Booking Cancelled - Covelnt',
-            html: emailHtml,
-          }).catch((err) =>
-            logger.error(
-              `Failed to send cancellation email for booking ${booking._id}:`,
-              err
-            )
-          );
-        }
-      } catch (emailErr) {
-        logger.error('Error preparing cancellation email:', emailErr);
+        sendMail({
+          to: fullBooking.user.email,
+          subject: 'Booking Cancelled - Covelnt',
+          html: emailHtml,
+        }).catch((err) =>
+          logger.error(
+            `Failed to send cancellation email for booking ${booking._id}:`,
+            err
+          )
+        );
       }
-
+    } catch (emailErr) {
+      logger.error('Error preparing cancellation email:', emailErr);
+    }
 
     return res
       .status(200)
@@ -1545,7 +1541,6 @@ const bookingCancel = asyncHandler(async (req, res) => {
     throw new ApiError(500, 'Failed to mark booking as cancelled');
   }
 });
-
 
 const rescheduleBooking = asyncHandler(async (req, res) => {
   const { bookingId, scheduledDate, scheduledTime } = req.body;
@@ -1561,7 +1556,10 @@ const rescheduleBooking = asyncHandler(async (req, res) => {
 
   // user check
   if (booking.user.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, 'You are not authorized to reschedule this booking');
+    throw new ApiError(
+      403,
+      'You are not authorized to reschedule this booking'
+    );
   }
 
   // Status Check
@@ -1572,30 +1570,38 @@ const rescheduleBooking = asyncHandler(async (req, res) => {
   // Time Check (1 hour before current scheduled time)
   // Construct current scheduled Date object
   // scheduledDate is a Date object (from Mongoose schema), scheduledTime is "HH:mm" string
-  const currentScheduledDateStr = booking.scheduledDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  const currentScheduledDateStr = booking.scheduledDate
+    .toISOString()
+    .split('T')[0]; // YYYY-MM-DD
   const currentDateTimeStr = `${currentScheduledDateStr}T${booking.scheduledTime.length === 5 ? booking.scheduledTime + ':00' : booking.scheduledTime}`;
   const currentScheduledDateTime = new Date(currentDateTimeStr);
-  
+
   const now = new Date();
   const oneHour = 60 * 60 * 1000;
 
   if (currentScheduledDateTime.getTime() - now.getTime() < oneHour) {
-    throw new ApiError(400, 'Cannot reschedule less than 1 hour before the scheduled time');
+    throw new ApiError(
+      400,
+      'Cannot reschedule less than 1 hour before the scheduled time'
+    );
   }
 
   // Validate new Date/Time
-   if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
     throw new ApiError(400, 'scheduledDate must be in YYYY-MM-DD format');
   }
-   if (!/^\d{2}:\d{2}(:\d{2}(\.\d{3})?)?$/.test(scheduledTime)) {
-      throw new ApiError(400, 'scheduledTime must be in HH:mm format');
-   }
+  if (!/^\d{2}:\d{2}(:\d{2}(\.\d{3})?)?$/.test(scheduledTime)) {
+    throw new ApiError(400, 'scheduledTime must be in HH:mm format');
+  }
 
   const newScheduledDateTimeString = `${scheduledDate}T${scheduledTime.length === 5 ? scheduledTime + ':00' : scheduledTime}`;
   const newScheduledDateTime = new Date(newScheduledDateTimeString);
 
   if (newScheduledDateTime <= now) {
-      throw new ApiError(400, 'New scheduled date and time must be in the future');
+    throw new ApiError(
+      400,
+      'New scheduled date and time must be in the future'
+    );
   }
 
   // Update
@@ -1607,7 +1613,6 @@ const rescheduleBooking = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, booking, 'Booking rescheduled successfully'));
 });
-
 
 export {
   createBooking,
@@ -1623,5 +1628,5 @@ export {
   bookingCancel,
   updateBookingStatus,
   booking,
-  rescheduleBooking
+  rescheduleBooking,
 };
